@@ -1,0 +1,105 @@
+import 'package:collection/collection.dart';
+import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/data/models/file_model.dart';
+import 'package:cross_platform_project/data/sync/sync_handlers/delete_handler.dart';
+import 'package:cross_platform_project/data/sync/sync_handlers/load_handler.dart';
+import 'package:cross_platform_project/data/sync/sync_handlers/update_handler.dart';
+
+enum SyncAction { load, delete, update }
+
+enum SyncSource { remote, local }
+
+class SyncEvent {
+  final SyncAction action;
+  final SyncSource source;
+  final int priority;
+  final FileModel payload;
+  final int retry;
+
+  const SyncEvent({
+    required this.action,
+    required this.source,
+    required this.priority,
+    required this.payload,
+    this.retry = 0,
+  });
+
+  SyncEvent copyWith({
+    final SyncAction? action,
+    final SyncSource? source,
+    final int? priority,
+    final FileModel? payload,
+    final int? retry,
+  }) => SyncEvent(
+    action: action ?? this.action,
+    source: source ?? this.source,
+    priority: priority ?? this.priority,
+    payload: payload ?? this.payload,
+    retry: retry ?? this.retry,
+  );
+}
+
+class SyncProcessor {
+  final UpdateHandler updateHandler;
+  final LoadHandler loadHandler;
+  final DeleteHandler deleteHandler;
+  final PriorityQueue<SyncEvent> _queue;
+
+  bool _isProcessing = false;
+  final int maxRetry = 3;
+
+  SyncProcessor({
+    required this.updateHandler,
+    required this.loadHandler,
+    required this.deleteHandler,
+  }) : _queue = PriorityQueue<SyncEvent>(
+         (a, b) => a.priority.compareTo(b.priority),
+       );
+
+  void addEvent({
+    required SyncAction action,
+    required SyncSource source,
+    required FileModel payload,
+  }) {
+    _queue.add(
+      SyncEvent(
+        action: action,
+        source: source,
+        priority: switch (action) {
+          SyncAction.update => 30,
+          SyncAction.load => 20,
+          SyncAction.delete => 10,
+        },
+        payload: payload,
+      ),
+    );
+    _process();
+  }
+
+  Future<void> _process() async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
+    while (_queue.isNotEmpty) {
+      final event = _queue.removeFirst();
+      final result = await _handleEvent(event);
+      if (result.isSuccess) {}
+    }
+    _isProcessing = false;
+  }
+
+  Future<Result<void>> _handleEvent(SyncEvent event) async {
+    Result<void> result = switch (event.action) {
+      SyncAction.update => await updateHandler.handle(event),
+      SyncAction.load => await loadHandler.handle(event),
+      SyncAction.delete => await deleteHandler.handle(event),
+    };
+    if (result.isFailure) {
+      if (event.retry >= maxRetry) {
+        return Failure("Max Retry Attempts Reached");
+      }
+      _queue.add(event.copyWith(retry: event.retry + 1));
+    }
+    return result;
+  }
+}
