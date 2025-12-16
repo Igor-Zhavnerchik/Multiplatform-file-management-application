@@ -5,36 +5,45 @@ import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:drift/drift.dart';
 
 class FileModelMapper {
-  FilesCompanion toInsert(FileModel model) => FilesCompanion.insert(
-    id: model.id,
-    ownerId: model.ownerId,
-    parentId: Value(model.parentId),
+  FilesCompanion toInsert(FileModel model, String relPath) =>
+      FilesCompanion.insert(
+        id: model.id,
+        ownerId: model.ownerId,
+        parentId: Value(model.parentId),
 
-    name: model.name,
-    mimeType: Value(model.mimeType),
-    isFolder: model.isFolder,
-    size: Value(model.size),
-    hash: Value(model.hash),
+        relativePath: relPath,
+        name: model.name,
+        mimeType: Value(model.mimeType),
+        isFolder: model.isFolder,
+        size: Value(model.size),
+        hash: Value(model.hash),
 
-    syncStatus: model.syncStatus.name,
-    downloadEnabled: model.downloadEnabled!,
+        syncStatus: model.syncStatus.name,
+        downloadEnabled: model.downloadEnabled!,
 
-    downloadStatus: model.downloadStatus.name,
-    syncEnabled: model.syncEnabled!,
+        downloadStatus: model.downloadStatus.name,
+        syncEnabled: model.syncEnabled!,
 
-    createdAt: model.createdAt,
-    updatedAt: model.updatedAt,
-    deletedAt: Value(model.deletedAt),
-  );
+        createdAt: model.createdAt,
+        updatedAt: model.updatedAt,
+        deletedAt: Value(model.deletedAt),
+      );
 
-  FilesCompanion toUpdate(FileModel model) => FilesCompanion(
+  FilesCompanion toUpdate(FileModel model, String relPath) => FilesCompanion(
     id: Value(model.id),
     parentId: Value(model.parentId),
 
+    relativePath: Value(relPath),
     name: Value(model.name),
     mimeType: Value(model.mimeType),
     size: Value(model.size),
     hash: Value(model.hash),
+
+    syncStatus: Value(model.syncStatus.name),
+    downloadStatus: Value(model.downloadStatus.name),
+    //FIXME make bools in model to not nullable
+    syncEnabled: Value(model.syncEnabled!),
+    downloadEnabled: Value(model.downloadEnabled!),
 
     updatedAt: Value(model.updatedAt),
     deletedAt: Value(model.deletedAt),

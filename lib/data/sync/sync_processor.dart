@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
@@ -44,9 +46,12 @@ class SyncProcessor {
   final LoadHandler loadHandler;
   final DeleteHandler deleteHandler;
   final PriorityQueue<SyncEvent> _queue;
+  Completer<void>? _syncCompleter;
 
   bool _isProcessing = false;
-  final int maxRetry = 3;
+
+  //FIXME to 3
+  final int maxRetry = 0;
 
   SyncProcessor({
     required this.updateHandler,
@@ -55,6 +60,10 @@ class SyncProcessor {
   }) : _queue = PriorityQueue<SyncEvent>(
          (a, b) => a.priority.compareTo(b.priority),
        );
+
+  Future<void> waitSyncCompletetion() {
+    return _isProcessing ? _syncCompleter!.future : Future.value();
+  }
 
   void addEvent({
     required SyncAction action,
@@ -79,12 +88,24 @@ class SyncProcessor {
   Future<void> _process() async {
     if (_isProcessing) return;
     _isProcessing = true;
+    _syncCompleter = Completer<void>();
 
     while (_queue.isNotEmpty) {
       final event = _queue.removeFirst();
       final result = await _handleEvent(event);
-      if (result.isSuccess) {}
+      if (result.isFailure) {
+        print(
+          'failed to execute event.\n'
+          'action: ${event.action}\n'
+          'source: ${event.source}\n'
+          'file name: ${event.payload.name}\n'
+          'error: ${(result as Failure).error}\n'
+          'source: ${(result).source}\n',
+        );
+      }
     }
+
+    _syncCompleter!.complete();
     _isProcessing = false;
   }
 

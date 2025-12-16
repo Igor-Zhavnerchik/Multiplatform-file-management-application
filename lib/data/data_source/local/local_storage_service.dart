@@ -35,20 +35,23 @@ class LocalStorageService {
 
   Future<void> moveEntity({
     required String currentPath,
-    required String newParentPath,
+    required String newPath,
     required bool isFolder,
     bool overwrite = false,
   }) async {
-    var entity = getEntity(path: currentPath, isFolder: isFolder);
-    var parentDir =
-        getEntity(path: newParentPath, isFolder: false) as Directory;
+    print('current: $currentPath');
+    print('new: $newPath');
+    final entity = getEntity(path: currentPath, isFolder: isFolder);
+    final newEntity = getEntity(path: newPath, isFolder: isFolder);
+    var parentDir = newEntity
+        .parent; //getEntity(path: newParentPath, isFolder: true) as Directory;
     if (!await parentDir.exists()) {
       await parentDir.create(recursive: true);
     }
     if (overwrite && await entity.exists()) {
-      await deleteEntity(path: newParentPath, isFolder: isFolder);
+      await deleteEntity(path: newPath, isFolder: isFolder);
     }
-    await entity.rename(newParentPath);
+    await entity.rename(newPath);
   }
 
   Future<void> deleteEntity({

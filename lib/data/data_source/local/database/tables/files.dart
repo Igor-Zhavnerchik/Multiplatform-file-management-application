@@ -7,6 +7,7 @@ class Files extends Table {
   TextColumn get parentId => text().nullable()();
   TextColumn get ownerId => text()();
 
+  TextColumn get relativePath => text()();
   IntColumn get size => integer().nullable()();
   TextColumn get hash => text().nullable()();
   BoolColumn get isFolder => boolean()();

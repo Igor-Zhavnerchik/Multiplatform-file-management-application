@@ -1,3 +1,4 @@
+import 'package:cross_platform_project/domain/providers/user_login_use_case_provider.dart';
 import 'package:cross_platform_project/presentation/providers/auth_view_model_provider.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,23 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   void regLogToggle() {
     setState(() {
       showLogin = !showLogin;
+    });
+  }
+
+  bool _called = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_called) return;
+    _called = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final loginVM = ref.read(authViewModelProvider.notifier);
+      loginVM.setEmail('ftb2196im@gmail.com');
+      loginVM.setPassword('123456');
+      loginVM.setSaveOnThisDevice(false);
+      await loginVM.tryLogin();
     });
   }
 

@@ -1,3 +1,4 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
@@ -57,6 +58,7 @@ class StorageRepositoryImpl extends StorageRepository {
   }
 
   Future<Result<List<FileModel>>> _getLocalFileList() async {
+    print('getting file list');
     var rawFileListResult = await localDataSource.getFileList(
       ownerId: currentUserId!,
     );
@@ -84,6 +86,14 @@ class StorageRepositoryImpl extends StorageRepository {
     final List<FileModel> remoteFileList =
         (remoteFileListResult as Success).data;
     final List<FileModel> localFileList = (localFileListResult as Success).data;
+    print('local');
+    for (var file in localFileList) {
+      print(file.name);
+    }
+    print('remote');
+    for (var file in remoteFileList) {
+      print(file.name);
+    }
 
     final Map<String, FileModel> remoteMap = {};
     final Map<String, FileModel> localMap = {};
@@ -195,7 +205,7 @@ class StorageRepositoryImpl extends StorageRepository {
                   ? SyncAction.update
                   : SyncAction.load,
               source: SyncSource.remote,
-              payload: localModel,
+              payload: remoteModel,
             );
           default:
             await syncStatusManager.updateStatus(
@@ -241,7 +251,7 @@ class StorageRepositoryImpl extends StorageRepository {
       deletedAt: null,
     );
     final Result<void> saveResult;
-    if (fromPath != null) {
+    if (fromPath != null && fromPath.isNotEmpty) {
       saveResult = await localDataSource.saveFromDevice(
         model: newFile,
         devicePath: fromPath,
@@ -250,6 +260,9 @@ class StorageRepositoryImpl extends StorageRepository {
       saveResult = await localDataSource.saveFile(model: newFile, bytes: null);
     }
     if (saveResult.isFailure) {
+      debugLog(
+        '${(saveResult as Failure).message}, error: ${saveResult.error}, source: ${saveResult.source}',
+      );
       return saveResult;
     }
     return Success(null);
@@ -263,7 +276,7 @@ class StorageRepositoryImpl extends StorageRepository {
       status: SyncStatus.deletingLocally,
     );
     final deleteResult = await localDataSource.deleteFile(
-      model: model,
+      model: model.copyWith(deletedAt: DateTime.now()),
       softDelete: true,
     );
     if (deleteResult.isFailure) {
@@ -313,7 +326,10 @@ class StorageRepositoryImpl extends StorageRepository {
         source: 'StorageRepository.createUserSaveState',
       );
     }
-    if (((fileListResult as Success).data as List<FileModel>).isEmpty) {
+    await syncProcessor.waitSyncCompletetion();
+    //FIXME
+    if (((fileListResult as Success).data as List<FileModel>).isEmpty ||
+        ((fileListResult as Success).data) == null) {
       return await createFile(
         parentId: null,
         name: 'My Folder',

@@ -48,6 +48,17 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _relativePathMeta = const VerificationMeta(
+    'relativePath',
+  );
+  @override
+  late final GeneratedColumn<String> relativePath = GeneratedColumn<String>(
+    'relative_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _sizeMeta = const VerificationMeta('size');
   @override
   late final GeneratedColumn<int> size = GeneratedColumn<int>(
@@ -180,6 +191,7 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
     name,
     parentId,
     ownerId,
+    relativePath,
     size,
     hash,
     isFolder,
@@ -230,6 +242,17 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
       );
     } else if (isInserting) {
       context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('relative_path')) {
+      context.handle(
+        _relativePathMeta,
+        relativePath.isAcceptableOrUnknown(
+          data['relative_path']!,
+          _relativePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_relativePathMeta);
     }
     if (data.containsKey('size')) {
       context.handle(
@@ -345,6 +368,10 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
         DriftSqlType.string,
         data['${effectivePrefix}owner_id'],
       )!,
+      relativePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}relative_path'],
+      )!,
       size: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}size'],
@@ -403,6 +430,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
   final String name;
   final String? parentId;
   final String ownerId;
+  final String relativePath;
   final int? size;
   final String? hash;
   final bool isFolder;
@@ -419,6 +447,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     required this.name,
     this.parentId,
     required this.ownerId,
+    required this.relativePath,
     this.size,
     this.hash,
     required this.isFolder,
@@ -440,6 +469,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       map['parent_id'] = Variable<String>(parentId);
     }
     map['owner_id'] = Variable<String>(ownerId);
+    map['relative_path'] = Variable<String>(relativePath);
     if (!nullToAbsent || size != null) {
       map['size'] = Variable<int>(size);
     }
@@ -470,6 +500,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
           ? const Value.absent()
           : Value(parentId),
       ownerId: Value(ownerId),
+      relativePath: Value(relativePath),
       size: size == null && nullToAbsent ? const Value.absent() : Value(size),
       hash: hash == null && nullToAbsent ? const Value.absent() : Value(hash),
       isFolder: Value(isFolder),
@@ -498,6 +529,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       name: serializer.fromJson<String>(json['name']),
       parentId: serializer.fromJson<String?>(json['parentId']),
       ownerId: serializer.fromJson<String>(json['ownerId']),
+      relativePath: serializer.fromJson<String>(json['relativePath']),
       size: serializer.fromJson<int?>(json['size']),
       hash: serializer.fromJson<String?>(json['hash']),
       isFolder: serializer.fromJson<bool>(json['isFolder']),
@@ -519,6 +551,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       'name': serializer.toJson<String>(name),
       'parentId': serializer.toJson<String?>(parentId),
       'ownerId': serializer.toJson<String>(ownerId),
+      'relativePath': serializer.toJson<String>(relativePath),
       'size': serializer.toJson<int?>(size),
       'hash': serializer.toJson<String?>(hash),
       'isFolder': serializer.toJson<bool>(isFolder),
@@ -538,6 +571,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     String? name,
     Value<String?> parentId = const Value.absent(),
     String? ownerId,
+    String? relativePath,
     Value<int?> size = const Value.absent(),
     Value<String?> hash = const Value.absent(),
     bool? isFolder,
@@ -554,6 +588,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     name: name ?? this.name,
     parentId: parentId.present ? parentId.value : this.parentId,
     ownerId: ownerId ?? this.ownerId,
+    relativePath: relativePath ?? this.relativePath,
     size: size.present ? size.value : this.size,
     hash: hash.present ? hash.value : this.hash,
     isFolder: isFolder ?? this.isFolder,
@@ -572,6 +607,9 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       name: data.name.present ? data.name.value : this.name,
       parentId: data.parentId.present ? data.parentId.value : this.parentId,
       ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      relativePath: data.relativePath.present
+          ? data.relativePath.value
+          : this.relativePath,
       size: data.size.present ? data.size.value : this.size,
       hash: data.hash.present ? data.hash.value : this.hash,
       isFolder: data.isFolder.present ? data.isFolder.value : this.isFolder,
@@ -601,6 +639,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
           ..write('name: $name, ')
           ..write('parentId: $parentId, ')
           ..write('ownerId: $ownerId, ')
+          ..write('relativePath: $relativePath, ')
           ..write('size: $size, ')
           ..write('hash: $hash, ')
           ..write('isFolder: $isFolder, ')
@@ -622,6 +661,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     name,
     parentId,
     ownerId,
+    relativePath,
     size,
     hash,
     isFolder,
@@ -642,6 +682,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
           other.name == this.name &&
           other.parentId == this.parentId &&
           other.ownerId == this.ownerId &&
+          other.relativePath == this.relativePath &&
           other.size == this.size &&
           other.hash == this.hash &&
           other.isFolder == this.isFolder &&
@@ -660,6 +701,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
   final Value<String> name;
   final Value<String?> parentId;
   final Value<String> ownerId;
+  final Value<String> relativePath;
   final Value<int?> size;
   final Value<String?> hash;
   final Value<bool> isFolder;
@@ -677,6 +719,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     this.name = const Value.absent(),
     this.parentId = const Value.absent(),
     this.ownerId = const Value.absent(),
+    this.relativePath = const Value.absent(),
     this.size = const Value.absent(),
     this.hash = const Value.absent(),
     this.isFolder = const Value.absent(),
@@ -695,6 +738,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     required String name,
     this.parentId = const Value.absent(),
     required String ownerId,
+    required String relativePath,
     this.size = const Value.absent(),
     this.hash = const Value.absent(),
     required bool isFolder,
@@ -710,6 +754,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
   }) : id = Value(id),
        name = Value(name),
        ownerId = Value(ownerId),
+       relativePath = Value(relativePath),
        isFolder = Value(isFolder),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt),
@@ -722,6 +767,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     Expression<String>? name,
     Expression<String>? parentId,
     Expression<String>? ownerId,
+    Expression<String>? relativePath,
     Expression<int>? size,
     Expression<String>? hash,
     Expression<bool>? isFolder,
@@ -740,6 +786,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
       if (name != null) 'name': name,
       if (parentId != null) 'parent_id': parentId,
       if (ownerId != null) 'owner_id': ownerId,
+      if (relativePath != null) 'relative_path': relativePath,
       if (size != null) 'size': size,
       if (hash != null) 'hash': hash,
       if (isFolder != null) 'is_folder': isFolder,
@@ -760,6 +807,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     Value<String>? name,
     Value<String?>? parentId,
     Value<String>? ownerId,
+    Value<String>? relativePath,
     Value<int?>? size,
     Value<String?>? hash,
     Value<bool>? isFolder,
@@ -778,6 +826,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
       name: name ?? this.name,
       parentId: parentId ?? this.parentId,
       ownerId: ownerId ?? this.ownerId,
+      relativePath: relativePath ?? this.relativePath,
       size: size ?? this.size,
       hash: hash ?? this.hash,
       isFolder: isFolder ?? this.isFolder,
@@ -807,6 +856,9 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     }
     if (ownerId.present) {
       map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (relativePath.present) {
+      map['relative_path'] = Variable<String>(relativePath.value);
     }
     if (size.present) {
       map['size'] = Variable<int>(size.value);
@@ -854,6 +906,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
           ..write('name: $name, ')
           ..write('parentId: $parentId, ')
           ..write('ownerId: $ownerId, ')
+          ..write('relativePath: $relativePath, ')
           ..write('size: $size, ')
           ..write('hash: $hash, ')
           ..write('isFolder: $isFolder, ')
@@ -889,6 +942,7 @@ typedef $$FilesTableCreateCompanionBuilder =
       required String name,
       Value<String?> parentId,
       required String ownerId,
+      required String relativePath,
       Value<int?> size,
       Value<String?> hash,
       required bool isFolder,
@@ -908,6 +962,7 @@ typedef $$FilesTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String?> parentId,
       Value<String> ownerId,
+      Value<String> relativePath,
       Value<int?> size,
       Value<String?> hash,
       Value<bool> isFolder,
@@ -947,6 +1002,11 @@ class $$FilesTableFilterComposer extends Composer<_$AppDatabase, $FilesTable> {
 
   ColumnFilters<String> get ownerId => $composableBuilder(
     column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1035,6 +1095,11 @@ class $$FilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get size => $composableBuilder(
     column: $table.size,
     builder: (column) => ColumnOrderings(column),
@@ -1112,6 +1177,11 @@ class $$FilesTableAnnotationComposer
   GeneratedColumn<String> get ownerId =>
       $composableBuilder(column: $table.ownerId, builder: (column) => column);
 
+  GeneratedColumn<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get size =>
       $composableBuilder(column: $table.size, builder: (column) => column);
 
@@ -1186,6 +1256,7 @@ class $$FilesTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String?> parentId = const Value.absent(),
                 Value<String> ownerId = const Value.absent(),
+                Value<String> relativePath = const Value.absent(),
                 Value<int?> size = const Value.absent(),
                 Value<String?> hash = const Value.absent(),
                 Value<bool> isFolder = const Value.absent(),
@@ -1203,6 +1274,7 @@ class $$FilesTableTableManager
                 name: name,
                 parentId: parentId,
                 ownerId: ownerId,
+                relativePath: relativePath,
                 size: size,
                 hash: hash,
                 isFolder: isFolder,
@@ -1222,6 +1294,7 @@ class $$FilesTableTableManager
                 required String name,
                 Value<String?> parentId = const Value.absent(),
                 required String ownerId,
+                required String relativePath,
                 Value<int?> size = const Value.absent(),
                 Value<String?> hash = const Value.absent(),
                 required bool isFolder,
@@ -1239,6 +1312,7 @@ class $$FilesTableTableManager
                 name: name,
                 parentId: parentId,
                 ownerId: ownerId,
+                relativePath: relativePath,
                 size: size,
                 hash: hash,
                 isFolder: isFolder,

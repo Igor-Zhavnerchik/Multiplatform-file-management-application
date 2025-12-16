@@ -5,6 +5,7 @@ import 'package:cross_platform_project/data/data_source/local/database/app_datab
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 import 'package:cross_platform_project/data/data_source/local/database/database_providers.dart';
 import 'package:cross_platform_project/core/utility/storage_path_service.dart';
+import 'package:cross_platform_project/data/providers/file_system_scan_providers.dart';
 import 'package:cross_platform_project/data/providers/local_data_source_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +19,7 @@ Future<void> main() async {
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugLog('Platform error: $error');
+    debugLog('Platform error: $error stack: $stack');
     return true;
   };
 
@@ -54,6 +55,8 @@ class App extends ConsumerWidget {
     ref.watch(appCoordinatorProvider);
 
     final router = ref.watch(routerProvider);
+    ref.watch(fileSystemWatcherProvider).watchFS();
+
     return MaterialApp.router(
       routerConfig: router,
       theme: ThemeData(
@@ -65,6 +68,8 @@ class App extends ConsumerWidget {
     );
   }
 }
+
+
 
 
 //access key

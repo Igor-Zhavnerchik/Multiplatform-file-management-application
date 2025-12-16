@@ -8,6 +8,7 @@ final authStatusProvider = FutureProvider<AuthStatus>((ref) async {
   final authStorage = ref.watch(authDataStorageProvider);
 
   final authViewModel = ref.watch(authViewModelProvider);
+
   return (await authStorage.getAccessToken() != null) ||
           (authViewModel.value != null && authViewModel.value!.isAuthorized)
       ? AuthStatus.authenticated

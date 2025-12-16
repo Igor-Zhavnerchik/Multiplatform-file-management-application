@@ -16,7 +16,7 @@ class LoadHandler {
   });
 
   Future<Result<void>> handle(SyncEvent event) async {
-    final src = event.source == SyncSource.remote ? local : remote;
+    final src = event.source == SyncSource.remote ? remote : local;
     final dest = event.source == SyncSource.remote ? local : remote;
     await syncStatusManager.updateStatus(
       model: event.payload,
@@ -26,6 +26,7 @@ class LoadHandler {
     );
     final dataResult = await src.readFile(model: event.payload);
     if (dataResult.isFailure) {
+      print('read failed.\n${(dataResult as Failure).error}');
       syncStatusManager.updateStatus(
         model: event.payload,
         status: event.source == SyncSource.remote
@@ -40,6 +41,7 @@ class LoadHandler {
       data: (dataResult as Success).data,
     );
     if (saveResult.isFailure) {
+      print('write failed.\n${(saveResult as Failure).error}');
       await syncStatusManager.updateStatus(
         model: event.payload,
         status: event.source == SyncSource.remote

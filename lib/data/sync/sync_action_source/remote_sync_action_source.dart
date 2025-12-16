@@ -22,9 +22,9 @@ class RemoteSyncActionSource extends SyncActionSource {
   }
 
   @override
-  Future<Result<Uint8List>> readFile({required FileModel model}) async {
+  Future<Result<Uint8List?>> readFile({required FileModel model}) async {
     if (model.isFolder) {
-      return Failure('cant read contents of folder entity');
+      return Success(null);
     }
     return await remoteDataSource.downloadFile(model: model);
   }

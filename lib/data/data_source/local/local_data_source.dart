@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/core/utility/safe_call.dart';
 import 'package:cross_platform_project/core/utility/storage_path_service.dart';
@@ -8,6 +9,7 @@ import 'package:cross_platform_project/data/data_source/local/database/app_datab
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
+import 'package:cross_platform_project/data/services/hash_service.dart';
 import '../local/local_storage_service.dart';
 import '../local/json_storage.dart';
 
@@ -17,6 +19,7 @@ class LocalDataSource {
   final JsonStorage jsonStorage;
   final FilesDao filesTable;
   final FileModelMapper mapper;
+  final HashService hashService;
 
   LocalDataSource({
     required this.pathService,
@@ -24,8 +27,9 @@ class LocalDataSource {
     required this.jsonStorage,
     required this.filesTable,
     required this.mapper,
+    required this.hashService,
   });
-
+  /* 
   Future<Result<void>> saveAsJson({
     required String path,
     required Map<String, dynamic> data,
@@ -46,24 +50,38 @@ class LocalDataSource {
         path: pathService.resolve(relPath: path),
       );
     }, source: 'LocalDataSource.getFromJson');
-  }
+  } */
 
   Future<Result<void>> saveFile({
     required FileModel model,
     required Uint8List? bytes,
   }) async {
     return await safeCall(() async {
-      final path = await pathService.getLocalPath(
-        fileId: model.id,
-        userId: model.ownerId,
+      var savePath = pathService.join(
+        parent: await pathService.getLocalPath(
+          fileId: model.parentId,
+          userId: model.ownerId,
+        ),
+        child: model.name,
       );
+      debugLog('Saving "${model.name}" in "$savePath"');
 
       if (model.isFolder) {
-        await localStorage.createEntity(path: path, isFolder: model.isFolder);
+        await localStorage.createEntity(
+          path: savePath,
+          isFolder: model.isFolder,
+        );
       } else {
-        await localStorage.saveBytes(path: path, bytes: bytes ?? Uint8List(0));
+        await localStorage.saveBytes(
+          path: savePath,
+          bytes: bytes ?? Uint8List(0),
+        );
       }
-      await filesTable.insertFile(mapper.toInsert(model));
+      model = model.copyWith(
+        hash: await _getHash(model: model, filePath: savePath),
+      );
+      debugLog('after hash for ${model.name}');
+      await filesTable.insertFile(mapper.toInsert(model, savePath));
     }, source: 'LocalDataSource.saveFile');
   }
 
@@ -83,12 +101,12 @@ class LocalDataSource {
     required String devicePath,
   }) async {
     return await safeCall(() async {
-      var savePath = pathService.joinFromAnotherPath(
+      var savePath = pathService.join(
         parent: await pathService.getLocalPath(
           fileId: model.parentId,
           userId: model.ownerId,
         ),
-        fromPath: devicePath,
+        child: model.name,
       );
       if (!model.isFolder) {
         var deviceFile = await localStorage.getBytes(path: devicePath);
@@ -96,7 +114,10 @@ class LocalDataSource {
       } else {
         await localStorage.createEntity(path: savePath, isFolder: true);
       }
-      await filesTable.insertFile(mapper.toUpdate(model));
+      model = model.copyWith(
+        hash: await _getHash(model: model, filePath: savePath),
+      );
+      await filesTable.insertFile(mapper.toInsert(model, savePath));
     }, source: 'LocalDataSource.saveFromDevice');
   }
 
@@ -131,19 +152,26 @@ class LocalDataSource {
     bool overwrite = false,
   }) async {
     return await safeCall(() async {
+      final newPath = pathService.join(
+        parent: await pathService.getLocalPath(
+          fileId: model.parentId,
+          userId: model.ownerId,
+        ),
+        child: model.name,
+      );
       await localStorage.moveEntity(
         currentPath: await pathService.getLocalPath(
           fileId: model.id,
           userId: model.ownerId,
         ),
-        newParentPath: await pathService.getLocalPath(
-          fileId: model.parentId,
-          userId: model.ownerId,
-        ),
+        newPath: newPath,
         isFolder: model.isFolder,
         overwrite: overwrite,
       );
-      await filesTable.updateFile(model.id, mapper.toUpdate(model));
+      model = model.copyWith(
+        hash: await _getHash(model: model, filePath: newPath),
+      );
+      await filesTable.updateFile(model.id, mapper.toUpdate(model, newPath));
     }, source: 'LocalDataSource.moveFile');
   }
 
@@ -153,13 +181,22 @@ class LocalDataSource {
         fileId: model.id,
         userId: model.ownerId,
       );
+
       return localStorage.getEntity(path: getPath, isFolder: model.isFolder);
     }, source: 'LocalDataSource.getFile');
   }
 
   Future<Result<void>> updateFile({required FileModel model}) async {
     return await safeCall(() async {
-      await filesTable.updateFile(model.id, mapper.toUpdate(model));
+      debugLog('updating status for ${model.name} to ${model.syncStatus.name}');
+      final filePath = await pathService.getLocalPath(
+        fileId: model.id,
+        userId: model.ownerId,
+      );
+      model = model.copyWith(
+        hash: await _getHash(model: model, filePath: filePath),
+      );
+      await filesTable.updateFile(model.id, mapper.toUpdate(model, filePath));
     }, source: 'LocalDataSource.UpdateFile');
   }
 
@@ -182,5 +219,15 @@ class LocalDataSource {
     return await safeCall(() async {
       return await filesTable.getFiles(ownerId);
     }, source: 'LocalDataSource.getFileList');
+  }
+
+  Future<String> _getHash({
+    required FileModel model,
+    required String filePath,
+  }) async {
+    debugLog('hash for ${model.name}');
+    return model.isFolder
+        ? await hashService.hashFolder(Directory(filePath))
+        : await hashService.hashFile(File(filePath));
   }
 }

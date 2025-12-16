@@ -28,7 +28,8 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
     return (select(files)..where(
           (entity) =>
               entity.parentId.equalsNullable(parentId) &
-              entity.ownerId.equals(ownerId),
+              entity.ownerId.equals(ownerId) &
+              entity.deletedAt.isNull(),
         ))
         .watch();
   }
@@ -38,7 +39,8 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
           (entity) =>
               entity.parentId.equalsNullable(parentId) &
               entity.isFolder.equals(true) &
-              entity.ownerId.equals(ownerId),
+              entity.ownerId.equals(ownerId) &
+              entity.deletedAt.isNull(),
         ))
         .watch();
   }
@@ -48,7 +50,8 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
           (entity) =>
               entity.parentId.equalsNullable(parentId) &
               entity.isFolder.equals(false) &
-              entity.ownerId.equals(ownerId),
+              entity.ownerId.equals(ownerId) &
+              entity.deletedAt.isNull(),
         ))
         .watch();
   }
@@ -56,6 +59,12 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
   Future<String?> getNameById(String id) async {
     final query = select(files)..where((entity) => entity.id.equals(id));
     return (await query.getSingleOrNull())?.name;
+  }
+
+  Future<DbFile?> getFileByRelativePath(String relPath) async {
+    final query = select(files)
+      ..where((entity) => entity.relativePath.equals(relPath));
+    return (await query.getSingleOrNull());
   }
 
   Future<String?> getParentIdbyId(String id) async {

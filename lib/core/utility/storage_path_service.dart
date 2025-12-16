@@ -7,6 +7,10 @@ class StoragePathService {
 
   StoragePathService(this.appRootPath, this.filesTable);
 
+  String getRoot() {
+    return appRootPath;
+  }
+
   String normalize(String path, {bool forRemote = false}) {
     return forRemote ? p.posix.normalize(path) : p.normalize(path);
   }
@@ -26,7 +30,6 @@ class StoragePathService {
     return normalize(p.join(appRootPath, relPath), forRemote: forRemote);
   }
 
-  @deprecated
   String join({
     required String parent,
     required String child,
@@ -39,6 +42,7 @@ class StoragePathService {
     return p.basename(path);
   }
 
+  @deprecated
   String joinFromAnotherPath({
     required String parent,
     required String fromPath,
