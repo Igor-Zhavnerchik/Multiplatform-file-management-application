@@ -49,13 +49,19 @@ class StoragePathService {
     return 'users/$userId/storage/$fileId';
   }
 
-  Future<String> getLocalPath({required String? fileId, userId}) async {
+  Future<String> getLocalPath({
+    required String? fileId,
+    required String userId,
+  }) async {
     if (fileId == null) {
       return p.join(appRootPath, 'users', userId, 'storage');
     }
 
     return p.join(
-      await getLocalPath(fileId: await filesTable.getParentIdbyId(fileId)),
+      await getLocalPath(
+        fileId: await filesTable.getParentIdbyId(fileId),
+        userId: userId,
+      ),
       await filesTable.getNameById(fileId),
     );
   }

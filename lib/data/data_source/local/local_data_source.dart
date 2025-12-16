@@ -53,7 +53,10 @@ class LocalDataSource {
     required Uint8List? bytes,
   }) async {
     return await safeCall(() async {
-      final path = await pathService.getLocalPath(fileId: model.id);
+      final path = await pathService.getLocalPath(
+        fileId: model.id,
+        userId: model.ownerId,
+      );
 
       if (model.isFolder) {
         await localStorage.createEntity(path: path, isFolder: model.isFolder);
@@ -67,7 +70,10 @@ class LocalDataSource {
   Future<Result<Uint8List>> getFileData({required FileModel model}) async {
     return await safeCall(() async {
       return await localStorage.getBytes(
-        path: await pathService.getLocalPath(fileId: model.id),
+        path: await pathService.getLocalPath(
+          fileId: model.id,
+          userId: model.ownerId,
+        ),
       );
     }, source: 'LocalDataSource.getFileData');
   }
@@ -78,7 +84,10 @@ class LocalDataSource {
   }) async {
     return await safeCall(() async {
       var savePath = pathService.joinFromAnotherPath(
-        parent: await pathService.getLocalPath(fileId: model.parentId),
+        parent: await pathService.getLocalPath(
+          fileId: model.parentId,
+          userId: model.ownerId,
+        ),
         fromPath: devicePath,
       );
       if (!model.isFolder) {
@@ -96,7 +105,10 @@ class LocalDataSource {
     bool softDelete = true,
   }) async {
     return await safeCall(() async {
-      var deletePath = await pathService.getLocalPath(fileId: model.id);
+      var deletePath = await pathService.getLocalPath(
+        fileId: model.id,
+        userId: model.ownerId,
+      );
       await localStorage.deleteEntity(
         path: deletePath,
         isFolder: model.isFolder,
@@ -120,8 +132,14 @@ class LocalDataSource {
   }) async {
     return await safeCall(() async {
       await localStorage.moveEntity(
-        currentPath: await pathService.getLocalPath(fileId: model.id),
-        newParentPath: await pathService.getLocalPath(fileId: model.parentId),
+        currentPath: await pathService.getLocalPath(
+          fileId: model.id,
+          userId: model.ownerId,
+        ),
+        newParentPath: await pathService.getLocalPath(
+          fileId: model.parentId,
+          userId: model.ownerId,
+        ),
         isFolder: model.isFolder,
         overwrite: overwrite,
       );
@@ -131,7 +149,10 @@ class LocalDataSource {
 
   Future<Result<FileSystemEntity>> getFile({required FileModel model}) async {
     return await safeCall(() async {
-      var getPath = await pathService.getLocalPath(fileId: model.id);
+      var getPath = await pathService.getLocalPath(
+        fileId: model.id,
+        userId: model.ownerId,
+      );
       return localStorage.getEntity(path: getPath, isFolder: model.isFolder);
     }, source: 'LocalDataSource.getFile');
   }

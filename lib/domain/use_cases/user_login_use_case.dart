@@ -21,11 +21,8 @@ class UserLoginUseCase {
     if (successfulLogin) {
       await storage.init();
       try {
-        print('here');
         await storage.syncronize();
-        print('after sync');
         final userStateResult = await storage.createUserSaveState();
-        print('after save');
         if (userStateResult.isFailure) {
           return false;
         }
@@ -33,7 +30,6 @@ class UserLoginUseCase {
         print(e);
       }
     }
-    print(successfulLogin);
 
     return successfulLogin;
   }

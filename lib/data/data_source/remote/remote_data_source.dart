@@ -54,7 +54,12 @@ class RemoteDataSource {
     return await safeCall(() async {
       if (!model.isFolder) {
         await storage.uploadFile(
-          file: File(await pathService.getLocalPath(fileId: model.id)),
+          file: File(
+            await pathService.getLocalPath(
+              fileId: model.id,
+              userId: model.ownerId,
+            ),
+          ),
           path: pathService.getRemotePath(
             userId: model.ownerId,
             fileId: model.id,
