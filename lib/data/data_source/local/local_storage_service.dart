@@ -69,13 +69,8 @@ class LocalStorageService {
     required bool isFolder,
   }) async {
     FileSystemEntity entity = getEntity(path: path, isFolder: isFolder);
-    if (!await entity.exists()) {
-      isFolder
-          ? (entity as Directory).create(recursive: true)
-          : (entity as File).create();
-    } else {
-      print(path);
-      throw Exception('File already exists path: $path');
-    }
+    isFolder
+        ? (entity as Directory).create(recursive: true)
+        : (entity as File).create();
   }
 }

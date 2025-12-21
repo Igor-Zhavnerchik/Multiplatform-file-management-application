@@ -5,49 +5,53 @@ import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:drift/drift.dart';
 
 class FileModelMapper {
-  FilesCompanion toInsert(FileModel model, String relPath) =>
-      FilesCompanion.insert(
-        id: model.id,
-        ownerId: model.ownerId,
-        parentId: Value(model.parentId),
-
-        relativePath: relPath,
-        name: model.name,
-        mimeType: Value(model.mimeType),
-        isFolder: model.isFolder,
-        size: Value(model.size),
-        hash: Value(model.hash),
-
-        syncStatus: model.syncStatus.name,
-        downloadEnabled: model.downloadEnabled!,
-
-        downloadStatus: model.downloadStatus.name,
-        syncEnabled: model.syncEnabled!,
-
-        createdAt: model.createdAt,
-        updatedAt: model.updatedAt,
-        deletedAt: Value(model.deletedAt),
-      );
-
-  FilesCompanion toUpdate(FileModel model, String relPath) => FilesCompanion(
-    id: Value(model.id),
+  FilesCompanion toInsert(
+    FileModel model,
+    String localFileId, {
+    String? tempParentId,
+  }) => FilesCompanion.insert(
+    id: model.id,
+    ownerId: model.ownerId,
     parentId: Value(model.parentId),
+    tempParentId: Value(tempParentId),
 
-    relativePath: Value(relPath),
-    name: Value(model.name),
+    localFileId: localFileId,
+    name: model.name,
     mimeType: Value(model.mimeType),
+    isFolder: model.isFolder,
     size: Value(model.size),
     hash: Value(model.hash),
 
-    syncStatus: Value(model.syncStatus.name),
-    downloadStatus: Value(model.downloadStatus.name),
-    //FIXME make bools in model to not nullable
-    syncEnabled: Value(model.syncEnabled!),
-    downloadEnabled: Value(model.downloadEnabled!),
+    syncStatus: model.syncStatus.name,
+    downloadEnabled: model.downloadEnabled!,
 
-    updatedAt: Value(model.updatedAt),
+    downloadStatus: model.downloadStatus.name,
+    syncEnabled: model.syncEnabled!,
+
+    createdAt: model.createdAt,
+    updatedAt: model.updatedAt,
     deletedAt: Value(model.deletedAt),
   );
+
+  FilesCompanion toUpdate(FileModel model, {String? tempParentId}) =>
+      FilesCompanion(
+        parentId: Value(model.parentId),
+        tempParentId: Value(tempParentId),
+
+        name: Value(model.name),
+        mimeType: Value(model.mimeType),
+        size: Value(model.size),
+        hash: Value(model.hash),
+
+        syncStatus: Value(model.syncStatus.name),
+        downloadStatus: Value(model.downloadStatus.name),
+        //FIXME make bools in model to not nullable
+        syncEnabled: Value(model.syncEnabled!),
+        downloadEnabled: Value(model.downloadEnabled!),
+
+        updatedAt: Value(model.updatedAt),
+        deletedAt: Value(model.deletedAt),
+      );
 
   FileModel fromDbFile(DbFile dbFile) => FileModel(
     id: dbFile.id,

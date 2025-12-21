@@ -4,7 +4,6 @@ import 'package:cross_platform_project/presentation/dialog/file_operation_dialog
 import 'package:cross_platform_project/presentation/providers/auth_view_model_provider.dart';
 import 'package:cross_platform_project/presentation/providers/file_operations_view_model_provider.dart';
 import 'package:cross_platform_project/presentation/providers/home_view_model_provider.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

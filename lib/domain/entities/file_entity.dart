@@ -1,6 +1,7 @@
 enum SyncStatus {
   syncronized,
   created,
+  creating,
   updated,
   deleted,
 

@@ -5,9 +5,10 @@ class Files extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get parentId => text().nullable()();
+  TextColumn get tempParentId => text().nullable()();
   TextColumn get ownerId => text()();
 
-  TextColumn get relativePath => text()();
+  TextColumn get localFileId => text()();
   IntColumn get size => integer().nullable()();
   TextColumn get hash => text().nullable()();
   BoolColumn get isFolder => boolean()();

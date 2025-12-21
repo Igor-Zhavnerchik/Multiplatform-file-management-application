@@ -7,6 +7,7 @@ import 'package:cross_platform_project/core/utility/safe_call.dart';
 import 'package:cross_platform_project/core/utility/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
+import 'package:cross_platform_project/data/data_source/local/local_file_id_service.dart/local_file_id_service.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/data/services/hash_service.dart';
@@ -20,6 +21,7 @@ class LocalDataSource {
   final FilesDao filesTable;
   final FileModelMapper mapper;
   final HashService hashService;
+  final LocalFileIdService localFileIdService;
 
   LocalDataSource({
     required this.pathService,
@@ -28,6 +30,7 @@ class LocalDataSource {
     required this.filesTable,
     required this.mapper,
     required this.hashService,
+    required this.localFileIdService,
   });
   /* 
   Future<Result<void>> saveAsJson({
@@ -81,7 +84,17 @@ class LocalDataSource {
         hash: await _getHash(model: model, filePath: savePath),
       );
       debugLog('after hash for ${model.name}');
-      await filesTable.insertFile(mapper.toInsert(model, savePath));
+      final entity = model.isFolder ? Directory(savePath) : File(savePath);
+      if (!await entity.exists()) {
+        debugLog('FS entity not created: $savePath');
+        throw Exception('FS entity not created: $savePath');
+      }
+      await filesTable.insertFile(
+        mapper.toInsert(
+          model,
+          await localFileIdService.getFileId(path: savePath),
+        ),
+      );
     }, source: 'LocalDataSource.saveFile');
   }
 
@@ -117,7 +130,18 @@ class LocalDataSource {
       model = model.copyWith(
         hash: await _getHash(model: model, filePath: savePath),
       );
-      await filesTable.insertFile(mapper.toInsert(model, savePath));
+
+      final entity = model.isFolder ? Directory(savePath) : File(savePath);
+      if (!await entity.exists()) {
+        debugLog('FS entity not created: $savePath');
+        throw Exception('FS entity not created: $savePath');
+      }
+      await filesTable.insertFile(
+        mapper.toInsert(
+          model,
+          await localFileIdService.getFileId(path: savePath),
+        ),
+      );
     }, source: 'LocalDataSource.saveFromDevice');
   }
 
@@ -139,39 +163,36 @@ class LocalDataSource {
       }
     }, source: 'LocalDataSource.deleteFile');
   }
-  /*
-  Future<Result<void>> deleteFileMetadata({required FileModel model}) async {
-    return await safeCall(() async {
-      await filesTable.deleteFile(model.id);
-    }, source: 'LocalDataSource.DeleteFileMetadata');
-  }
-  */
 
-  Future<Result<void>> moveFile({
+  Future<Result<void>> updateFile({
     required FileModel model,
     bool overwrite = false,
   }) async {
     return await safeCall(() async {
-      final newPath = pathService.join(
+      final modelPath = pathService.join(
         parent: await pathService.getLocalPath(
           fileId: model.parentId,
           userId: model.ownerId,
         ),
         child: model.name,
       );
-      await localStorage.moveEntity(
-        currentPath: await pathService.getLocalPath(
-          fileId: model.id,
-          userId: model.ownerId,
-        ),
-        newPath: newPath,
-        isFolder: model.isFolder,
-        overwrite: overwrite,
+      final currentPath = await pathService.getLocalPath(
+        fileId: model.id,
+        userId: model.ownerId,
       );
+      if (currentPath != modelPath) {
+        await localStorage.moveEntity(
+          currentPath: currentPath,
+          newPath: modelPath,
+          isFolder: model.isFolder,
+          overwrite: overwrite,
+        );
+      }
+
       model = model.copyWith(
-        hash: await _getHash(model: model, filePath: newPath),
+        hash: await _getHash(model: model, filePath: modelPath),
       );
-      await filesTable.updateFile(model.id, mapper.toUpdate(model, newPath));
+      await filesTable.updateFile(model.id, mapper.toUpdate(model));
     }, source: 'LocalDataSource.moveFile');
   }
 
@@ -184,20 +205,6 @@ class LocalDataSource {
 
       return localStorage.getEntity(path: getPath, isFolder: model.isFolder);
     }, source: 'LocalDataSource.getFile');
-  }
-
-  Future<Result<void>> updateFile({required FileModel model}) async {
-    return await safeCall(() async {
-      debugLog('updating status for ${model.name} to ${model.syncStatus.name}');
-      final filePath = await pathService.getLocalPath(
-        fileId: model.id,
-        userId: model.ownerId,
-      );
-      model = model.copyWith(
-        hash: await _getHash(model: model, filePath: filePath),
-      );
-      await filesTable.updateFile(model.id, mapper.toUpdate(model, filePath));
-    }, source: 'LocalDataSource.UpdateFile');
   }
 
   Stream<List<DbFile>> getFileStream({
@@ -217,7 +224,7 @@ class LocalDataSource {
 
   Future<Result<List<DbFile>>> getFileList({required String ownerId}) async {
     return await safeCall(() async {
-      return await filesTable.getFiles(ownerId);
+      return await filesTable.getFilesByOwner(ownerId);
     }, source: 'LocalDataSource.getFileList');
   }
 

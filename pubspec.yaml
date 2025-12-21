@@ -25,6 +25,8 @@ dependencies:
   collection: ^1.19.1
   shared_preferences: ^2.5.3
   crypto: ^3.0.7
+  local_file_id_service:
+    path: plugins/local_file_id_service
 
 dev_dependencies:
   flutter_test:

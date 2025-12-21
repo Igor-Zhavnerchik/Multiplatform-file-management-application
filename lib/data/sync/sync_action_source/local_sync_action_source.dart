@@ -39,6 +39,6 @@ class LocalSyncActionSource extends SyncActionSource {
 
   @override
   Future<Result<void>> updateFile({required FileModel model}) async {
-    return await localDataSource.moveFile(model: model, overwrite: true);
+    return await localDataSource.updateFile(model: model, overwrite: true);
   }
 }

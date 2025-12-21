@@ -8,7 +8,7 @@ class StoragePathService {
   StoragePathService(this.appRootPath, this.filesTable);
 
   String getRoot() {
-    return appRootPath;
+    return p.join(appRootPath, 'users');
   }
 
   String normalize(String path, {bool forRemote = false}) {
@@ -68,5 +68,10 @@ class StoragePathService {
       ),
       await filesTable.getNameById(fileId),
     );
+  }
+
+  Future<String> getOwnerIdByPath({required String path}) async {
+    final regex = RegExp('${getRoot()}${p.separator}(\\d+)${p.separator}');
+    return regex.firstMatch(path)!.group(1)!;
   }
 }

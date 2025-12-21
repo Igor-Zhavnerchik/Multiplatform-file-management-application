@@ -1,4 +1,5 @@
 import 'package:cross_platform_project/data/data_source/local/database/database_providers.dart';
+import 'package:cross_platform_project/data/data_source/local/local_file_id_service.dart/local_file_id_serivde_provider.dart';
 import 'package:cross_platform_project/data/data_source/local/local_storage_service.dart';
 import 'package:cross_platform_project/data/data_source/local/json_storage.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
@@ -14,6 +15,7 @@ final localDataSourceProvider = Provider<LocalDataSource>((ref) {
   final filesTable = ref.watch(filesTableProvider);
   final mapper = ref.watch(fileModelMapperProvider);
   final hashService = ref.watch(hashServiceProvider);
+  final localFileIdService = ref.watch(localFileIdServiceProvider);
   return LocalDataSource(
     pathService: pathService,
     localStorage: localStorage,
@@ -21,6 +23,7 @@ final localDataSourceProvider = Provider<LocalDataSource>((ref) {
     filesTable: filesTable,
     mapper: mapper,
     hashService: hashService,
+    localFileIdService: localFileIdService,
   );
 });
 
