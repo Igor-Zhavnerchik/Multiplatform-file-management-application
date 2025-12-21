@@ -178,6 +178,9 @@ class StorageRepositoryImpl extends StorageRepository {
           payload: localModel,
         );
       default:
+        debugLog('for ${localModel.name}');
+        debugLog('local time: ${localModel.updatedAt.toIso8601String()}');
+        debugLog('remote time: ${remoteModel.updatedAt.toIso8601String()}');
         switch (localModel.updatedAt.compareTo(remoteModel.updatedAt)) {
           case > 0:
             await syncStatusManager.updateStatus(
@@ -226,6 +229,7 @@ class StorageRepositoryImpl extends StorageRepository {
     required String name,
     String? fromPath,
     int? size,
+    required int parentDepth,
     String? mimeType,
     required bool isFolder,
     required bool syncEnabled,
@@ -235,6 +239,7 @@ class StorageRepositoryImpl extends StorageRepository {
       id: _generateUuidV4(),
       ownerId: currentUserId!,
       parentId: parentId,
+      depth: parentDepth + 1,
       name: name,
       size: size,
       hash: null,
@@ -246,8 +251,8 @@ class StorageRepositoryImpl extends StorageRepository {
       downloadStatus: fromPath == null
           ? DownloadStatus.notDownloaded
           : DownloadStatus.downloaded,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime(1970),
+      createdAt: DateTime.now().toUtc(),
+      updatedAt: DateTime.fromMicrosecondsSinceEpoch(0),
       deletedAt: null,
     );
     final Result<void> saveResult;
@@ -276,7 +281,7 @@ class StorageRepositoryImpl extends StorageRepository {
       status: SyncStatus.deletingLocally,
     );
     final deleteResult = await localDataSource.deleteFile(
-      model: model.copyWith(deletedAt: DateTime.now()),
+      model: model.copyWith(deletedAt: DateTime.now().toUtc()),
       softDelete: true,
     );
     if (deleteResult.isFailure) {
@@ -319,6 +324,7 @@ class StorageRepositoryImpl extends StorageRepository {
 
   @override
   Future<Result<void>> createUserSaveState() async {
+    await syncProcessor.waitSyncCompletetion();
     final fileListResult = await _getLocalFileList();
     if (fileListResult.isFailure) {
       return Failure(
@@ -326,13 +332,12 @@ class StorageRepositoryImpl extends StorageRepository {
         source: 'StorageRepository.createUserSaveState',
       );
     }
-    await syncProcessor.waitSyncCompletetion();
     //FIXME
-    if (((fileListResult as Success).data as List<FileModel>).isEmpty ||
-        ((fileListResult as Success).data) == null) {
+    if (((fileListResult as Success).data as List<FileModel>).isEmpty) {
       return await createFile(
         parentId: null,
         name: 'My Folder',
+        parentDepth: -1,
         isFolder: true,
         syncEnabled: true,
         downloadEnabed: true,

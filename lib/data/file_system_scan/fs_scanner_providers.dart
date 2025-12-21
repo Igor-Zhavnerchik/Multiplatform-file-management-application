@@ -12,7 +12,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final fileSystemScannerProvider = Provider<FileSystemScanner>((ref) {
   final localFileIdService = ref.watch(localFileIdServiceProvider);
-  return FileSystemScanner(localFileIdService: localFileIdService);
+  final pathService = ref.watch(storagePathServiceProvider);
+  return FileSystemScanner(
+    localFileIdService: localFileIdService,
+    pathService: pathService,
+  );
 });
 final fileSystemWatcherProvider = Provider<FileSystemWatcher>((ref) {
   final pathService = ref.watch(storagePathServiceProvider);
@@ -20,7 +24,8 @@ final fileSystemWatcherProvider = Provider<FileSystemWatcher>((ref) {
 });
 final reconcilerProvider = Provider<Reconciler>((ref) {
   final hashService = ref.watch(hashServiceProvider);
-  return Reconciler(hashService: hashService);
+  final pathService = ref.watch(storagePathServiceProvider);
+  return Reconciler(hashService: hashService, pathService: pathService);
 });
 final dbUpdaterProvider = Provider<DbUpdater>((ref) {
   final pathService = ref.watch(storagePathServiceProvider);

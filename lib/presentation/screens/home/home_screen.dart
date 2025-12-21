@@ -38,6 +38,12 @@ class Homescreen extends ConsumerWidget {
         actions: [
           ElevatedButton(
             onPressed: () =>
+                ref.read(fileOperationsViewModelProvider.notifier).startScan(),
+            child: Text('Scan FS'),
+          ),
+
+          ElevatedButton(
+            onPressed: () =>
                 ref.read(fileOperationsViewModelProvider.notifier).startSync(),
             child: Text('Syncronize'),
           ),

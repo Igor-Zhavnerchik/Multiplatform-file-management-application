@@ -20,9 +20,9 @@ class FsScanHandler {
   final FilesDao filesTable;
   final FileModelMapper mapper;
 
-  Future<void> executeScan({required String path}) async {
+  Future<void> executeScan() async {
     debugLog('scanning fs');
-    final fsSnapshot = await scanner.scan(path: path);
+    final fsSnapshot = await scanner.scan();
     debugLog('getting files from db');
     final fileList = await filesTable.getAllFiles();
     debugLog('transforming db response to snapshot');

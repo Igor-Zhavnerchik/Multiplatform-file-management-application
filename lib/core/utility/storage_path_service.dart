@@ -1,3 +1,4 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 import 'package:path/path.dart' as p;
 
@@ -71,7 +72,28 @@ class StoragePathService {
   }
 
   Future<String> getOwnerIdByPath({required String path}) async {
-    final regex = RegExp('${getRoot()}${p.separator}(\\d+)${p.separator}');
-    return regex.firstMatch(path)!.group(1)!;
+    debugLog('getting ownerId from $path');
+    final rootPattern = RegExp.escape(getRoot());
+    final separatorPattern = RegExp.escape(p.separator);
+    final uuidPattern =
+        r'([0-9a-fA-F]{8}-'
+        r'[0-9a-fA-F]{4}-'
+        r'[0-9a-fA-F]{4}-'
+        r'[0-9a-fA-F]{4}-'
+        r'[0-9a-fA-F]{12})';
+
+    final regex = RegExp(
+      rootPattern + separatorPattern + uuidPattern + separatorPattern,
+    );
+    final res = regex.firstMatch(path)!.group(1)!;
+    debugLog('got: $res');
+    return res;
+  }
+
+  Future<List<String>> getUsersStorageDirectories() async {
+    final users = await filesTable.getAllUserIds();
+    return users
+        .map((userId) => p.join(appRootPath, 'users', userId, 'storage'))
+        .toList();
   }
 }

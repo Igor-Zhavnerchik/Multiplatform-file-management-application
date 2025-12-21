@@ -8,6 +8,7 @@ class Files extends Table {
   TextColumn get tempParentId => text().nullable()();
   TextColumn get ownerId => text()();
 
+  IntColumn get depth => integer()();
   TextColumn get localFileId => text()();
   IntColumn get size => integer().nullable()();
   TextColumn get hash => text().nullable()();

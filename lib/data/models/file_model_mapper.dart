@@ -16,6 +16,8 @@ class FileModelMapper {
     tempParentId: Value(tempParentId),
 
     localFileId: localFileId,
+    depth: model.depth,
+
     name: model.name,
     mimeType: Value(model.mimeType),
     isFolder: model.isFolder,
@@ -38,6 +40,8 @@ class FileModelMapper {
         parentId: Value(model.parentId),
         tempParentId: Value(tempParentId),
 
+        depth: Value(model.depth),
+
         name: Value(model.name),
         mimeType: Value(model.mimeType),
         size: Value(model.size),
@@ -45,7 +49,6 @@ class FileModelMapper {
 
         syncStatus: Value(model.syncStatus.name),
         downloadStatus: Value(model.downloadStatus.name),
-        //FIXME make bools in model to not nullable
         syncEnabled: Value(model.syncEnabled!),
         downloadEnabled: Value(model.downloadEnabled!),
 
@@ -57,6 +60,8 @@ class FileModelMapper {
     id: dbFile.id,
     ownerId: dbFile.ownerId,
     parentId: dbFile.parentId,
+
+    depth: dbFile.depth,
 
     name: dbFile.name,
     mimeType: dbFile.mimeType,
@@ -80,6 +85,8 @@ class FileModelMapper {
       id: model.id,
       ownerId: model.ownerId,
       parentId: model.parentId,
+
+      depth: model.depth,
 
       name: model.name,
       mimeType: model.mimeType,
@@ -105,6 +112,8 @@ class FileModelMapper {
       ownerId: entity.ownerId,
       parentId: entity.parentId,
 
+      depth: entity.depth,
+
       name: entity.name,
       mimeType: entity.mimeType,
       isFolder: entity.isFolder,
@@ -129,6 +138,7 @@ class FileModelMapper {
       'owner_id': model.ownerId,
       'parent_id': model.parentId,
 
+      'depth': model.depth,
       'name': model.name,
       'mime_type': model.mimeType,
       'is_folder': model.isFolder,
@@ -150,6 +160,8 @@ class FileModelMapper {
       id: metadata['id'],
       ownerId: metadata['owner_id'],
       parentId: metadata['parent_id'],
+
+      depth: metadata['depth'],
 
       name: metadata['name'],
       mimeType: metadata['mime_type'],
@@ -179,6 +191,8 @@ class FileModelMapper {
       id: remoteFileModel.id,
       ownerId: remoteFileModel.ownerId,
       parentId: remoteFileModel.parentId,
+
+      depth: remoteFileModel.depth,
 
       name: remoteFileModel.name,
       mimeType: remoteFileModel.mimeType,

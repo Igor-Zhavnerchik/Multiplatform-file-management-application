@@ -12,6 +12,7 @@ abstract class StorageRepository {
     required String name,
     String? fromPath,
     int? size,
+    required int parentDepth,
     required bool isFolder,
     required bool syncEnabled,
     required bool downloadEnabed,

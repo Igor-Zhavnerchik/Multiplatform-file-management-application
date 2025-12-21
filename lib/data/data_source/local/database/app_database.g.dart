@@ -59,6 +59,15 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _depthMeta = const VerificationMeta('depth');
+  @override
+  late final GeneratedColumn<int> depth = GeneratedColumn<int>(
+    'depth',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _localFileIdMeta = const VerificationMeta(
     'localFileId',
   );
@@ -203,6 +212,7 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
     parentId,
     tempParentId,
     ownerId,
+    depth,
     localFileId,
     size,
     hash,
@@ -263,6 +273,14 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
       );
     } else if (isInserting) {
       context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('depth')) {
+      context.handle(
+        _depthMeta,
+        depth.isAcceptableOrUnknown(data['depth']!, _depthMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_depthMeta);
     }
     if (data.containsKey('local_file_id')) {
       context.handle(
@@ -393,6 +411,10 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
         DriftSqlType.string,
         data['${effectivePrefix}owner_id'],
       )!,
+      depth: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}depth'],
+      )!,
       localFileId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}local_file_id'],
@@ -456,6 +478,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
   final String? parentId;
   final String? tempParentId;
   final String ownerId;
+  final int depth;
   final String localFileId;
   final int? size;
   final String? hash;
@@ -474,6 +497,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     this.parentId,
     this.tempParentId,
     required this.ownerId,
+    required this.depth,
     required this.localFileId,
     this.size,
     this.hash,
@@ -499,6 +523,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       map['temp_parent_id'] = Variable<String>(tempParentId);
     }
     map['owner_id'] = Variable<String>(ownerId);
+    map['depth'] = Variable<int>(depth);
     map['local_file_id'] = Variable<String>(localFileId);
     if (!nullToAbsent || size != null) {
       map['size'] = Variable<int>(size);
@@ -533,6 +558,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
           ? const Value.absent()
           : Value(tempParentId),
       ownerId: Value(ownerId),
+      depth: Value(depth),
       localFileId: Value(localFileId),
       size: size == null && nullToAbsent ? const Value.absent() : Value(size),
       hash: hash == null && nullToAbsent ? const Value.absent() : Value(hash),
@@ -563,6 +589,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       parentId: serializer.fromJson<String?>(json['parentId']),
       tempParentId: serializer.fromJson<String?>(json['tempParentId']),
       ownerId: serializer.fromJson<String>(json['ownerId']),
+      depth: serializer.fromJson<int>(json['depth']),
       localFileId: serializer.fromJson<String>(json['localFileId']),
       size: serializer.fromJson<int?>(json['size']),
       hash: serializer.fromJson<String?>(json['hash']),
@@ -586,6 +613,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       'parentId': serializer.toJson<String?>(parentId),
       'tempParentId': serializer.toJson<String?>(tempParentId),
       'ownerId': serializer.toJson<String>(ownerId),
+      'depth': serializer.toJson<int>(depth),
       'localFileId': serializer.toJson<String>(localFileId),
       'size': serializer.toJson<int?>(size),
       'hash': serializer.toJson<String?>(hash),
@@ -607,6 +635,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     Value<String?> parentId = const Value.absent(),
     Value<String?> tempParentId = const Value.absent(),
     String? ownerId,
+    int? depth,
     String? localFileId,
     Value<int?> size = const Value.absent(),
     Value<String?> hash = const Value.absent(),
@@ -625,6 +654,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     parentId: parentId.present ? parentId.value : this.parentId,
     tempParentId: tempParentId.present ? tempParentId.value : this.tempParentId,
     ownerId: ownerId ?? this.ownerId,
+    depth: depth ?? this.depth,
     localFileId: localFileId ?? this.localFileId,
     size: size.present ? size.value : this.size,
     hash: hash.present ? hash.value : this.hash,
@@ -647,6 +677,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
           ? data.tempParentId.value
           : this.tempParentId,
       ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      depth: data.depth.present ? data.depth.value : this.depth,
       localFileId: data.localFileId.present
           ? data.localFileId.value
           : this.localFileId,
@@ -680,6 +711,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
           ..write('parentId: $parentId, ')
           ..write('tempParentId: $tempParentId, ')
           ..write('ownerId: $ownerId, ')
+          ..write('depth: $depth, ')
           ..write('localFileId: $localFileId, ')
           ..write('size: $size, ')
           ..write('hash: $hash, ')
@@ -703,6 +735,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     parentId,
     tempParentId,
     ownerId,
+    depth,
     localFileId,
     size,
     hash,
@@ -725,6 +758,7 @@ class DbFile extends DataClass implements Insertable<DbFile> {
           other.parentId == this.parentId &&
           other.tempParentId == this.tempParentId &&
           other.ownerId == this.ownerId &&
+          other.depth == this.depth &&
           other.localFileId == this.localFileId &&
           other.size == this.size &&
           other.hash == this.hash &&
@@ -745,6 +779,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
   final Value<String?> parentId;
   final Value<String?> tempParentId;
   final Value<String> ownerId;
+  final Value<int> depth;
   final Value<String> localFileId;
   final Value<int?> size;
   final Value<String?> hash;
@@ -764,6 +799,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     this.parentId = const Value.absent(),
     this.tempParentId = const Value.absent(),
     this.ownerId = const Value.absent(),
+    this.depth = const Value.absent(),
     this.localFileId = const Value.absent(),
     this.size = const Value.absent(),
     this.hash = const Value.absent(),
@@ -784,6 +820,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     this.parentId = const Value.absent(),
     this.tempParentId = const Value.absent(),
     required String ownerId,
+    required int depth,
     required String localFileId,
     this.size = const Value.absent(),
     this.hash = const Value.absent(),
@@ -800,6 +837,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
   }) : id = Value(id),
        name = Value(name),
        ownerId = Value(ownerId),
+       depth = Value(depth),
        localFileId = Value(localFileId),
        isFolder = Value(isFolder),
        createdAt = Value(createdAt),
@@ -814,6 +852,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     Expression<String>? parentId,
     Expression<String>? tempParentId,
     Expression<String>? ownerId,
+    Expression<int>? depth,
     Expression<String>? localFileId,
     Expression<int>? size,
     Expression<String>? hash,
@@ -834,6 +873,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
       if (parentId != null) 'parent_id': parentId,
       if (tempParentId != null) 'temp_parent_id': tempParentId,
       if (ownerId != null) 'owner_id': ownerId,
+      if (depth != null) 'depth': depth,
       if (localFileId != null) 'local_file_id': localFileId,
       if (size != null) 'size': size,
       if (hash != null) 'hash': hash,
@@ -856,6 +896,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     Value<String?>? parentId,
     Value<String?>? tempParentId,
     Value<String>? ownerId,
+    Value<int>? depth,
     Value<String>? localFileId,
     Value<int?>? size,
     Value<String?>? hash,
@@ -876,6 +917,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
       parentId: parentId ?? this.parentId,
       tempParentId: tempParentId ?? this.tempParentId,
       ownerId: ownerId ?? this.ownerId,
+      depth: depth ?? this.depth,
       localFileId: localFileId ?? this.localFileId,
       size: size ?? this.size,
       hash: hash ?? this.hash,
@@ -909,6 +951,9 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     }
     if (ownerId.present) {
       map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (depth.present) {
+      map['depth'] = Variable<int>(depth.value);
     }
     if (localFileId.present) {
       map['local_file_id'] = Variable<String>(localFileId.value);
@@ -960,6 +1005,7 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
           ..write('parentId: $parentId, ')
           ..write('tempParentId: $tempParentId, ')
           ..write('ownerId: $ownerId, ')
+          ..write('depth: $depth, ')
           ..write('localFileId: $localFileId, ')
           ..write('size: $size, ')
           ..write('hash: $hash, ')
@@ -997,6 +1043,7 @@ typedef $$FilesTableCreateCompanionBuilder =
       Value<String?> parentId,
       Value<String?> tempParentId,
       required String ownerId,
+      required int depth,
       required String localFileId,
       Value<int?> size,
       Value<String?> hash,
@@ -1018,6 +1065,7 @@ typedef $$FilesTableUpdateCompanionBuilder =
       Value<String?> parentId,
       Value<String?> tempParentId,
       Value<String> ownerId,
+      Value<int> depth,
       Value<String> localFileId,
       Value<int?> size,
       Value<String?> hash,
@@ -1063,6 +1111,11 @@ class $$FilesTableFilterComposer extends Composer<_$AppDatabase, $FilesTable> {
 
   ColumnFilters<String> get ownerId => $composableBuilder(
     column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get depth => $composableBuilder(
+    column: $table.depth,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1161,6 +1214,11 @@ class $$FilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get depth => $composableBuilder(
+    column: $table.depth,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get localFileId => $composableBuilder(
     column: $table.localFileId,
     builder: (column) => ColumnOrderings(column),
@@ -1248,6 +1306,9 @@ class $$FilesTableAnnotationComposer
   GeneratedColumn<String> get ownerId =>
       $composableBuilder(column: $table.ownerId, builder: (column) => column);
 
+  GeneratedColumn<int> get depth =>
+      $composableBuilder(column: $table.depth, builder: (column) => column);
+
   GeneratedColumn<String> get localFileId => $composableBuilder(
     column: $table.localFileId,
     builder: (column) => column,
@@ -1328,6 +1389,7 @@ class $$FilesTableTableManager
                 Value<String?> parentId = const Value.absent(),
                 Value<String?> tempParentId = const Value.absent(),
                 Value<String> ownerId = const Value.absent(),
+                Value<int> depth = const Value.absent(),
                 Value<String> localFileId = const Value.absent(),
                 Value<int?> size = const Value.absent(),
                 Value<String?> hash = const Value.absent(),
@@ -1347,6 +1409,7 @@ class $$FilesTableTableManager
                 parentId: parentId,
                 tempParentId: tempParentId,
                 ownerId: ownerId,
+                depth: depth,
                 localFileId: localFileId,
                 size: size,
                 hash: hash,
@@ -1368,6 +1431,7 @@ class $$FilesTableTableManager
                 Value<String?> parentId = const Value.absent(),
                 Value<String?> tempParentId = const Value.absent(),
                 required String ownerId,
+                required int depth,
                 required String localFileId,
                 Value<int?> size = const Value.absent(),
                 Value<String?> hash = const Value.absent(),
@@ -1387,6 +1451,7 @@ class $$FilesTableTableManager
                 parentId: parentId,
                 tempParentId: tempParentId,
                 ownerId: ownerId,
+                depth: depth,
                 localFileId: localFileId,
                 size: size,
                 hash: hash,

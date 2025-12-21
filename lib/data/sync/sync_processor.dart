@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/sync/sync_handlers/delete_handler.dart';
@@ -74,14 +75,17 @@ class SyncProcessor {
       SyncEvent(
         action: action,
         source: source,
-        priority: switch (action) {
-          SyncAction.update => 30,
-          SyncAction.load => 20,
-          SyncAction.delete => 10,
-        },
+        priority:
+            payload.depth * 100 +
+            switch (action) {
+              SyncAction.update => 30,
+              SyncAction.load => 20,
+              SyncAction.delete => 10,
+            },
         payload: payload,
       ),
     );
+    debugLog('adding ${action.name} event for ${payload.name}');
     _process();
   }
 

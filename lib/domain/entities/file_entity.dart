@@ -29,6 +29,7 @@ class FileEntity {
   final String ownerId;
   final String? parentId;
 
+  final int depth;
   final String name;
   final String? mimeType;
 
@@ -51,6 +52,7 @@ class FileEntity {
     required this.ownerId,
     required this.parentId,
 
+    required this.depth,
     required this.name,
     required this.mimeType,
     required this.isFolder,
@@ -73,6 +75,7 @@ class FileEntity {
     String? ownerId,
     String? parentId,
 
+    int? depth,
     String? name,
     String? mimeType,
     bool? isFolder,
@@ -94,6 +97,7 @@ class FileEntity {
       ownerId: this.ownerId,
       parentId: parentId ?? this.parentId,
 
+      depth: depth ?? this.depth,
       name: name ?? this.name,
       mimeType: mimeType ?? this.mimeType,
       isFolder: isFolder ?? this.isFolder,

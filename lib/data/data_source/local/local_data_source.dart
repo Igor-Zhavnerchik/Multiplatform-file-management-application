@@ -55,6 +55,17 @@ class LocalDataSource {
     }, source: 'LocalDataSource.getFromJson');
   } */
 
+  Future<void> _waitFileCreation({required String path}) async {
+    debugLog('waiting for creation of $path');
+    for (var i = 0; i < 5; i++) {
+      if (await File(path).exists() || await Directory(path).exists()) {
+        return;
+      }
+      await Future.delayed(const Duration(milliseconds: 20));
+    }
+    throw Exception('file $path not created in given timeframe');
+  }
+
   Future<Result<void>> saveFile({
     required FileModel model,
     required Uint8List? bytes,
@@ -80,21 +91,15 @@ class LocalDataSource {
           bytes: bytes ?? Uint8List(0),
         );
       }
+
+      await _waitFileCreation(path: savePath);
       model = model.copyWith(
         hash: await _getHash(model: model, filePath: savePath),
       );
       debugLog('after hash for ${model.name}');
-      final entity = model.isFolder ? Directory(savePath) : File(savePath);
-      if (!await entity.exists()) {
-        debugLog('FS entity not created: $savePath');
-        throw Exception('FS entity not created: $savePath');
-      }
-      await filesTable.insertFile(
-        mapper.toInsert(
-          model,
-          await localFileIdService.getFileId(path: savePath),
-        ),
-      );
+      final localId = await localFileIdService.getFileId(path: savePath);
+      debugLog('inserting ${model.name} with id:$localId');
+      await filesTable.insertFile(mapper.toInsert(model, localId));
     }, source: 'LocalDataSource.saveFile');
   }
 
@@ -180,6 +185,9 @@ class LocalDataSource {
         fileId: model.id,
         userId: model.ownerId,
       );
+      debugLog('in update for ${model.name}');
+      debugLog('    current path: $currentPath');
+      debugLog('    model path: $modelPath');
       if (currentPath != modelPath) {
         await localStorage.moveEntity(
           currentPath: currentPath,
@@ -228,13 +236,13 @@ class LocalDataSource {
     }, source: 'LocalDataSource.getFileList');
   }
 
-  Future<String> _getHash({
+  Future<String?> _getHash({
     required FileModel model,
     required String filePath,
   }) async {
     debugLog('hash for ${model.name}');
     return model.isFolder
-        ? await hashService.hashFolder(Directory(filePath))
-        : await hashService.hashFile(File(filePath));
+        ? null
+        : await hashService.hashFile(file: File(filePath));
   }
 }

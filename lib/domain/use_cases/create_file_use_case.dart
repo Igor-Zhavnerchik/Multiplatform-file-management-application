@@ -9,6 +9,7 @@ class CreateFileUseCase {
   Future<Result<void>> call({
     required String? parentId,
     required String name,
+    required int parentDepth,
     required String? fileLocalPath,
     required bool syncEnabled,
     required bool downloadEnabled,
@@ -17,6 +18,7 @@ class CreateFileUseCase {
     return await repository.createFile(
       parentId: parentId,
       name: name,
+      parentDepth: parentDepth,
       isFolder: isFolder,
       fromPath: fileLocalPath,
       syncEnabled: syncEnabled,

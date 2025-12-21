@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
@@ -33,10 +34,11 @@ class DbUpdater {
                   path: change.fs.path,
                 ),
                 parentId: null,
+                depth: change.fs.depth,
 
                 name: pathService.getName(change.fs.path),
                 mimeType: null,
-                isFolder: change is ExistingFolder,
+                isFolder: change.fs is ExistingFolder,
                 size: switch (change.fs) {
                   ExistingFile file => file.size,
                   _ => null,
@@ -53,7 +55,7 @@ class DbUpdater {
                 },
                 deletedAt: null,
               ),
-              change.fs.path,
+              change.fs.localFileId,
 
               tempParentId: change.fs.parentLocalFileId,
             ),
@@ -70,36 +72,35 @@ class DbUpdater {
           );
         case DbUpdate():
           debugLog('updating from fs');
-          late final FileModel updateModel;
-          switch (change.fs) {
-            case ExistingFile fsFile:
-              updateModel = mapper
-                  .fromDbFile(change.file)
-                  .copyWith(
-                    hash: change.hash,
-                    size: fsFile.size,
-                    updatedAt: fsFile.modifiedAt,
-                    syncStatus: SyncStatus.updated,
-                    name: pathService.getName(change.fs.path),
-                  );
-            case ExistingFolder fsFolder:
-              updateModel = mapper
-                  .fromDbFile(change.file)
-                  .copyWith(
-                    hash: change.hash,
-                    syncStatus: SyncStatus.updated,
-                    updatedAt: DateTime.now(),
-                    name: pathService.getName(change.fs.path),
-                  );
-            case _:
-              throw Exception('cant update non existing entity');
-          }
+          final FileModel currentModel = mapper.fromDbFile(change.file);
+          final FileModel updateModel = currentModel.copyWith(
+            hash: change.hash,
+            size: change.fs is ExistingFile
+                ? (change.fs as ExistingFile).size
+                : null,
+            /* updatedAt: change.fs is ExistingFile
+                ? (change.fs as ExistingFile).modifiedAt
+                : DateTime.now(), */
+            updatedAt: DateTime.now().toUtc(),
+            syncStatus: currentModel.syncStatus == SyncStatus.created
+                ? SyncStatus.created
+                : SyncStatus.updated,
+            name: pathService.getName(change.fs.path),
+            parentId: change.fs.parentLocalFileId == null
+                ? null
+                : (await filesTable.getFileByLocalFileId(
+                    change.fs.parentLocalFileId!,
+                  ))!.id,
+            depth: change.fs.depth,
+          );
+
           filesTable.updateFile(updateModel.id, mapper.toUpdate(updateModel));
       }
     }
 
     //Phase 2 - for entries with tempParent
     final inProgress = await filesTable.getFilesByStatus(SyncStatus.creating);
+    //final queue = PriorityQueue((Dbfile arg) => arg.)
     for (var file in inProgress) {
       filesTable.updateFile(
         file.id,

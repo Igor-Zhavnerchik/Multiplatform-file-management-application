@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/data/file_system_scan/fs_scan_handler.dart';
+import 'package:cross_platform_project/data/file_system_scan/fs_scanner_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/providers/storage_operations_providers.dart';
 import 'package:cross_platform_project/domain/use_cases/create_file_use_case.dart';
@@ -60,6 +62,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
   late final DeleteFileUseCase _deleteFileUseCase;
   late final UpdateFileUseCase _updateFileUseCase;
   late final SyncStartUseCase _syncStartUseCase;
+  late final FsScanHandler _scanHandler;
 
   @override
   FileOperationsState build() {
@@ -67,6 +70,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
     _deleteFileUseCase = ref.read(deleteFileUseCaseProvider);
     _updateFileUseCase = ref.read(updateFileUseCaseProvider);
     _syncStartUseCase = ref.read(syncStartUseCaseProvider);
+    _scanHandler = ref.read(fsScanHandlerProvider);
 
     return FileOperationsState();
   }
@@ -78,6 +82,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
       final result = await _createFileUseCase(
         parentId: ref.read(homeViewModelProvider).currentFolder!.id,
         name: state.newFileName,
+        parentDepth: ref.read(homeViewModelProvider).currentFolder!.depth,
         isFolder: isFolder ?? state.newFileIsFolder,
         fileLocalPath: state.newFileLocalPath,
         downloadEnabled: state.newFileDownloadEnabled,
@@ -137,5 +142,9 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
 
   Future<void> startSync() async {
     await _syncStartUseCase();
+  }
+
+  Future<void> startScan() async {
+    _scanHandler.executeScan();
   }
 }

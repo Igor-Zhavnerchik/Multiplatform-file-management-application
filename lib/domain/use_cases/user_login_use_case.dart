@@ -30,12 +30,9 @@ class UserLoginUseCase {
     if (successfulLogin) {
       await storage.init();
       try {
+        await fsScanHandler.executeScan();
         await storage.syncronize();
         final userStateResult = await storage.createUserSaveState();
-        await fsScanHandler.executeScan(
-          path:
-              r'C:\Users\ftb96\Documents\users\0c65d5c0-97f5-4ab7-85aa-7e9f18e7fa51\storage\My Folder',
-        );
         if (userStateResult.isFailure) {
           return false;
         }

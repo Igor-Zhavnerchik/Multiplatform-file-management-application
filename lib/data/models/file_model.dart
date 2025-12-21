@@ -6,6 +6,7 @@ class FileModel {
   final String ownerId;
   final String? parentId;
 
+  final int depth;
   final String name;
   final String? mimeType;
   final bool isFolder;
@@ -27,6 +28,7 @@ class FileModel {
     required this.ownerId,
     required this.parentId,
 
+    required this.depth,
     required this.name,
     required this.mimeType,
     required this.isFolder,
@@ -49,6 +51,7 @@ class FileModel {
     String? ownerId,
     String? parentId,
 
+    int? depth,
     String? name,
     String? mimeType,
     bool? isFolder,
@@ -70,6 +73,7 @@ class FileModel {
       ownerId: this.ownerId,
       parentId: parentId ?? this.parentId,
 
+      depth: depth ?? this.depth,
       name: name ?? this.name,
       mimeType: mimeType ?? this.mimeType,
       isFolder: isFolder ?? this.isFolder,
@@ -96,6 +100,7 @@ class FileModel {
       ownerId: remoteModel.ownerId,
       parentId: remoteModel.parentId,
       name: remoteModel.name,
+      depth: remoteModel.depth,
       mimeType: remoteModel.mimeType,
       size: remoteModel.size,
       hash: remoteModel.hash,

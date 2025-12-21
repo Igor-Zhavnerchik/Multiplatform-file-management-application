@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/core/utility/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/file_system_scan/file_system_scanner.dart';
-import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/services/hash_service.dart';
 
 sealed class DbChange {}
@@ -12,13 +12,13 @@ class DbUpdate extends DbChange {
   DbUpdate({required this.fs, required this.file, required this.hash});
   final DbFile file;
   final FSEntry fs;
-  final String hash;
+  final String? hash;
 }
 
 class DbCreate extends DbChange {
   DbCreate({required this.fs, required this.hash});
   final FSEntry fs;
-  final String hash;
+  final String? hash;
 }
 
 class DbDelete extends DbChange {
@@ -27,8 +27,9 @@ class DbDelete extends DbChange {
 }
 
 class Reconciler {
-  Reconciler({required this.hashService});
+  Reconciler({required this.hashService, required this.pathService});
   final HashService hashService;
+  final StoragePathService pathService;
 
   Future<List<DbChange>> detectDbChanges({
     required Map<String, DbFile> dbSnapshot,
@@ -49,38 +50,47 @@ class Reconciler {
           changeList.add(
             DbCreate(
               fs: file,
-              hash: await hashService.hashFile(File(file.path)),
+              hash: await hashService.hashFile(file: File(file.path)),
             ),
           );
           debugLog('path: ${fsEntry!.path} decision: create file');
         case ((ExistingFolder folder, null)):
-          changeList.add(
-            DbCreate(
-              fs: folder,
-              hash: await hashService.hashFolder(Directory(folder.path)),
-            ),
-          );
+          changeList.add(DbCreate(fs: folder, hash: null));
           debugLog('path: ${fsEntry!.path} decision: create folder');
         case ((ExistingFile() || ExistingFolder()), DbFile file):
           {
             final fsHash = switch (fsEntry) {
-              ExistingFile file => await hashService.hashFile(File(file.path)),
-              ExistingFolder folder => await hashService.hashFolder(
-                Directory(folder.path),
+              ExistingFile file => await hashService.hashFile(
+                file: File(file.path),
               ),
-              MissingEntry miss => null,
+              ExistingFolder folder => null,
               _ => null,
             };
 
-            if (fsHash != file.hash && fsHash != null) {
-              changeList.add(DbUpdate(fs: fsEntry!, file: file, hash: fsHash));
+            if ((fsHash != file.hash && fsHash != null) ||
+                (file.name != pathService.getName(fsEntry!.path)) ||
+                (fsEntry.path !=
+                    await pathService.getLocalPath(
+                      fileId: dbEntry!.id,
+                      userId: await pathService.getOwnerIdByPath(
+                        path: fsEntry.path,
+                      ),
+                    ))) {
+              debugLog('path: ${fsEntry!.path} decision: update');
+              debugLog(
+                '    reason: ${fsHash != file.hash ? 'different hash' : 'different names'}',
+              );
+              debugLog(
+                'fs: hash: $fsHash, name: ${pathService.getName(fsEntry.path)} ',
+              );
+              debugLog('db: hash: ${file.hash}, name: ${file.name} ');
+              changeList.add(DbUpdate(fs: fsEntry, file: file, hash: fsHash));
             }
           }
-          debugLog('path: ${fsEntry!.path} decision: update');
         case ((null, DbFile file)):
           {
             changeList.add(DbDelete(file: file));
-            debugLog('path: ${fsEntry!.path} decision: delete');
+            debugLog('file name: ${file.name} decision: delete');
           }
       }
     }

@@ -5,6 +5,7 @@ class RemoteFileModel {
   final String ownerId;
   final String? parentId;
 
+  final int depth;
   final String name;
   final String? mimeType;
   final bool isFolder;
@@ -21,6 +22,8 @@ class RemoteFileModel {
     required this.id,
     required this.ownerId,
     required this.parentId,
+
+    required this.depth,
 
     required this.name,
     required this.mimeType,
@@ -40,6 +43,8 @@ class RemoteFileModel {
     String? ownerId,
     String? parentId,
 
+    int? depth,
+
     String? name,
     String? mimeType,
     bool? isFolder,
@@ -54,8 +59,10 @@ class RemoteFileModel {
   }) {
     return RemoteFileModel(
       id: id ?? this.id,
-      ownerId: this.ownerId,
+      ownerId: ownerId ?? this.ownerId,
       parentId: parentId ?? this.parentId,
+
+      depth: depth ?? this.depth,
 
       name: name ?? this.name,
       mimeType: mimeType ?? this.mimeType,

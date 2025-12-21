@@ -69,7 +69,7 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
   Future<DbFile?> getFileByLocalFileId(String localFileId) async {
     final query = select(files)
       ..where((entity) => entity.localFileId.equals(localFileId));
-    return (await query.getSingleOrNull());
+    return await query.getSingleOrNull();
   }
 
   Future<String?> getParentIdbyId(String id) async {
