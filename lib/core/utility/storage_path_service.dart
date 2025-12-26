@@ -59,7 +59,7 @@ class StoragePathService {
     required String userId,
   }) async {
     if (fileId == null) {
-      return p.join(appRootPath, 'users', userId, 'storage');
+      return p.join(appRootPath, 'users', userId);
     }
 
     return p.join(
@@ -72,7 +72,7 @@ class StoragePathService {
   }
 
   Future<String> getOwnerIdByPath({required String path}) async {
-    debugLog('getting ownerId from $path');
+    //debugLog('getting ownerId from $path');
     final rootPattern = RegExp.escape(getRoot());
     final separatorPattern = RegExp.escape(p.separator);
     final uuidPattern =
@@ -86,14 +86,14 @@ class StoragePathService {
       rootPattern + separatorPattern + uuidPattern + separatorPattern,
     );
     final res = regex.firstMatch(path)!.group(1)!;
-    debugLog('got: $res');
+    //debugLog('got: $res');
     return res;
   }
 
   Future<List<String>> getUsersStorageDirectories() async {
     final users = await filesTable.getAllUserIds();
     return users
-        .map((userId) => p.join(appRootPath, 'users', userId, 'storage'))
+        .map((userId) => p.join(appRootPath, 'users', userId))
         .toList();
   }
 }

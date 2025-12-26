@@ -9,6 +9,7 @@ import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/data/sync/sync_processor.dart';
 import 'package:cross_platform_project/data/sync/sync_status_manager.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
+import 'package:cross_platform_project/domain/entities/user_entity.dart';
 import 'package:cross_platform_project/domain/repositories/auth_repository.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -34,8 +35,8 @@ class StorageRepositoryImpl extends StorageRepository {
   });
 
   @override
-  Future<void> init() async {
-    currentUserId = (await auth.getCurrentUser())!.id;
+  Future<void> init({required String currentUserId}) async {
+    this.currentUserId = currentUserId;
   }
 
   Future<Result<List<FileModel>>> _getRemoteFileList() async {
@@ -178,9 +179,9 @@ class StorageRepositoryImpl extends StorageRepository {
           payload: localModel,
         );
       default:
-        debugLog('for ${localModel.name}');
+        /*  debugLog('for ${localModel.name}');
         debugLog('local time: ${localModel.updatedAt.toIso8601String()}');
-        debugLog('remote time: ${remoteModel.updatedAt.toIso8601String()}');
+        debugLog('remote time: ${remoteModel.updatedAt.toIso8601String()}'); */
         switch (localModel.updatedAt.compareTo(remoteModel.updatedAt)) {
           case > 0:
             await syncStatusManager.updateStatus(
@@ -219,15 +220,18 @@ class StorageRepositoryImpl extends StorageRepository {
     }
   }
 
+  //FIXME to v7 and centrolize
   String _generateUuidV4() {
     return Uuid().v4();
   }
 
   @override
   Future<Result<void>> createFile({
+    String? id,
     required String? parentId,
     required String name,
     String? fromPath,
+    String? ownerId,
     int? size,
     required int parentDepth,
     String? mimeType,
@@ -236,8 +240,8 @@ class StorageRepositoryImpl extends StorageRepository {
     required bool downloadEnabed,
   }) async {
     final newFile = FileModel(
-      id: _generateUuidV4(),
-      ownerId: currentUserId!,
+      id: id ?? _generateUuidV4(),
+      ownerId: ownerId ?? currentUserId!,
       parentId: parentId,
       depth: parentDepth + 1,
       name: name,
@@ -323,20 +327,54 @@ class StorageRepositoryImpl extends StorageRepository {
   }
 
   @override
-  Future<Result<void>> createUserSaveState() async {
-    await syncProcessor.waitSyncCompletetion();
-    final fileListResult = await _getLocalFileList();
-    if (fileListResult.isFailure) {
-      return Failure(
-        'failed to fetch file list',
-        source: 'StorageRepository.createUserSaveState',
-      );
+  Future<Result<void>> copyFile({
+    required FileEntity newParent,
+    required FileEntity entity,
+    required bool deleteOrigin,
+  }) async {
+    final newParentModel = mapper.fromEntity(newParent);
+    final model = mapper.fromEntity(entity);
+    final result = await localDataSource.copyFile(
+      model: model,
+      newParentModel: newParentModel,
+      deleteOrigin: deleteOrigin,
+    );
+    if (result.isFailure) {
+      return Failure('Failed to copy to ${newParent.name} from ${entity.name}');
+    } else {
+      return Success(null);
     }
-    //FIXME
-    if (((fileListResult as Success).data as List<FileModel>).isEmpty) {
+  }
+
+  @override
+  Future<Result<void>> createUserSaveState({required UserEntity user}) async {
+    var result = ensureRootExists(userId: user.id);
+    return result;
+  }
+
+  @override
+  Future<Result<FileEntity>> getRootFolder({required String ownerId}) async {
+    final result = await localDataSource.getRootFolder(ownerId: ownerId);
+    if (result.isFailure) {
+      return Failure(
+        (result as Failure).message,
+        source: (result as Failure).source,
+      );
+    } else {
+      return Success(mapper.toEntity((result as Success).data));
+    }
+  }
+
+  @override
+  Future<Result<void>> ensureRootExists({required String userId}) async {
+    var result = await getRootFolder(ownerId: userId);
+    if (result.isFailure) {
+      debugLog('root not exists. creating root');
       return await createFile(
+        id: Uuid().v5(Namespace.nil.value, ''),
         parentId: null,
-        name: 'My Folder',
+        ownerId: userId,
+        name: 'Storage',
         parentDepth: -1,
         isFolder: true,
         syncEnabled: true,

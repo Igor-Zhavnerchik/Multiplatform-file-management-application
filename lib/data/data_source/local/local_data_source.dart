@@ -11,6 +11,9 @@ import 'package:cross_platform_project/data/data_source/local/local_file_id_serv
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/data/services/hash_service.dart';
+import 'package:cross_platform_project/domain/entities/file_entity.dart';
+import 'package:uuid/uuid.dart';
+import 'package:uuid/v4.dart';
 import '../local/local_storage_service.dart';
 import '../local/json_storage.dart';
 
@@ -186,8 +189,8 @@ class LocalDataSource {
         userId: model.ownerId,
       );
       debugLog('in update for ${model.name}');
-      debugLog('    current path: $currentPath');
-      debugLog('    model path: $modelPath');
+      /* debugLog('    current path: $currentPath');
+      debugLog('    model path: $modelPath'); */
       if (currentPath != modelPath) {
         await localStorage.moveEntity(
           currentPath: currentPath,
@@ -234,6 +237,77 @@ class LocalDataSource {
     return await safeCall(() async {
       return await filesTable.getFilesByOwner(ownerId);
     }, source: 'LocalDataSource.getFileList');
+  }
+
+  Future<Result<void>> copyFile({
+    required FileModel newParentModel,
+    required FileModel model,
+    required bool deleteOrigin,
+  }) async {
+    return await safeCall(() async {
+      final fromPath = await pathService.getLocalPath(
+        fileId: model.id,
+        userId: model.ownerId,
+      );
+      final toPath = pathService.join(
+        parent: await pathService.getLocalPath(
+          fileId: newParentModel.id,
+          userId: newParentModel.ownerId,
+        ),
+        child: pathService.getName(fromPath),
+      );
+      await localStorage.copyEntity(
+        fromPath: fromPath,
+        toPath: toPath,
+        isFolder: model.isFolder,
+      );
+
+      /* final lastDot = model.name.lastIndexOf('.');
+      final base = model.name.substring(0, lastDot);
+      final ext = model.name.substring(lastDot);
+      final siblings = await filesTable.getChildren(newParentModel.id, model.ownerId);
+      for(var sibling in siblings){
+        final number = (regex.firstMatch(model.name)?.group(1)).;
+        if(number != null && number > max_same_name)
+      } */
+      await filesTable.insertFile(
+        mapper.toInsert(
+          //FIXME
+          model.copyWith(
+            id: UuidV4().generate(),
+            parentId: newParentModel.id,
+            depth: newParentModel.depth + 1,
+            syncStatus: SyncStatus.created,
+          ),
+          await localFileIdService.getFileId(path: toPath),
+        ),
+      );
+      if (model.isFolder) {
+        final childrenList = await filesTable.getChildren(
+          model.id,
+          model.ownerId,
+        );
+        for (var child in childrenList.map(
+          (dbFile) => mapper.fromDbFile(dbFile),
+        )) {
+          await copyFile(
+            newParentModel: model,
+            model: child,
+            deleteOrigin: false,
+          );
+        }
+      }
+      if (deleteOrigin) {
+        await deleteFile(model: model);
+      }
+    }, source: 'LocalDataSource.copyFile');
+  }
+
+  Future<Result<FileModel>> getRootFolder({required String ownerId}) async{
+    return safeCall(() async{
+      final root = (await filesTable.getChildren(null, ownerId)).first;
+      return mapper.fromDbFile(root);
+    }, source: 'LocalDataSource.getrootFolder');
   }
 
   Future<String?> _getHash({

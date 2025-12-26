@@ -1,4 +1,6 @@
 import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/core/utility/safe_call.dart';
 import 'package:cross_platform_project/domain/entities/user_entity.dart';
 import 'package:cross_platform_project/domain/repositories/auth_repository.dart';
 
@@ -19,20 +21,21 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<bool> signIn({
+  Future<Result<UserEntity>> signIn({
     required String email,
     required String password,
     required bool saveOnThisDevice,
   }) async {
     final AuthResponse response;
-    if (await getCurrentUser() == null) {
+    UserEntity? user = await getCurrentUser();
+    if (user == null) {
       try {
         response = await client.auth.signInWithPassword(
           email: email,
           password: password,
         );
-      } on AuthException catch (_) {
-        return false;
+      } on AuthException catch (error) {
+        return Failure('error: $error');
       }
 
       if (saveOnThisDevice) {
@@ -41,9 +44,9 @@ class AuthRepositoryImpl implements AuthRepository {
           refreshToken: response.session!.refreshToken,
         );
       }
+      user = UserEntity(id: response.user!.id, email: response.user!.email);
     }
-
-    return true;
+    return Success(user);
   }
 
   @override
@@ -53,18 +56,21 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<bool> registerUser({
+  Future<Result<UserEntity>> registerUser({
     required String email,
     required String password,
   }) async {
-    final AuthResponse response;
-
-    try {
-      response = await client.auth.signUp(email: email, password: password);
-    } catch (e) {
-      debugLog('AuthRepository: failed to regester user\nerror: $e');
-      return false;
-    }
-    return response.session != null;
+    return await safeCall(() async {
+      final AuthResponse response = await client.auth.signUp(
+        email: email,
+        password: password,
+      );
+      if (response.user == null) {
+        throw Exception(
+          'failed to register with email : $email password: $password',
+        );
+      }
+      return UserEntity(id: response.user!.id, email: email);
+    }, source: 'AuthRepository.registeruser');
   }
 }

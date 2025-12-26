@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
@@ -25,7 +24,7 @@ class DbUpdater {
     for (var change in changeList) {
       switch (change) {
         case DbCreate():
-          debugLog('creating from fs');
+          debugLog('creating ${change.fs.path} from fs');
           filesTable.insertFile(
             mapper.toInsert(
               FileModel(
@@ -51,7 +50,7 @@ class DbUpdater {
                 createdAt: DateTime.now(),
                 updatedAt: switch (change.fs) {
                   ExistingFile file => file.modifiedAt,
-                  _ => DateTime.fromMicrosecondsSinceEpoch(0),
+                  _ => DateTime.fromMicrosecondsSinceEpoch(0, isUtc: true),
                 },
                 deletedAt: null,
               ),
@@ -61,7 +60,7 @@ class DbUpdater {
             ),
           );
         case DbDelete():
-          debugLog('deleting from fs');
+          debugLog('deleting ${change.file.name} from fs');
           filesTable.updateFile(
             change.file.id,
             mapper.toUpdate(
@@ -71,7 +70,10 @@ class DbUpdater {
             ),
           );
         case DbUpdate():
-          debugLog('updating from fs');
+          debugLog('updating ${change.file.name} from fs');
+          debugLog(
+            'dbParentId = ${(await filesTable.getFileByLocalFileId(change.fs.parentLocalFileId))?.id}',
+          );
           final FileModel currentModel = mapper.fromDbFile(change.file);
           final FileModel updateModel = currentModel.copyWith(
             hash: change.hash,
@@ -86,15 +88,16 @@ class DbUpdater {
                 ? SyncStatus.created
                 : SyncStatus.updated,
             name: pathService.getName(change.fs.path),
-            parentId: change.fs.parentLocalFileId == null
-                ? null
-                : (await filesTable.getFileByLocalFileId(
-                    change.fs.parentLocalFileId!,
-                  ))!.id,
+            parentId: (await filesTable.getFileByLocalFileId(
+              change.fs.parentLocalFileId,
+            ))?.id,
             depth: change.fs.depth,
           );
 
-          filesTable.updateFile(updateModel.id, mapper.toUpdate(updateModel));
+          await filesTable.updateFile(
+            updateModel.id,
+            mapper.toUpdate(updateModel),
+          );
       }
     }
 
@@ -102,15 +105,15 @@ class DbUpdater {
     final inProgress = await filesTable.getFilesByStatus(SyncStatus.creating);
     //final queue = PriorityQueue((Dbfile arg) => arg.)
     for (var file in inProgress) {
-      filesTable.updateFile(
+      await filesTable.updateFile(
         file.id,
         mapper.toUpdate(
           mapper
               .fromDbFile(file)
               .copyWith(
                 parentId: (await filesTable.getFileByLocalFileId(
-                  file.tempParentId!,
-                ))!.id,
+                  file.tempParentId,
+                ))?.id,
                 syncStatus: SyncStatus.created,
               ),
           tempParentId: null,

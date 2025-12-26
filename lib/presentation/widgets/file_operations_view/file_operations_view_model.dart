@@ -7,6 +7,7 @@ import 'package:cross_platform_project/data/file_system_scan/fs_scan_handler.dar
 import 'package:cross_platform_project/data/file_system_scan/fs_scanner_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/providers/storage_operations_providers.dart';
+import 'package:cross_platform_project/domain/use_cases/copy_file_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/create_file_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/delete_file_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/sync_start_use_case.dart';
@@ -30,6 +31,8 @@ class FileOperationsState {
   final bool newFileSyncEnabled;
   final bool newFileDownloadEnabled;
   final bool newFileIsFolder;
+  final FileEntity? copyFrom;
+  final bool? isCut;
 
   FileOperationsState({
     this.newFileName = '',
@@ -37,6 +40,8 @@ class FileOperationsState {
     this.newFileSyncEnabled = true,
     this.newFileDownloadEnabled = true,
     this.newFileIsFolder = false,
+    this.copyFrom,
+    this.isCut,
   });
 
   FileOperationsState copyWith({
@@ -45,6 +50,8 @@ class FileOperationsState {
     bool? newFileSyncEnabled,
     bool? newFileDownloadEnabled,
     bool? newFileIsFolder,
+    FileEntity? copyFrom,
+    bool? isCut,
   }) {
     return FileOperationsState(
       newFileName: newFileName ?? this.newFileName,
@@ -53,6 +60,8 @@ class FileOperationsState {
       newFileDownloadEnabled:
           newFileDownloadEnabled ?? this.newFileDownloadEnabled,
       newFileIsFolder: newFileIsFolder ?? this.newFileIsFolder,
+      copyFrom: copyFrom ?? this.copyFrom,
+      isCut: isCut ?? this.isCut,
     );
   }
 }
@@ -62,6 +71,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
   late final DeleteFileUseCase _deleteFileUseCase;
   late final UpdateFileUseCase _updateFileUseCase;
   late final SyncStartUseCase _syncStartUseCase;
+  late final CopyFileUseCase _copyFileUseCase;
   late final FsScanHandler _scanHandler;
 
   @override
@@ -70,6 +80,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
     _deleteFileUseCase = ref.read(deleteFileUseCaseProvider);
     _updateFileUseCase = ref.read(updateFileUseCaseProvider);
     _syncStartUseCase = ref.read(syncStartUseCaseProvider);
+    _copyFileUseCase = ref.read(copyFileUseCaseProvider);
     _scanHandler = ref.read(fsScanHandlerProvider);
 
     return FileOperationsState();
@@ -78,11 +89,11 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
   Future<void> createFile({required bool? isFolder}) async {
     if (state.newFileName.isNotEmpty) {
       debugLog('created ${state.newFileIsFolder ? 'folder' : 'file'}');
-      debugLog('in ${ref.read(homeViewModelProvider).currentFolder!.id}');
+      debugLog('in ${ref.read(homeViewModelProvider).currentFolder?.id}');
       final result = await _createFileUseCase(
-        parentId: ref.read(homeViewModelProvider).currentFolder!.id,
+        parentId: ref.read(homeViewModelProvider).currentFolder?.id,
         name: state.newFileName,
-        parentDepth: ref.read(homeViewModelProvider).currentFolder!.depth,
+        parentDepth: ref.read(homeViewModelProvider).currentFolder?.depth ?? 0,
         isFolder: isFolder ?? state.newFileIsFolder,
         fileLocalPath: state.newFileLocalPath,
         downloadEnabled: state.newFileDownloadEnabled,
@@ -137,6 +148,24 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
         name: result.files.first.name,
         isFolder: Directory(result.files.first.path!).existsSync(),
       );
+    }
+  }
+
+  Future<void> setCopyFrom({required bool isCut}) async {
+    state = state.copyWith(
+      copyFrom: ref.read(homeViewModelProvider).selected!,
+      isCut: isCut,
+    );
+  }
+
+  Future<void> copyTo() async {
+    if (state.copyFrom != null) {
+      await _copyFileUseCase(
+        copyFrom: state.copyFrom!,
+        copyTo: ref.read(homeViewModelProvider).currentFolder!,
+        isCut: state.isCut!,
+      );
+      state = state.copyWith(isCut: null, copyFrom: null);
     }
   }
 

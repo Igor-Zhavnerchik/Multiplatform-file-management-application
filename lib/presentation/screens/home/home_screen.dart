@@ -69,8 +69,12 @@ class FileView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final homeState = ref.watch(homeViewModelProvider);
     final currentFolder = homeState.currentFolder;
-    if (currentFolder == null) return Text('No Folder Selected');
-    final childrenStream = ref.watch(childrenListProvider(currentFolder.id));
+    if (currentFolder == null) {
+      return Text('Loading...');
+    }
+    final childrenStream = ref.watch(
+      childrenListProvider(currentFolder.id.isEmpty ? null : currentFolder.id),
+    );
     return childrenStream.when(
       data: (children) => GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -150,12 +154,11 @@ class FolderView extends ConsumerStatefulWidget {
 class _FolderViewState extends ConsumerState<FolderView> {
   @override
   Widget build(BuildContext context) {
-    final rootStream = ref.watch(childrenListProvider(null));
-
-    return rootStream.when(
-      data: (root) => FolderWidget(folder: root[0]),
+    final folderStream = ref.watch(onlyFoldersListProvider(null));
+    return folderStream.when(
+      data: (data) => FolderWidget(folder: data.first),
+      error: (error, stackTrace) => Text('error: $error'),
       loading: () => CircularProgressIndicator(),
-      error: (error, stackTrace) => Text('Error: $error'),
     );
   }
 }
@@ -174,7 +177,11 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final folderStream = ref.watch(onlyFoldersListProvider(widget.folder.id));
+    final folderStream = ref.watch(
+      onlyFoldersListProvider(
+        widget.folder.id.isEmpty ? null : widget.folder.id,
+      ),
+    );
 
     return folderStream.when(
       data: (folders) => Column(

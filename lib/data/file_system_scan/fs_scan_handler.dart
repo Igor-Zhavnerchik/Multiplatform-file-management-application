@@ -29,11 +29,12 @@ class FsScanHandler {
     final dbSnapshot = Map.fromEntries(
       fileList.map((file) => MapEntry(file.localFileId, file)),
     );
-    debugLog('appling changes');
     final changes = await reconciler.detectDbChanges(
       dbSnapshot: dbSnapshot,
       fsSnapshot: fsSnapshot,
     );
+    
+    debugLog('appling changes');
     updater.updateDb(changeList: changes);
   }
 }

@@ -20,6 +20,9 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
   Future<List<DbFile>> getAllFiles() {
     return select(files).get();
   }
+  Future<DbFile?> getFileById({required String? fileId, required String ownerId}){
+    return (select(files)..where((file) => file.id.equalsNullable(fileId))).getSingleOrNull();
+  }
 
   Future deleteFile(String id) {
     return (delete(files)..where((entity) => entity.id.equals(id))).go();
@@ -37,6 +40,16 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
               entity.deletedAt.isNull(),
         ))
         .watch();
+  }
+
+  Future<List<DbFile>> getChildren(String? parentId, String ownerId) async {
+    return await (select(files)..where(
+          (entity) =>
+              entity.parentId.equalsNullable(parentId) &
+              entity.ownerId.equals(ownerId) &
+              entity.deletedAt.isNull(),
+        ))
+        .get();
   }
 
   Stream<List<DbFile>> watchFolders(String? parentId, String ownerId) {
@@ -66,7 +79,10 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
     return (await query.getSingleOrNull())?.name;
   }
 
-  Future<DbFile?> getFileByLocalFileId(String localFileId) async {
+  Future<DbFile?> getFileByLocalFileId(String? localFileId) async {
+    if (localFileId == null) {
+      return null;
+    }
     final query = select(files)
       ..where((entity) => entity.localFileId.equals(localFileId));
     return await query.getSingleOrNull();

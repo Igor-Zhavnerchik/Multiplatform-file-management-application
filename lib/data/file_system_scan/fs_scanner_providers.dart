@@ -25,7 +25,12 @@ final fileSystemWatcherProvider = Provider<FileSystemWatcher>((ref) {
 final reconcilerProvider = Provider<Reconciler>((ref) {
   final hashService = ref.watch(hashServiceProvider);
   final pathService = ref.watch(storagePathServiceProvider);
-  return Reconciler(hashService: hashService, pathService: pathService);
+  final filesTable = ref.watch(filesTableProvider);
+  return Reconciler(
+    hashService: hashService,
+    pathService: pathService,
+    filesTable: filesTable,
+  );
 });
 final dbUpdaterProvider = Provider<DbUpdater>((ref) {
   final pathService = ref.watch(storagePathServiceProvider);

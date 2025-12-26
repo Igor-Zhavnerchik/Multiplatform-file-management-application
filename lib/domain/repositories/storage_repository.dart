@@ -1,11 +1,14 @@
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
+import 'package:cross_platform_project/domain/entities/user_entity.dart';
 
 abstract class StorageRepository {
-  Future<void> init();
+  Future<void> init({required String currentUserId});
 
   Future<void> syncronize();
-  Future<Result<void>> createUserSaveState();
+  Future<Result<void>> createUserSaveState({required UserEntity user});
+  Future<Result<void>> ensureRootExists({required String userId});
+  Future<Result<FileEntity>> getRootFolder({required String ownerId});
 
   Future<Result<void>> createFile({
     required String? parentId,
@@ -16,6 +19,12 @@ abstract class StorageRepository {
     required bool isFolder,
     required bool syncEnabled,
     required bool downloadEnabed,
+  });
+
+  Future<Result<void>> copyFile({
+    required FileEntity newParent,
+    required FileEntity entity,
+    required bool deleteOrigin,
   });
 
   Future<Result<void>> deleteFile({required FileEntity entity});

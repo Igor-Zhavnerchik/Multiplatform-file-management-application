@@ -111,25 +111,23 @@ class AuthViewModel extends AsyncNotifier<AuthViewState> {
       return;
     }
 
-    var successfulLogin = await _userLoginUseCase(
+    var loginResult = await _userLoginUseCase(
       email: currentState.email,
       password: currentState.password,
       saveOnThisDevice: currentState.saveOnThisDevice,
     );
-    if (successfulLogin) {
+    if (loginResult.isSuccess) {
       state = AsyncData(
         currentState.copyWith(hasError: false, isAuthorized: true),
       );
     } else {
-      if (successfulLogin) {
-        state = AsyncData(
-          currentState.copyWith(
-            hasError: true,
-            errorMessage: ErrorMessage.invalidPasswordOrEmailError,
-            isAuthorized: false,
-          ),
-        );
-      }
+      state = AsyncData(
+        currentState.copyWith(
+          hasError: true,
+          errorMessage: ErrorMessage.invalidPasswordOrEmailError,
+          isAuthorized: false,
+        ),
+      );
     }
   }
 
@@ -141,12 +139,12 @@ class AuthViewModel extends AsyncNotifier<AuthViewState> {
   Future<void> tryRegister() async {
     var currentState = state.value!;
     if (currentState.password == currentState.confirmPassword) {
-      var successfulRegister = await _userRegistrationUseCase(
+      var regResult = await _userRegistrationUseCase(
         email: currentState.email,
         password: currentState.password,
       );
-
-      if (successfulRegister) {
+      //FIXME make alert on failed reg
+      if (regResult.isSuccess) {
         tryLogin();
       } else {
         debugLog('failed to register');

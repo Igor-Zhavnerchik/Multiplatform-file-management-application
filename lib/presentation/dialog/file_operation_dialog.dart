@@ -12,6 +12,9 @@ enum ContextDialogType {
   addEntity,
   update,
   delete,
+  copy,
+  cut,
+  paste,
 }
 
 class ContextDialog extends ConsumerWidget {
@@ -36,7 +39,15 @@ class ContextDialog extends ConsumerWidget {
       ContextDialogType.addEntity => AddEntityDialog(),
       ContextDialogType.update => UpdateDialog(),
       ContextDialogType.delete => DeleteDialog(),
+      _ => AlertDialog(),
     };
+  }
+}
+
+class AlertDialog extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return CenteredPopUpMenu(children: [Text('Alert!')]);
   }
 }
 
@@ -180,6 +191,20 @@ class OptionMenu extends ConsumerWidget {
       children: [
         DialogOption(dialog: ContextDialogType.delete, text: 'Delete'),
         DialogOption(dialog: ContextDialogType.update, text: 'Edit'),
+        DialogOption(
+          dialog: ContextDialogType.copy,
+          text: 'Copy',
+          action: () => ref
+              .read(fileOperationsViewModelProvider.notifier)
+              .setCopyFrom(isCut: false),
+        ),
+        DialogOption(
+          dialog: ContextDialogType.cut,
+          text: 'Cut',
+          action: () => ref
+              .read(fileOperationsViewModelProvider.notifier)
+              .setCopyFrom(isCut: true),
+        ),
       ],
     );
   }
@@ -201,21 +226,36 @@ class InFolderMenu extends ConsumerWidget {
           text: 'Create Folder',
         ),
         DialogOption(dialog: ContextDialogType.addEntity, text: 'Add existing'),
+        DialogOption(
+          dialog: ContextDialogType.paste,
+          text: 'Paste',
+          action: () =>
+              ref.read(fileOperationsViewModelProvider.notifier).copyTo(),
+        ),
       ],
     );
   }
 }
 
 class DialogOption extends ConsumerWidget {
-  DialogOption({required this.dialog, required this.text, super.key});
+  DialogOption({
+    required this.dialog,
+    required this.text,
+    this.action,
+    super.key,
+  });
 
   final ContextDialogType dialog;
   final String text;
+  final Function? action;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () {
+        if (action != null) {
+          action!();
+        }
         Navigator.of(context).pop(dialog);
       },
       child: Padding(padding: EdgeInsets.all(10), child: Text(text)),

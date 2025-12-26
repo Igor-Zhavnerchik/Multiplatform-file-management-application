@@ -1,6 +1,8 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/core/utility/storage_path_service.dart';
 import 'package:cross_platform_project/data/file_system_scan/fs_scan_handler.dart';
+import 'package:cross_platform_project/domain/entities/user_entity.dart';
 import 'package:cross_platform_project/domain/repositories/auth_repository.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
 
@@ -17,30 +19,32 @@ class UserLoginUseCase {
     required this.pathService,
   });
 
-  Future<bool> call({
+  Future<Result<UserEntity>> call({
     required String email,
     required String password,
     required bool saveOnThisDevice,
   }) async {
-    var successfulLogin = await auth.signIn(
+    final loginResult = await auth.signIn(
       email: email,
       password: password,
       saveOnThisDevice: saveOnThisDevice,
     );
-    if (successfulLogin) {
-      await storage.init();
-      try {
-        await fsScanHandler.executeScan();
-        await storage.syncronize();
-        final userStateResult = await storage.createUserSaveState();
-        if (userStateResult.isFailure) {
-          return false;
-        }
-      } catch (e) {
-        print(e);
-      }
+    if (loginResult.isSuccess) {
+      await storage.init(
+        currentUserId: ((loginResult as Success).data as UserEntity).id,
+      );
+      debugLog('storage initialized');
+      await storage.ensureRootExists(
+        userId: ((loginResult as Success).data as UserEntity).id,
+      );
+      debugLog('root should exist');
+      debugLog('starting scan');
+      await fsScanHandler.executeScan();
+      debugLog('scan finished');
+      debugLog('launching sync');
+      storage.syncronize();
     }
 
-    return successfulLogin;
+    return loginResult;
   }
 }

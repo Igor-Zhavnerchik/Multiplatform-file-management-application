@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:cross_platform_project/data/providers/file_stream_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
+import 'package:cross_platform_project/domain/providers/storage_operations_providers.dart';
+import 'package:cross_platform_project/domain/use_cases/get_root_use_case.dart';
 import 'package:cross_platform_project/presentation/dialog/file_operation_dialog.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,8 +42,14 @@ class HomeViewState {
 }
 
 class HomeViewModel extends Notifier<HomeViewState> {
+  late final GetRootUseCase _getRootUseCase;
+
   @override
   HomeViewState build() {
+    _getRootUseCase = ref.read(getRootUseCaseProvider);
+    ref
+        .read(onlyFoldersListProvider(null))
+        .whenData((data) => setCurrentFolder(data.first));
     return HomeViewState(openDialog: false);
   }
 

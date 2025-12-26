@@ -75,9 +75,9 @@ class FileModelMapper {
     syncStatus: SyncStatus.values.byName(dbFile.syncStatus),
     downloadStatus: DownloadStatus.values.byName(dbFile.downloadStatus),
 
-    createdAt: dbFile.createdAt,
-    updatedAt: dbFile.updatedAt,
-    deletedAt: dbFile.deletedAt,
+    createdAt: dbFile.createdAt.toUtc(),
+    updatedAt: dbFile.updatedAt.toUtc(),
+    deletedAt: dbFile.deletedAt?.toUtc(),
   );
 
   FileEntity toEntity(FileModel model) {
