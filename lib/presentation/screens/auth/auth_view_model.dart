@@ -5,9 +5,9 @@ import 'package:cross_platform_project/domain/providers/sign_out_use_case_provid
 import 'package:cross_platform_project/domain/providers/user_login_use_case_provider.dart';
 import 'package:cross_platform_project/domain/providers/user_registration_use_case.dart';
 
-import 'package:cross_platform_project/domain/use_cases/sign_out_use_case.dart';
-import 'package:cross_platform_project/domain/use_cases/user_login_use_case.dart';
-import 'package:cross_platform_project/domain/use_cases/user_registration_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/auth_operations/sign_out_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/auth_operations/user_login_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/auth_operations/user_registration_use_case.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum ErrorMessage {
@@ -111,7 +111,7 @@ class AuthViewModel extends AsyncNotifier<AuthViewState> {
       return;
     }
 
-    var loginResult = await _userLoginUseCase(
+    final loginResult = await _userLoginUseCase(
       email: currentState.email,
       password: currentState.password,
       saveOnThisDevice: currentState.saveOnThisDevice,

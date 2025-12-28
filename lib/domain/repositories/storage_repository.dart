@@ -1,13 +1,12 @@
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
-import 'package:cross_platform_project/domain/entities/user_entity.dart';
 
 abstract class StorageRepository {
   Future<void> init({required String currentUserId});
 
   Future<void> syncronize();
-  Future<Result<void>> createUserSaveState({required UserEntity user});
-  Future<Result<void>> ensureRootExists({required String userId});
+  Future<Result<void>> createUserSaveState();
+  Future<Result<void>> ensureRootExists();
   Future<Result<FileEntity>> getRootFolder({required String ownerId});
 
   Future<Result<void>> createFile({

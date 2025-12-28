@@ -1,5 +1,5 @@
 import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/utility/storage_path_service.dart';
+import 'package:cross_platform_project/core/services/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 import 'package:cross_platform_project/data/file_system_scan/file_system_scanner.dart';
 import 'package:cross_platform_project/data/file_system_scan/reconciler.dart';
@@ -91,6 +91,7 @@ class DbUpdater {
             parentId: (await filesTable.getFileByLocalFileId(
               change.fs.parentLocalFileId,
             ))?.id,
+            ownerId: await pathService.getOwnerIdByPath(path: change.fs.path),
             depth: change.fs.depth,
           );
 

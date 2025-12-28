@@ -1,3 +1,4 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RemoteDatabaseDataSource {

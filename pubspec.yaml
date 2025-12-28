@@ -27,6 +27,7 @@ dependencies:
   crypto: ^3.0.7
   local_file_id_service:
     path: plugins/local_file_id_service
+  open_filex: ^4.2.0
 
 dev_dependencies:
   flutter_test:

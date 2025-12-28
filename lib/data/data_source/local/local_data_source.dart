@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/core/utility/safe_call.dart';
-import 'package:cross_platform_project/core/utility/storage_path_service.dart';
+import 'package:cross_platform_project/core/services/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 import 'package:cross_platform_project/data/data_source/local/local_file_id_service.dart/local_file_id_service.dart';
@@ -12,7 +12,6 @@ import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/data/services/hash_service.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
-import 'package:uuid/uuid.dart';
 import 'package:uuid/v4.dart';
 import '../local/local_storage_service.dart';
 import '../local/json_storage.dart';
@@ -75,10 +74,7 @@ class LocalDataSource {
   }) async {
     return await safeCall(() async {
       var savePath = pathService.join(
-        parent: await pathService.getLocalPath(
-          fileId: model.parentId,
-          userId: model.ownerId,
-        ),
+        parent: await pathService.getLocalPath(fileId: model.parentId),
         child: model.name,
       );
       debugLog('Saving "${model.name}" in "$savePath"');
@@ -109,10 +105,7 @@ class LocalDataSource {
   Future<Result<Uint8List>> getFileData({required FileModel model}) async {
     return await safeCall(() async {
       return await localStorage.getBytes(
-        path: await pathService.getLocalPath(
-          fileId: model.id,
-          userId: model.ownerId,
-        ),
+        path: await pathService.getLocalPath(fileId: model.id),
       );
     }, source: 'LocalDataSource.getFileData');
   }
@@ -123,10 +116,7 @@ class LocalDataSource {
   }) async {
     return await safeCall(() async {
       var savePath = pathService.join(
-        parent: await pathService.getLocalPath(
-          fileId: model.parentId,
-          userId: model.ownerId,
-        ),
+        parent: await pathService.getLocalPath(fileId: model.parentId),
         child: model.name,
       );
       if (!model.isFolder) {
@@ -158,16 +148,15 @@ class LocalDataSource {
     bool softDelete = true,
   }) async {
     return await safeCall(() async {
-      var deletePath = await pathService.getLocalPath(
-        fileId: model.id,
-        userId: model.ownerId,
-      );
+      var deletePath = await pathService.getLocalPath(fileId: model.id);
       await localStorage.deleteEntity(
         path: deletePath,
         isFolder: model.isFolder,
       );
       if (!softDelete) {
         await filesTable.deleteFile(model.id);
+      } else {
+        await filesTable.updateFile(model.id, mapper.toUpdate(model));
       }
     }, source: 'LocalDataSource.deleteFile');
   }
@@ -178,16 +167,10 @@ class LocalDataSource {
   }) async {
     return await safeCall(() async {
       final modelPath = pathService.join(
-        parent: await pathService.getLocalPath(
-          fileId: model.parentId,
-          userId: model.ownerId,
-        ),
+        parent: await pathService.getLocalPath(fileId: model.parentId),
         child: model.name,
       );
-      final currentPath = await pathService.getLocalPath(
-        fileId: model.id,
-        userId: model.ownerId,
-      );
+      final currentPath = await pathService.getLocalPath(fileId: model.id);
       debugLog('in update for ${model.name}');
       /* debugLog('    current path: $currentPath');
       debugLog('    model path: $modelPath'); */
@@ -209,10 +192,7 @@ class LocalDataSource {
 
   Future<Result<FileSystemEntity>> getFile({required FileModel model}) async {
     return await safeCall(() async {
-      var getPath = await pathService.getLocalPath(
-        fileId: model.id,
-        userId: model.ownerId,
-      );
+      var getPath = await pathService.getLocalPath(fileId: model.id);
 
       return localStorage.getEntity(path: getPath, isFolder: model.isFolder);
     }, source: 'LocalDataSource.getFile');
@@ -245,15 +225,9 @@ class LocalDataSource {
     required bool deleteOrigin,
   }) async {
     return await safeCall(() async {
-      final fromPath = await pathService.getLocalPath(
-        fileId: model.id,
-        userId: model.ownerId,
-      );
+      final fromPath = await pathService.getLocalPath(fileId: model.id);
       final toPath = pathService.join(
-        parent: await pathService.getLocalPath(
-          fileId: newParentModel.id,
-          userId: newParentModel.ownerId,
-        ),
+        parent: await pathService.getLocalPath(fileId: newParentModel.id),
         child: pathService.getName(fromPath),
       );
       await localStorage.copyEntity(
@@ -303,8 +277,8 @@ class LocalDataSource {
     }, source: 'LocalDataSource.copyFile');
   }
 
-  Future<Result<FileModel>> getRootFolder({required String ownerId}) async{
-    return safeCall(() async{
+  Future<Result<FileModel>> getRootFolder({required String ownerId}) async {
+    return safeCall(() async {
       final root = (await filesTable.getChildren(null, ownerId)).first;
       return mapper.fromDbFile(root);
     }, source: 'LocalDataSource.getrootFolder');

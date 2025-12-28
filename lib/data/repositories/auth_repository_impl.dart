@@ -14,7 +14,7 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({required this.client, required this.storage});
 
   @override
-  Future<UserEntity?> getCurrentUser() async {
+  UserEntity? getCurrentUser() {
     final user = client.auth.currentUser;
 
     return user == null ? null : UserEntity(id: user.id, email: user.email);
@@ -27,7 +27,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required bool saveOnThisDevice,
   }) async {
     final AuthResponse response;
-    UserEntity? user = await getCurrentUser();
+    UserEntity? user = getCurrentUser();
     if (user == null) {
       try {
         response = await client.auth.signInWithPassword(

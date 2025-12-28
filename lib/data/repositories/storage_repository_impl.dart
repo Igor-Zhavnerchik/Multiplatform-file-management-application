@@ -347,8 +347,8 @@ class StorageRepositoryImpl extends StorageRepository {
   }
 
   @override
-  Future<Result<void>> createUserSaveState({required UserEntity user}) async {
-    var result = ensureRootExists(userId: user.id);
+  Future<Result<void>> createUserSaveState() async {
+    var result = ensureRootExists();
     return result;
   }
 
@@ -366,14 +366,14 @@ class StorageRepositoryImpl extends StorageRepository {
   }
 
   @override
-  Future<Result<void>> ensureRootExists({required String userId}) async {
-    var result = await getRootFolder(ownerId: userId);
+  Future<Result<void>> ensureRootExists() async {
+    var result = await getRootFolder(ownerId: currentUserId!);
     if (result.isFailure) {
       debugLog('root not exists. creating root');
       return await createFile(
         id: Uuid().v5(Namespace.nil.value, ''),
         parentId: null,
-        ownerId: userId,
+        ownerId: currentUserId!,
         name: 'Storage',
         parentDepth: -1,
         isFolder: true,

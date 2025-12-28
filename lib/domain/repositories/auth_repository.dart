@@ -2,7 +2,7 @@ import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/domain/entities/user_entity.dart';
 
 abstract class AuthRepository {
-  Future<UserEntity?> getCurrentUser();
+  UserEntity? getCurrentUser();
   Future<Result<UserEntity>> signIn({
     required String email,
     required String password,

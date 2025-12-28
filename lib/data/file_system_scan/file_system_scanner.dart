@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/utility/storage_path_service.dart';
+import 'package:cross_platform_project/core/services/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/local/local_file_id_service.dart/local_file_id_service.dart';
 
 sealed class FSEntry {

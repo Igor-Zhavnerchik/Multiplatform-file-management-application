@@ -7,11 +7,11 @@ import 'package:cross_platform_project/data/file_system_scan/fs_scan_handler.dar
 import 'package:cross_platform_project/data/file_system_scan/fs_scanner_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/providers/storage_operations_providers.dart';
-import 'package:cross_platform_project/domain/use_cases/copy_file_use_case.dart';
-import 'package:cross_platform_project/domain/use_cases/create_file_use_case.dart';
-import 'package:cross_platform_project/domain/use_cases/delete_file_use_case.dart';
-import 'package:cross_platform_project/domain/use_cases/sync_start_use_case.dart';
-import 'package:cross_platform_project/domain/use_cases/update_file_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/crud_operations/copy_file_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/crud_operations/create_file_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/crud_operations/delete_file_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/utils/sync_start_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/crud_operations/update_file_use_case.dart';
 import 'package:cross_platform_project/presentation/providers/home_view_model_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

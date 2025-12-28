@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:cross_platform_project/core/utility/storage_path_service.dart';
+import 'package:cross_platform_project/core/services/storage_path_service.dart';
 
 class FileSystemWatcher {
   FileSystemWatcher({required this.pathService});

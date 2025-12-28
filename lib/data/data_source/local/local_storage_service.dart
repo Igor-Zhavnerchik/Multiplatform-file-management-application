@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:cross_platform_project/core/utility/storage_path_service.dart';
+import 'package:cross_platform_project/core/services/storage_path_service.dart';
 
 class LocalStorageService {
   final StoragePathService pathService;

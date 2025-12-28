@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/core/utility/safe_call.dart';
-import 'package:cross_platform_project/core/utility/storage_path_service.dart';
+import 'package:cross_platform_project/core/services/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_database_data_source.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_storage_data_source.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
@@ -54,12 +54,7 @@ class RemoteDataSource {
     return await safeCall(() async {
       if (!model.isFolder) {
         await storage.uploadFile(
-          file: File(
-            await pathService.getLocalPath(
-              fileId: model.id,
-              userId: model.ownerId,
-            ),
-          ),
+          file: File(await pathService.getLocalPath(fileId: model.id)),
           path: pathService.getRemotePath(
             userId: model.ownerId,
             fileId: model.id,

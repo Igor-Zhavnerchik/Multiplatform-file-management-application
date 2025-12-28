@@ -3,10 +3,17 @@ import 'package:cross_platform_project/data/data_source/local/database/dao/files
 import 'package:path/path.dart' as p;
 
 class StoragePathService {
-  final String appRootPath;
+  late final String appRootPath;
   final FilesDao filesTable;
+  late final String currentUserId;
 
-  StoragePathService(this.appRootPath, this.filesTable);
+  StoragePathService({required this.filesTable});
+
+  void init({required String currentUserId, required String appRootPath}) {
+    this.currentUserId = currentUserId;
+    this.appRootPath = appRootPath;
+    debugLog('StoragePathService initialized with userId: $currentUserId');
+  }
 
   String getRoot() {
     return p.join(appRootPath, 'users');
@@ -18,12 +25,6 @@ class StoragePathService {
 
   String toLocalPath(String path) {
     return normalize(path);
-  }
-
-  @deprecated
-  String toRemotePath(String path) {
-    var normalized = normalize(path, forRemote: true);
-    return normalized.replaceFirst(RegExp(r'^/+'), '');
   }
 
   @deprecated
@@ -54,19 +55,13 @@ class StoragePathService {
     return 'users/$userId/storage/$fileId';
   }
 
-  Future<String> getLocalPath({
-    required String? fileId,
-    required String userId,
-  }) async {
+  Future<String> getLocalPath({required String? fileId}) async {
     if (fileId == null) {
-      return p.join(appRootPath, 'users', userId);
+      return p.join(appRootPath, 'users', currentUserId);
     }
 
     return p.join(
-      await getLocalPath(
-        fileId: await filesTable.getParentIdbyId(fileId),
-        userId: userId,
-      ),
+      await getLocalPath(fileId: await filesTable.getParentIdbyId(fileId)),
       await filesTable.getNameById(fileId),
     );
   }
@@ -92,8 +87,6 @@ class StoragePathService {
 
   Future<List<String>> getUsersStorageDirectories() async {
     final users = await filesTable.getAllUserIds();
-    return users
-        .map((userId) => p.join(appRootPath, 'users', userId))
-        .toList();
+    return users.map((userId) => p.join(appRootPath, 'users', userId)).toList();
   }
 }

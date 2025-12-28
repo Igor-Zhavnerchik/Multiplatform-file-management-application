@@ -8,11 +8,14 @@ class UserRegistrationUseCase {
 
   UserRegistrationUseCase({required this.auth, required this.storage});
 
-  Future<Result<void>> call({required String email, required String password}) async {
-    final userResult = await auth.registerUser(email: email, password: password);
-    if(userResult.isSuccess){
-      await storage.createUserSaveState(user: (userResult as Success).data);
-    }
+  Future<Result<void>> call({
+    required String email,
+    required String password,
+  }) async {
+    final userResult = await auth.registerUser(
+      email: email,
+      password: password,
+    );
     return userResult;
   }
 }
