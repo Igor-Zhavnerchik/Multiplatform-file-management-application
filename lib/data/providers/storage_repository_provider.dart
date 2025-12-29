@@ -1,4 +1,5 @@
 import 'package:cross_platform_project/data/providers/file_model_mapper_provider.dart';
+import 'package:cross_platform_project/data/providers/uuid_generation_service_provider.dart';
 import 'package:cross_platform_project/data/repositories/storage_repository_impl.dart';
 import 'package:cross_platform_project/data/sync/providers/sync_providers.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
@@ -14,6 +15,7 @@ final storageRepositoryProvider = Provider<StorageRepository>((ref) {
   final syncProcessor = ref.watch(syncProcessorProvider);
   final syncStatusManager = ref.watch(syncStatusManagerProvider);
   final mapper = ref.watch(fileModelMapperProvider);
+  final uuidService = ref.watch(uuidGenerationServiceProvider);
 
   return StorageRepositoryImpl(
     client: client,
@@ -23,5 +25,6 @@ final storageRepositoryProvider = Provider<StorageRepository>((ref) {
     syncProcessor: syncProcessor,
     syncStatusManager: syncStatusManager,
     mapper: mapper,
+    uuidService: uuidService,
   );
 });

@@ -27,6 +27,7 @@ class RemoteDatabaseDataSource {
   }
 
   Future<void> uploadMetadata({required Map<String, dynamic> metadata}) async {
+    debugLog('updating metadata for ${metadata['name']}');
     var res = await client
         .from(fileMetadataTable)
         .upsert(metadata, onConflict: 'id')

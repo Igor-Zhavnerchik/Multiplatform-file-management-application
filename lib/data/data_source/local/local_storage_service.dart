@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cross_platform_project/core/services/storage_path_service.dart';
 
@@ -15,19 +14,19 @@ class LocalStorageService {
 
   Future<void> saveBytes({
     required String path,
-    required Uint8List bytes,
+    required Stream<List<int>> bytes,
   }) async {
     var file = getEntity(path: path, isFolder: false) as File;
     if (!await file.exists()) {
       await file.create(recursive: true);
     }
-    await file.writeAsBytes(bytes);
+    await file.openWrite(mode: FileMode.write).addStream(bytes);
   }
 
-  Future<Uint8List> getBytes({required String path}) async {
+  Future<Stream<List<int>>> getBytes({required String path}) async {
     var file = getEntity(path: path, isFolder: false) as File;
     if (await file.exists()) {
-      return await file.readAsBytes();
+      return file.openRead();
     } else {
       throw Exception('file not exists path: $path');
     }

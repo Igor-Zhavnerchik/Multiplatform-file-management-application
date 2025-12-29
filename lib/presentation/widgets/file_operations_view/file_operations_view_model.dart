@@ -1,7 +1,8 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/core/providers/settings_service_provider.dart';
+import 'package:cross_platform_project/core/services/settings_service.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/file_system_scan/fs_scan_handler.dart';
 import 'package:cross_platform_project/data/file_system_scan/fs_scanner_providers.dart';
@@ -10,56 +11,68 @@ import 'package:cross_platform_project/domain/providers/storage_operations_provi
 import 'package:cross_platform_project/domain/use_cases/crud_operations/copy_file_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/crud_operations/create_file_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/crud_operations/delete_file_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/crud_operations/rename_file_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/utils/pick_existing_files_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/utils/sync_start_use_case.dart';
-import 'package:cross_platform_project/domain/use_cases/crud_operations/update_file_use_case.dart';
 import 'package:cross_platform_project/presentation/providers/home_view_model_provider.dart';
-import 'package:file_picker/file_picker.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-enum FileOperation { delete, create }
+class FileCreateRequest {
+  final String? localPath;
+  final Stream<List<int>>? bytes;
+  final String name;
+  final bool isFolder;
+  final bool downloadEnabled;
+  final bool syncEnabled;
 
-class FileOperationDTO {
-  final FileEntity selectedFile;
-  final FileOperation fileOperation;
+  FileCreateRequest({
+    required this.name,
+    this.localPath,
+    this.bytes,
+    required this.isFolder,
+    required this.downloadEnabled,
+    required this.syncEnabled,
+  });
 
-  FileOperationDTO({required this.selectedFile, required this.fileOperation});
+  FileCreateRequest copyWith({
+    String? localPath,
+    Stream<List<int>>? bytes,
+    String? name,
+    bool? isFolder,
+    bool? downloadEnabled,
+    bool? syncEnabled,
+  }) {
+    return FileCreateRequest(
+      name: name ?? this.name,
+      localPath: localPath ?? this.localPath,
+      bytes: bytes ?? this.bytes,
+      isFolder: isFolder ?? this.isFolder,
+      downloadEnabled: downloadEnabled ?? this.downloadEnabled,
+      syncEnabled: syncEnabled ?? this.syncEnabled,
+    );
+  }
 }
 
 class FileOperationsState {
-  final String newFileName;
-  final String newFileLocalPath;
-  final bool newFileSyncEnabled;
-  final bool newFileDownloadEnabled;
-  final bool newFileIsFolder;
+  final List<FileCreateRequest> pendingCreateRequests;
   final FileEntity? copyFrom;
   final bool? isCut;
 
   FileOperationsState({
-    this.newFileName = '',
-    this.newFileLocalPath = '',
-    this.newFileSyncEnabled = true,
-    this.newFileDownloadEnabled = true,
-    this.newFileIsFolder = false,
+    this.pendingCreateRequests = const [],
     this.copyFrom,
     this.isCut,
   });
 
   FileOperationsState copyWith({
-    String? newFileName,
-    String? newFileLocalPath,
-    bool? newFileSyncEnabled,
-    bool? newFileDownloadEnabled,
-    bool? newFileIsFolder,
+    List<FileCreateRequest>? pendingCreateRequests,
     FileEntity? copyFrom,
     bool? isCut,
   }) {
     return FileOperationsState(
-      newFileName: newFileName ?? this.newFileName,
-      newFileLocalPath: newFileLocalPath ?? this.newFileLocalPath,
-      newFileSyncEnabled: newFileSyncEnabled ?? this.newFileSyncEnabled,
-      newFileDownloadEnabled:
-          newFileDownloadEnabled ?? this.newFileDownloadEnabled,
-      newFileIsFolder: newFileIsFolder ?? this.newFileIsFolder,
+      pendingCreateRequests:
+          pendingCreateRequests ?? this.pendingCreateRequests,
       copyFrom: copyFrom ?? this.copyFrom,
       isCut: isCut ?? this.isCut,
     );
@@ -69,49 +82,45 @@ class FileOperationsState {
 class FileOperationsViewModel extends Notifier<FileOperationsState> {
   late final CreateFileUseCase _createFileUseCase;
   late final DeleteFileUseCase _deleteFileUseCase;
-  late final UpdateFileUseCase _updateFileUseCase;
+  late final RenameFileUseCase _renameFileUseCase;
   late final SyncStartUseCase _syncStartUseCase;
   late final CopyFileUseCase _copyFileUseCase;
+  late final PickExistingFilesUseCase _pickExistingFilesUseCase;
   late final FsScanHandler _scanHandler;
+  late final SettingsService _settingsService;
+  FileCreateRequest get emptyRequest => FileCreateRequest(
+    name: '',
+    isFolder: false,
+    syncEnabled: _settingsService.defaultSyncEnabled,
+    downloadEnabled: _settingsService.defaultDownloadEnabled,
+  );
 
   @override
   FileOperationsState build() {
     _createFileUseCase = ref.read(createFileUseCaseProvider);
     _deleteFileUseCase = ref.read(deleteFileUseCaseProvider);
-    _updateFileUseCase = ref.read(updateFileUseCaseProvider);
+    _renameFileUseCase = ref.read(updateFileUseCaseProvider);
     _syncStartUseCase = ref.read(syncStartUseCaseProvider);
     _copyFileUseCase = ref.read(copyFileUseCaseProvider);
+    _pickExistingFilesUseCase = ref.read(pickExistingFilesUseCaseProvider);
+    _settingsService = ref.read(settingsServiceProvider);
     _scanHandler = ref.read(fsScanHandlerProvider);
 
-    return FileOperationsState();
+    return FileOperationsState(pendingCreateRequests: [emptyRequest]);
   }
 
-  Future<void> createFile({required bool? isFolder}) async {
-    if (state.newFileName.isNotEmpty) {
-      debugLog('created ${state.newFileIsFolder ? 'folder' : 'file'}');
-      debugLog('in ${ref.read(homeViewModelProvider).currentFolder?.id}');
+  void _setDefaultCreateRequest() {
+    state = state.copyWith(pendingCreateRequests: [emptyRequest]);
+  }
+
+  Future<void> createFile({required FileEntity parent}) async {
+    if (state.pendingCreateRequests.first.name.isNotEmpty) {
       final result = await _createFileUseCase(
-        parentId: ref.read(homeViewModelProvider).currentFolder?.id,
-        name: state.newFileName,
-        parentDepth: ref.read(homeViewModelProvider).currentFolder?.depth ?? 0,
-        isFolder: isFolder ?? state.newFileIsFolder,
-        fileLocalPath: state.newFileLocalPath,
-        downloadEnabled: state.newFileDownloadEnabled,
-        syncEnabled: state.newFileSyncEnabled,
+        parent: parent,
+        requests: state.pendingCreateRequests,
       );
-      switch (result) {
-        case Failure f:
-          debugLog('${f.message} error: ${f.error} source: ${f.source}');
-        case Success s:
-          debugLog('successfully created ${state.newFileName}');
-      }
-      state.copyWith(
-        newFileLocalPath: '',
-        newFileName: '',
-        newFileIsFolder: null,
-        newFileDownloadEnabled: true,
-        newFileSyncEnabled: true,
-      );
+
+      _setDefaultCreateRequest();
     }
   }
 
@@ -122,32 +131,37 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
     debugLog('in delete file. deleted: $deleted');
   }
 
-  Future<void> updateFile({required FileEntity toUpdate}) async {
-    var updated = await _updateFileUseCase(entity: toUpdate);
-    debugLog('in update file. updated: $updated');
+  Future<void> renameFile({required FileEntity entity}) async {
+    var renameResult = await _renameFileUseCase(
+      entity: entity,
+      newName: state.pendingCreateRequests.first.name,
+    );
+    _setDefaultCreateRequest();
   }
 
   Future<void> setNewFileState({
     String? name,
-    String? path,
     bool? isFolder,
+    bool? downloadEnabled,
+    bool? syncEnabled,
   }) async {
+    final currentRequest = state.pendingCreateRequests.first;
     state = state.copyWith(
-      newFileName: name,
-      newFileLocalPath: path,
-      newFileIsFolder: isFolder,
+      pendingCreateRequests: [
+        currentRequest.copyWith(
+          name: name,
+          isFolder: isFolder,
+          downloadEnabled: downloadEnabled,
+          syncEnabled: syncEnabled,
+        ),
+      ],
     );
   }
 
-  Future<void> getNewFilePath() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
-
-    if (result != null) {
-      await setNewFileState(
-        path: result.files.first.path,
-        name: result.files.first.name,
-        isFolder: Directory(result.files.first.path!).existsSync(),
-      );
+  Future<void> setPickedFiles({required bool pickFolder}) async {
+    final result = await _pickExistingFilesUseCase(pickFolder: pickFolder);
+    if (result.isSuccess) {
+      state = state.copyWith(pendingCreateRequests: (result as Success).data);
     }
   }
 

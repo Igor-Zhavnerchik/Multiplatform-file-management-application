@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/core/utility/safe_call.dart';
@@ -14,12 +12,10 @@ import 'package:cross_platform_project/data/services/hash_service.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:uuid/v4.dart';
 import '../local/local_storage_service.dart';
-import '../local/json_storage.dart';
 
 class LocalDataSource {
   final StoragePathService pathService;
   final LocalStorageService localStorage;
-  final JsonStorage jsonStorage;
   final FilesDao filesTable;
   final FileModelMapper mapper;
   final HashService hashService;
@@ -28,35 +24,13 @@ class LocalDataSource {
   LocalDataSource({
     required this.pathService,
     required this.localStorage,
-    required this.jsonStorage,
     required this.filesTable,
     required this.mapper,
     required this.hashService,
     required this.localFileIdService,
   });
-  /* 
-  Future<Result<void>> saveAsJson({
-    required String path,
-    required Map<String, dynamic> data,
-  }) async {
-    return await safeCall(() async {
-      return await jsonStorage.save(
-        path: pathService.resolve(relPath: path),
-        jsonData: data,
-      );
-    }, source: 'LocalDataSource.saveAsJson');
-  }
 
-  Future<Result<Map<String, dynamic>>> getFromJson({
-    required String path,
-  }) async {
-    return await safeCall(() async {
-      return await jsonStorage.getFromJson(
-        path: pathService.resolve(relPath: path),
-      );
-    }, source: 'LocalDataSource.getFromJson');
-  } */
-
+  //FIXME get rid of waiting
   Future<void> _waitFileCreation({required String path}) async {
     debugLog('waiting for creation of $path');
     for (var i = 0; i < 5; i++) {
@@ -70,7 +44,7 @@ class LocalDataSource {
 
   Future<Result<void>> saveFile({
     required FileModel model,
-    required Uint8List? bytes,
+    required Stream<List<int>>? bytes,
   }) async {
     return await safeCall(() async {
       var savePath = pathService.join(
@@ -87,7 +61,7 @@ class LocalDataSource {
       } else {
         await localStorage.saveBytes(
           path: savePath,
-          bytes: bytes ?? Uint8List(0),
+          bytes: bytes ?? Stream.empty(),
         );
       }
 
@@ -102,7 +76,9 @@ class LocalDataSource {
     }, source: 'LocalDataSource.saveFile');
   }
 
-  Future<Result<Uint8List>> getFileData({required FileModel model}) async {
+  Future<Result<Stream<List<int>>>> getFileData({
+    required FileModel model,
+  }) async {
     return await safeCall(() async {
       return await localStorage.getBytes(
         path: await pathService.getLocalPath(fileId: model.id),
@@ -185,6 +161,9 @@ class LocalDataSource {
 
       model = model.copyWith(
         hash: await _getHash(model: model, filePath: modelPath),
+      );
+      debugLog(
+        'inner update time for ${model.name} at ${model.updatedAt.toIso8601String()}',
       );
       await filesTable.updateFile(model.id, mapper.toUpdate(model));
     }, source: 'LocalDataSource.moveFile');

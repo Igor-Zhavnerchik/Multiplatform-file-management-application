@@ -1,4 +1,3 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/core/utility/safe_call.dart';
 import 'package:cross_platform_project/domain/entities/user_entity.dart';

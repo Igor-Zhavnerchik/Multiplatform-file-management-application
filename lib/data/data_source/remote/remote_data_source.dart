@@ -8,20 +8,20 @@ import 'package:cross_platform_project/data/data_source/remote/remote_database_d
 import 'package:cross_platform_project/data/data_source/remote/remote_storage_data_source.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
-import 'package:cross_platform_project/domain/repositories/auth_repository.dart';
+import 'package:cross_platform_project/data/services/current_user_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RemoteDataSource {
   final RemoteStorageDataSource storage;
   final RemoteDatabaseDataSource database;
   final SupabaseClient client;
-  final AuthRepository auth;
+  final CurrentUserProvider currentUserProvider;
   final StoragePathService pathService;
   final FileModelMapper mapper;
 
   RemoteDataSource({
     required this.client,
-    required this.auth,
+    required this.currentUserProvider,
     required this.storage,
     required this.database,
     required this.pathService,
@@ -34,18 +34,17 @@ class RemoteDataSource {
     return await safeCall(() async {
       return await database.getMetadata(
         getDeleted: getDeleted,
-        userId: (await auth.getCurrentUser())!.id,
+        userId: currentUserProvider.currentUserId!,
       );
     }, source: 'RemoteDataSource.getFileList');
   }
 
-  Future<Result<Uint8List>> downloadFile({required FileModel model}) async {
+  Future<Result<Stream<List<int>>>> downloadFile({
+    required FileModel model,
+  }) async {
     return await safeCall(() async {
       return await storage.downloadFile(
-        path: pathService.getRemotePath(
-          userId: model.ownerId,
-          fileId: model.id,
-        ),
+        path: pathService.getRemotePath(fileId: model.id),
       );
     }, source: 'RemoteDataSource');
   }
@@ -55,10 +54,7 @@ class RemoteDataSource {
       if (!model.isFolder) {
         await storage.uploadFile(
           file: File(await pathService.getLocalPath(fileId: model.id)),
-          path: pathService.getRemotePath(
-            userId: model.ownerId,
-            fileId: model.id,
-          ),
+          path: pathService.getRemotePath(fileId: model.id),
         );
       }
       await database.uploadMetadata(metadata: mapper.toMetadata(model: model));
@@ -85,10 +81,7 @@ class RemoteDataSource {
       } else {
         if (!model.isFolder) {
           await storage.deleteFile(
-            path: pathService.getRemotePath(
-              userId: model.ownerId,
-              fileId: model.id,
-            ),
+            path: pathService.getRemotePath(fileId: model.id),
           );
         }
         await database.deleteMetadata(id: model.id);

@@ -1,18 +1,23 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cross_platform_project/core/converters/bytes_to_stream_converter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RemoteStorageDataSource {
   final SupabaseClient client;
+  final BytesToStreamConverter bytesToStreamConverter;
 
-  RemoteStorageDataSource({required this.client});
+  RemoteStorageDataSource({
+    required this.client,
+    required this.bytesToStreamConverter,
+  });
 
   static const String userFileStorage = 'FileStorage';
 
-  Future<Uint8List> downloadFile({required String path}) async {
+  Future<Stream<List<int>>> downloadFile({required String path}) async {
     final data = await client.storage.from(userFileStorage).download(path);
-    return data;
+    return bytesToStreamConverter.convert(data);
   }
 
   Future<void> uploadFile({required File file, required String path}) async {

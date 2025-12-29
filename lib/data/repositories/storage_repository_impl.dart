@@ -6,14 +6,14 @@ import 'package:cross_platform_project/data/data_source/remote/remote_data_sourc
 
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
+import 'package:cross_platform_project/data/services/uuid_generation_service.dart';
 import 'package:cross_platform_project/data/sync/sync_processor.dart';
 import 'package:cross_platform_project/data/sync/sync_status_manager.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
-import 'package:cross_platform_project/domain/entities/user_entity.dart';
 import 'package:cross_platform_project/domain/repositories/auth_repository.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
+import 'package:cross_platform_project/presentation/widgets/file_operations_view/file_operations_view_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
 
 class StorageRepositoryImpl extends StorageRepository {
   final SupabaseClient client;
@@ -23,6 +23,7 @@ class StorageRepositoryImpl extends StorageRepository {
   final SyncStatusManager syncStatusManager;
   final SyncProcessor syncProcessor;
   final FileModelMapper mapper;
+  final UuidGenerationService uuidService;
   late final String? currentUserId;
   StorageRepositoryImpl({
     required this.client,
@@ -32,6 +33,7 @@ class StorageRepositoryImpl extends StorageRepository {
     required this.syncStatusManager,
     required this.syncProcessor,
     required this.mapper,
+    required this.uuidService,
   });
 
   @override
@@ -220,39 +222,25 @@ class StorageRepositoryImpl extends StorageRepository {
     }
   }
 
-  //FIXME to v7 and centrolize
-  String _generateUuidV4() {
-    return Uuid().v4();
-  }
-
   @override
   Future<Result<void>> createFile({
-    String? id,
-    required String? parentId,
-    required String name,
-    String? fromPath,
-    String? ownerId,
-    int? size,
-    required int parentDepth,
-    String? mimeType,
-    required bool isFolder,
-    required bool syncEnabled,
-    required bool downloadEnabed,
+    required FileEntity? parent,
+    required FileCreateRequest request,
   }) async {
     final newFile = FileModel(
-      id: id ?? _generateUuidV4(),
-      ownerId: ownerId ?? currentUserId!,
-      parentId: parentId,
-      depth: parentDepth + 1,
-      name: name,
-      size: size,
+      id: uuidService.generateId(isRoot: parent == null),
+      ownerId: parent?.ownerId ?? currentUserId!,
+      parentId: parent?.id,
+      depth: parent?.depth ?? 0 + 1,
+      name: request.name,
+      size: null, //FIXME
       hash: null,
-      mimeType: mimeType,
-      isFolder: isFolder,
-      syncEnabled: syncEnabled,
-      downloadEnabled: downloadEnabed,
+      mimeType: null,
+      isFolder: request.isFolder,
+      syncEnabled: request.syncEnabled,
+      downloadEnabled: request.downloadEnabled,
       syncStatus: SyncStatus.created,
-      downloadStatus: fromPath == null
+      downloadStatus: request.localPath == null
           ? DownloadStatus.notDownloaded
           : DownloadStatus.downloaded,
       createdAt: DateTime.now().toUtc(),
@@ -260,13 +248,16 @@ class StorageRepositoryImpl extends StorageRepository {
       deletedAt: null,
     );
     final Result<void> saveResult;
-    if (fromPath != null && fromPath.isNotEmpty) {
+    if (request.localPath != null) {
       saveResult = await localDataSource.saveFromDevice(
         model: newFile,
-        devicePath: fromPath,
+        devicePath: request.localPath!,
       );
     } else {
-      saveResult = await localDataSource.saveFile(model: newFile, bytes: null);
+      saveResult = await localDataSource.saveFile(
+        model: newFile,
+        bytes: request.bytes,
+      );
     }
     if (saveResult.isFailure) {
       debugLog(
@@ -305,12 +296,15 @@ class StorageRepositoryImpl extends StorageRepository {
 
   @override
   Future<Result<void>> updateFile({required FileEntity entity}) async {
-    final model = mapper.fromEntity(entity);
+    var model = mapper.fromEntity(entity);
     await syncStatusManager.updateStatus(
       model: model,
       status: SyncStatus.updatingLocally,
     );
-    final updateResult = await localDataSource.updateFile(model: model);
+    model = model.copyWith(updatedAt: DateTime.now().toUtc());
+    final updateResult = await localDataSource.updateFile(
+      model: model.copyWith(updatedAt: DateTime.now().toUtc()),
+    );
     if (updateResult.isFailure) {
       await syncStatusManager.updateStatus(
         model: model,
@@ -371,14 +365,13 @@ class StorageRepositoryImpl extends StorageRepository {
     if (result.isFailure) {
       debugLog('root not exists. creating root');
       return await createFile(
-        id: Uuid().v5(Namespace.nil.value, ''),
-        parentId: null,
-        ownerId: currentUserId!,
-        name: 'Storage',
-        parentDepth: -1,
-        isFolder: true,
-        syncEnabled: true,
-        downloadEnabed: true,
+        parent: null,
+        request: FileCreateRequest(
+          name: 'Storage',
+          isFolder: true,
+          downloadEnabled: true,
+          syncEnabled: true,
+        ),
       );
     }
     return Success(null);

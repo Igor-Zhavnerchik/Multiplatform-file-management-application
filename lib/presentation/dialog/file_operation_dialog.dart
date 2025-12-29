@@ -1,7 +1,6 @@
 import 'package:cross_platform_project/presentation/providers/file_operations_view_model_provider.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:cross_platform_project/presentation/providers/home_view_model_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum ContextDialogType {
@@ -9,8 +8,9 @@ enum ContextDialogType {
   optionMenu,
   createFile,
   createFolder,
-  addEntity,
-  update,
+  addFiles,
+  addFolder,
+  rename,
   delete,
   copy,
   cut,
@@ -34,20 +34,24 @@ class ContextDialog extends ConsumerWidget {
     return switch (dialog) {
       ContextDialogType.inFolderMenu => InFolderMenu(position: position!),
       ContextDialogType.optionMenu => OptionMenu(position: position!),
-      ContextDialogType.createFile => CreateFileDialog(),
-      ContextDialogType.createFolder => CreateFolderDialog(),
-      ContextDialogType.addEntity => AddEntityDialog(),
-      ContextDialogType.update => UpdateDialog(),
+      ContextDialogType.createFile => CreateDialog(createFolder: false),
+      ContextDialogType.createFolder => CreateDialog(createFolder: true),
+      ContextDialogType.addFiles => AddEntityDialog(addFolder: false),
+      ContextDialogType.addFolder => AddEntityDialog(addFolder: false),
+
+      ContextDialogType.rename => RenameDialog(),
       ContextDialogType.delete => DeleteDialog(),
-      _ => AlertDialog(),
+      _ => AlertDialog(message: "unimplamented popup menu"),
     };
   }
 }
 
 class AlertDialog extends ConsumerWidget {
+  final String? message;
+  AlertDialog({this.message});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return CenteredPopUpMenu(children: [Text('Alert!')]);
+    return CenteredPopUpMenu(children: [Text(message ?? 'Alert!')]);
   }
 }
 
@@ -75,21 +79,13 @@ class DeleteDialog extends ConsumerWidget {
   }
 }
 
-class UpdateDialog extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: implement build
-    throw UnimplementedError();
-  }
-}
-
-class CreateFileDialog extends ConsumerWidget {
+class RenameDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return CenteredPopUpMenu(
       children: [
         TextField(
-          decoration: InputDecoration(labelText: 'File Name: '),
+          decoration: InputDecoration(labelText: 'New Name: '),
           onChanged: (value) => ref
               .read(fileOperationsViewModelProvider.notifier)
               .setNewFileState(name: value),
@@ -98,11 +94,15 @@ class CreateFileDialog extends ConsumerWidget {
         Row(
           children: [
             DialogButton(
-              onPressed: () => ref
-                  .read(fileOperationsViewModelProvider.notifier)
-                  .createFile(isFolder: false),
+              onPressed: () async {
+                await ref
+                    .read(fileOperationsViewModelProvider.notifier)
+                    .renameFile(
+                      entity: ref.read(homeViewModelProvider).selected!,
+                    );
+              },
 
-              text: 'Create',
+              text: 'Rename',
               closeOnApply: true,
             ),
             DialogButton(onPressed: () {}, text: 'Cancel', closeOnApply: true),
@@ -113,13 +113,17 @@ class CreateFileDialog extends ConsumerWidget {
   }
 }
 
-class CreateFolderDialog extends ConsumerWidget {
+class CreateDialog extends ConsumerWidget {
+  final bool createFolder;
+  CreateDialog({required this.createFolder});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return CenteredPopUpMenu(
       children: [
         TextField(
-          decoration: InputDecoration(labelText: 'Folder Name: '),
+          decoration: InputDecoration(
+            labelText: '${createFolder ? 'Folder' : 'File'} Name: ',
+          ),
           onChanged: (value) => ref
               .read(fileOperationsViewModelProvider.notifier)
               .setNewFileState(name: value),
@@ -128,9 +132,17 @@ class CreateFolderDialog extends ConsumerWidget {
         Row(
           children: [
             DialogButton(
-              onPressed: () => ref
-                  .read(fileOperationsViewModelProvider.notifier)
-                  .createFile(isFolder: true),
+              onPressed: () async {
+                await ref
+                    .read(fileOperationsViewModelProvider.notifier)
+                    .setNewFileState(isFolder: createFolder);
+                ref
+                    .read(fileOperationsViewModelProvider.notifier)
+                    .createFile(
+                      parent: ref.read(homeViewModelProvider).currentFolder!,
+                    );
+              },
+
               text: 'Create',
               closeOnApply: true,
             ),
@@ -143,6 +155,8 @@ class CreateFolderDialog extends ConsumerWidget {
 }
 
 class AddEntityDialog extends ConsumerWidget {
+  final bool addFolder;
+  AddEntityDialog({required this.addFolder});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(fileOperationsViewModelProvider.notifier);
@@ -153,11 +167,17 @@ class AddEntityDialog extends ConsumerWidget {
             DialogButton(
               onPressed: () => ref
                   .watch(fileOperationsViewModelProvider.notifier)
-                  .getNewFilePath(),
+                  .setPickedFiles(pickFolder: addFolder),
               text: 'Pick Path',
             ),
-            Text(
-              'path: ${ref.read(fileOperationsViewModelProvider).newFileLocalPath}',
+            Column(
+              children: [
+                for (var request
+                    in ref
+                        .watch(fileOperationsViewModelProvider)
+                        .pendingCreateRequests)
+                  Text(request.name),
+              ],
             ),
           ],
         ),
@@ -167,7 +187,9 @@ class AddEntityDialog extends ConsumerWidget {
             DialogButton(
               onPressed: () => ref
                   .read(fileOperationsViewModelProvider.notifier)
-                  .createFile(isFolder: false),
+                  .createFile(
+                    parent: ref.read(homeViewModelProvider).currentFolder!,
+                  ),
               text: 'Add',
               closeOnApply: true,
             ),
@@ -190,7 +212,7 @@ class OptionMenu extends ConsumerWidget {
       position: position,
       children: [
         DialogOption(dialog: ContextDialogType.delete, text: 'Delete'),
-        DialogOption(dialog: ContextDialogType.update, text: 'Edit'),
+        DialogOption(dialog: ContextDialogType.rename, text: 'Rename'),
         DialogOption(
           dialog: ContextDialogType.copy,
           text: 'Copy',
@@ -225,7 +247,8 @@ class InFolderMenu extends ConsumerWidget {
           dialog: ContextDialogType.createFolder,
           text: 'Create Folder',
         ),
-        DialogOption(dialog: ContextDialogType.addEntity, text: 'Add existing'),
+        DialogOption(dialog: ContextDialogType.addFiles, text: 'Add Files'),
+        DialogOption(dialog: ContextDialogType.addFolder, text: 'Add Folder'),
         DialogOption(
           dialog: ContextDialogType.paste,
           text: 'Paste',

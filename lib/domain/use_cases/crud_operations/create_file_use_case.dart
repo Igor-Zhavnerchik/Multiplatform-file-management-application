@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
+import 'package:cross_platform_project/presentation/widgets/file_operations_view/file_operations_view_model.dart';
 
 class CreateFileUseCase {
   final StorageRepository repository;
@@ -7,22 +11,22 @@ class CreateFileUseCase {
   CreateFileUseCase({required this.repository});
 
   Future<Result<void>> call({
-    required String? parentId,
-    required String name,
-    required int parentDepth,
-    required String? fileLocalPath,
-    required bool syncEnabled,
-    required bool downloadEnabled,
-    required isFolder,
+    required FileEntity parent,
+    required List<FileCreateRequest> requests,
   }) async {
-    return await repository.createFile(
-      parentId: parentId,
-      name: name,
-      parentDepth: parentDepth,
-      isFolder: isFolder,
-      fromPath: fileLocalPath,
-      syncEnabled: syncEnabled,
-      downloadEnabed: downloadEnabled,
-    );
+    Result result = Success(null);
+    for(var request in requests) {
+
+      result = await repository.createFile(
+        parent: parent,
+        request: request
+      );
+
+      if (result is Failure) {
+        break;
+      }
+    }
+
+    return result;
   }
 }

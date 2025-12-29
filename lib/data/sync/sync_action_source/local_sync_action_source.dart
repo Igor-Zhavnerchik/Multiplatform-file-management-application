@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
@@ -22,7 +20,9 @@ class LocalSyncActionSource extends SyncActionSource {
   }
 
   @override
-  Future<Result<Uint8List?>> readFile({required FileModel model}) async {
+  Future<Result<Stream<List<int>>?>> readFile({
+    required FileModel model,
+  }) async {
     if (model.isFolder) {
       return Success(null);
     }
@@ -32,7 +32,7 @@ class LocalSyncActionSource extends SyncActionSource {
   @override
   Future<Result<void>> writeFile({
     required FileModel model,
-    Uint8List? data,
+    Stream<List<int>>? data,
   }) async {
     return await localDataSource.saveFile(model: model, bytes: data);
   }

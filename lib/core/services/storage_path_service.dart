@@ -51,8 +51,8 @@ class StoragePathService {
     bool forRemote = false,
   }) => join(parent: parent, child: getName(fromPath), forRemote: forRemote);
 
-  String getRemotePath({required String userId, required fileId}) {
-    return 'users/$userId/storage/$fileId';
+  String getRemotePath({required String fileId}) {
+    return 'users/$currentUserId/storage/$fileId';
   }
 
   Future<String> getLocalPath({required String? fileId}) async {
