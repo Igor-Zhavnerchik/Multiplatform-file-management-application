@@ -41,7 +41,7 @@ class ContextDialog extends ConsumerWidget {
 
       ContextDialogType.rename => RenameDialog(),
       ContextDialogType.delete => DeleteDialog(),
-      _ => AlertDialog(message: "unimplamented popup menu"),
+      _ => AlertDialog(message: "unimplemented popup menu"),
     };
   }
 }
@@ -79,16 +79,38 @@ class DeleteDialog extends ConsumerWidget {
   }
 }
 
-class RenameDialog extends ConsumerWidget {
+class RenameDialog extends ConsumerStatefulWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends ConsumerState<RenameDialog> {
+  String? newName;
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    _controller = TextEditingController(
+      text: ref.read(homeViewModelProvider).selected!.name,
+    );
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return CenteredPopUpMenu(
       children: [
         TextField(
           decoration: InputDecoration(labelText: 'New Name: '),
-          onChanged: (value) => ref
-              .read(fileOperationsViewModelProvider.notifier)
-              .setNewFileState(name: value),
+          onChanged: (value) => newName = value,
+
+          controller: _controller,
         ),
 
         Row(
@@ -99,6 +121,7 @@ class RenameDialog extends ConsumerWidget {
                     .read(fileOperationsViewModelProvider.notifier)
                     .renameFile(
                       entity: ref.read(homeViewModelProvider).selected!,
+                      newName: newName!,
                     );
               },
 
@@ -166,7 +189,7 @@ class AddEntityDialog extends ConsumerWidget {
           children: [
             DialogButton(
               onPressed: () => ref
-                  .watch(fileOperationsViewModelProvider.notifier)
+                  .read(fileOperationsViewModelProvider.notifier)
                   .setPickedFiles(pickFolder: addFolder),
               text: 'Pick Path',
             ),

@@ -1,16 +1,21 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/data/providers/file_stream_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/providers/storage_operations_providers.dart';
 import 'package:cross_platform_project/domain/use_cases/utils/get_root_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/utils/open_file_use_case.dart';
 import 'package:cross_platform_project/presentation/dialog/file_operation_dialog.dart';
+import 'package:cross_platform_project/presentation/providers/history_navigator_provider.dart';
+import 'package:cross_platform_project/presentation/services/history_navigator.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class HomeViewState {
   bool openDialog;
+  bool canGoBack;
+  bool canGoForward;
   ContextDialogType? dialog;
   Offset? dialogPosition;
 
@@ -23,6 +28,8 @@ class HomeViewState {
     required this.openDialog,
     this.dialog,
     this.dialogPosition,
+    this.canGoBack = false,
+    this.canGoForward = false,
   });
 
   HomeViewState copyWith({
@@ -30,6 +37,8 @@ class HomeViewState {
     FileEntity? currentFolder,
     ContextDialogType? dialog,
     bool? openDialog,
+    bool? canGoBack,
+    bool? canGoForward,
     Offset? dialogPosition,
   }) {
     return HomeViewState(
@@ -37,6 +46,8 @@ class HomeViewState {
       currentFolder: currentFolder ?? this.currentFolder,
       dialog: dialog ?? this.dialog,
       openDialog: openDialog ?? this.openDialog,
+      canGoBack: canGoBack ?? this.canGoBack,
+      canGoForward: canGoForward ?? this.canGoForward,
       dialogPosition: dialogPosition ?? this.dialogPosition,
     );
   }
@@ -45,14 +56,24 @@ class HomeViewState {
 class HomeViewModel extends Notifier<HomeViewState> {
   late final GetRootUseCase _getRootUseCase;
   late final OpenFileUseCase _openFileUseCase;
+  late final HistoryNavigator _historyNavigator;
 
   @override
   HomeViewState build() {
     _getRootUseCase = ref.read(getRootUseCaseProvider);
     _openFileUseCase = ref.read(openFileUseCaseProvider);
-    ref
-        .read(onlyFoldersListProvider(null))
-        .whenData((data) => setCurrentFolder(data.first));
+    _historyNavigator = ref.read(historyNavigatorProvider);
+    ref.listen<AsyncValue<List<FileEntity>>>(onlyFoldersListProvider(null), (
+      prev,
+      next,
+    ) {
+      next.whenData((data) {
+        if (state.currentFolder == null && data.isNotEmpty) {
+          setCurrentFolder(data.first);
+          _historyNavigator.initHistory(data.first);
+        }
+      });
+    });
     return HomeViewState(openDialog: false);
   }
 
@@ -68,10 +89,39 @@ class HomeViewModel extends Notifier<HomeViewState> {
 
   Future<void> openElement(FileEntity element) async {
     if (element.isFolder) {
-      setCurrentFolder(element);
-      setSelected(element);
+      _historyNavigator.push(element);
+      await setCurrentFolder(element);
+      await setSelected(element);
+      state = state.copyWith(
+        canGoBack: _historyNavigator.canGoBack,
+        canGoForward: _historyNavigator.canGoForward,
+      );
     } else {
       await _openFileUseCase.call(file: element);
+    }
+  }
+
+  Future<void> goBack() async {
+    final previous = _historyNavigator.goBack();
+    debugLog('Go back to: ${previous?.name}');
+    if (previous != null) {
+      await setCurrentFolder(previous);
+      state = state.copyWith(
+        canGoBack: _historyNavigator.canGoBack,
+        canGoForward: _historyNavigator.canGoForward,
+      );
+    }
+  }
+
+  Future<void> goForward() async {
+    final next = _historyNavigator.goForward();
+    debugLog('Go forward to: ${next?.name}');
+    if (next != null) {
+      await setCurrentFolder(next);
+      state = state.copyWith(
+        canGoBack: _historyNavigator.canGoBack,
+        canGoForward: _historyNavigator.canGoForward,
+      );
     }
   }
 

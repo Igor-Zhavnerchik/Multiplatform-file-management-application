@@ -8,7 +8,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     routes: [
       GoRoute(path: '/', builder: (context, state) => Placeholder()),
-      GoRoute(path: '/home', builder: (context, state) => Homescreen()),
+      GoRoute(path: '/home', builder: (context, state) => HomeScreen()),
       GoRoute(path: '/auth', builder: (context, state) => AuthScreen()),
     ],
   );

@@ -7,12 +7,15 @@ import 'package:cross_platform_project/presentation/providers/home_view_model_pr
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class Homescreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = Theme.of(context);
-    var homeNotifier = ref.read(homeViewModelProvider.notifier);
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
 
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final homeNotifier = ref.read(homeViewModelProvider.notifier);
     ref.listen(homeViewModelProvider, (prev, next) {
       if (next.openDialog) {
         showDialog(
@@ -30,33 +33,34 @@ class Homescreen extends ConsumerWidget {
         });
       }
     });
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 600) {
+          return MobileHomeScreen();
+        } else {
+          return DesktopHomeScreen();
+        }
+      },
+    );
+  }
+}
 
+class MobileHomeScreen extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(appBar: NavigationPanel(), body: FileView());
+  }
+}
+
+class DesktopHomeScreen extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: theme.colorScheme.secondary,
-
-        actions: [
-          ElevatedButton(
-            onPressed: () =>
-                ref.read(fileOperationsViewModelProvider.notifier).startScan(),
-            child: Text('Scan FS'),
-          ),
-
-          ElevatedButton(
-            onPressed: () =>
-                ref.read(fileOperationsViewModelProvider.notifier).startSync(),
-            child: Text('Syncronize'),
-          ),
-
-          ElevatedButton(
-            onPressed: () => ref.read(authViewModelProvider.notifier).signOut(),
-            child: Text('Sign Out'),
-          ),
-        ],
-      ),
+      appBar: NavigationPanel(),
       body: Row(
         children: [
-          FolderView(),
+          SizedBox(width: 250, child: FolderView()),
           Expanded(child: FileView()),
         ],
       ),
@@ -72,9 +76,7 @@ class FileView extends ConsumerWidget {
     if (currentFolder == null) {
       return Text('Loading...');
     }
-    final childrenStream = ref.watch(
-      childrenListProvider(currentFolder.id.isEmpty ? null : currentFolder.id),
-    );
+    final childrenStream = ref.watch(childrenListProvider(currentFolder.id));
     return childrenStream.when(
       data: (children) => GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -85,14 +87,10 @@ class FileView extends ConsumerWidget {
                 ContextDialogType.inFolderMenu,
                 dialogPosition: details.globalPosition,
               );
-          for (var file in children) {
-            print(file.name);
-          }
-          print('');
         },
         child: GridView(
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 100,
+            maxCrossAxisExtent: 250,
           ),
           children: [
             for (var file in children)
@@ -200,14 +198,20 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
                 ),
               ),
               Icon(Icons.folder),
-              GestureDetector(
-                onTap: () {
-                  ref
-                      .read(homeViewModelProvider.notifier)
-                      .openElement(widget.folder);
-                },
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    ref
+                        .read(homeViewModelProvider.notifier)
+                        .openElement(widget.folder);
+                  },
 
-                child: Text(widget.folder.name),
+                  child: Text(
+                    widget.folder.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
             ],
           ),
@@ -227,6 +231,62 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
       ),
       error: (error, stackTrace) => Text('Error: $error'),
       loading: () => CircularProgressIndicator(),
+    );
+  }
+}
+
+class NavigationControls extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(homeViewModelProvider);
+    final notifier = ref.read(homeViewModelProvider.notifier);
+    return Row(
+      children: [
+        IconButton(
+          onPressed: state.canGoBack ? () => notifier.goBack() : null,
+          icon: Icon(Icons.arrow_back),
+          disabledColor: Colors.grey,
+        ),
+        IconButton(
+          onPressed: state.canGoForward ? () => notifier.goForward() : null,
+          icon: Icon(Icons.arrow_forward),
+          disabledColor: Colors.grey,
+        ),
+      ],
+    );
+  }
+}
+
+class NavigationPanel extends ConsumerWidget implements PreferredSizeWidget {
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return AppBar(
+      leading: NavigationControls(),
+      leadingWidth: 96,
+      backgroundColor: theme.colorScheme.secondary,
+
+      actions: [
+        ElevatedButton(
+          onPressed: () =>
+              ref.read(fileOperationsViewModelProvider.notifier).startScan(),
+          child: Text('Scan FS'),
+        ),
+
+        ElevatedButton(
+          onPressed: () =>
+              ref.read(fileOperationsViewModelProvider.notifier).startSync(),
+          child: Text('Syncronize'),
+        ),
+
+        ElevatedButton(
+          onPressed: () => ref.read(authViewModelProvider.notifier).signOut(),
+          child: Text('Sign Out'),
+        ),
+      ],
     );
   }
 }

@@ -131,10 +131,13 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
     debugLog('in delete file. deleted: $deleted');
   }
 
-  Future<void> renameFile({required FileEntity entity}) async {
+  Future<void> renameFile({
+    required FileEntity entity,
+    required String newName,
+  }) async {
     var renameResult = await _renameFileUseCase(
       entity: entity,
-      newName: state.pendingCreateRequests.first.name,
+      newName: newName,
     );
     _setDefaultCreateRequest();
   }
