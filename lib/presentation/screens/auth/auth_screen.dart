@@ -17,7 +17,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       showLogin = !showLogin;
     });
   }
-
+  /* 
   bool _called = false;
   @override
   void didChangeDependencies() {
@@ -33,7 +33,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       loginVM.setSaveOnThisDevice(false);
       await loginVM.tryLogin();
     });
-  }
+  } */
 
   @override
   Widget build(BuildContext context) {
@@ -142,18 +142,17 @@ class RegistrationForm extends ConsumerWidget {
 class SaveLoginCheckBox extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    bool saveOnThisDevice = false;
-    ref
-        .watch(authViewModelProvider)
-        .whenData((state) => saveOnThisDevice = state.saveOnThisDevice);
+    bool saveOnThisDevice = ref.watch(authViewModelProvider).saveOnThisDevice;
     return Row(
       children: [
         Text('Remember Me '),
         Checkbox(
           value: saveOnThisDevice,
-          onChanged: (value) => ref
-              .read(authViewModelProvider.notifier)
-              .setSaveOnThisDevice(value!),
+          onChanged: (value) {
+            ref
+                .read(authViewModelProvider.notifier)
+                .setSaveOnThisDevice(value!);
+          },
         ),
       ],
     );

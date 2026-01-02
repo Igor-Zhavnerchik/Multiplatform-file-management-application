@@ -6,7 +6,7 @@ import 'package:cross_platform_project/data/file_system_scan/reconciler.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
-import 'package:uuid/v4.dart';
+import 'package:uuid/v7.dart';
 
 class DbUpdater {
   DbUpdater({
@@ -25,10 +25,10 @@ class DbUpdater {
       switch (change) {
         case DbCreate():
           debugLog('creating ${change.fs.path} from fs');
-          filesTable.insertFile(
+          await filesTable.insertFile(
             mapper.toInsert(
               FileModel(
-                id: UuidV4().generate(),
+                id: UuidV7().generate(),
                 ownerId: await pathService.getOwnerIdByPath(
                   path: change.fs.path,
                 ),
@@ -61,12 +61,15 @@ class DbUpdater {
           );
         case DbDelete():
           debugLog('deleting ${change.file.name} from fs');
-          filesTable.updateFile(
+          await filesTable.updateFile(
             change.file.id,
             mapper.toUpdate(
               mapper
                   .fromDbFile(change.file)
-                  .copyWith(syncStatus: SyncStatus.deleted),
+                  .copyWith(
+                    syncStatus: SyncStatus.deleted,
+                    deletedAt: DateTime.now().toUtc(),
+                  ),
             ),
           );
         case DbUpdate():

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
@@ -15,12 +13,8 @@ class CreateFileUseCase {
     required List<FileCreateRequest> requests,
   }) async {
     Result result = Success(null);
-    for(var request in requests) {
-
-      result = await repository.createFile(
-        parent: parent,
-        request: request
-      );
+    for (var request in requests) {
+      result = await repository.createFile(parent: parent, request: request);
 
       if (result is Failure) {
         break;

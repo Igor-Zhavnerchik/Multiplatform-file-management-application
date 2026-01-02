@@ -9,10 +9,12 @@ class StoragePathService {
 
   StoragePathService({required this.filesTable});
 
-  void init({required String currentUserId, required String appRootPath}) {
-    this.currentUserId = currentUserId;
+  void init({required String appRootPath, required String userId}) {
     this.appRootPath = appRootPath;
-    debugLog('StoragePathService initialized with userId: $currentUserId');
+    currentUserId = userId;
+    debugLog(
+      'Path Service INIT with user id: $userId, root: ${this.appRootPath}',
+    );
   }
 
   String getRoot() {
@@ -57,6 +59,7 @@ class StoragePathService {
 
   Future<String> getLocalPath({required String? fileId}) async {
     if (fileId == null) {
+      debugLog('root: $appRootPath');
       return p.join(appRootPath, 'users', currentUserId);
     }
 

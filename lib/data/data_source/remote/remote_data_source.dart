@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/core/utility/safe_call.dart';
 import 'package:cross_platform_project/core/services/storage_path_service.dart';
@@ -8,20 +8,19 @@ import 'package:cross_platform_project/data/data_source/remote/remote_database_d
 import 'package:cross_platform_project/data/data_source/remote/remote_storage_data_source.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
-import 'package:cross_platform_project/data/services/current_user_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RemoteDataSource {
   final RemoteStorageDataSource storage;
   final RemoteDatabaseDataSource database;
   final SupabaseClient client;
-  final CurrentUserProvider currentUserProvider;
+  final String? userId;
   final StoragePathService pathService;
   final FileModelMapper mapper;
 
   RemoteDataSource({
     required this.client,
-    required this.currentUserProvider,
+    required this.userId,
     required this.storage,
     required this.database,
     required this.pathService,
@@ -32,9 +31,13 @@ class RemoteDataSource {
     bool getDeleted = false,
   }) async {
     return await safeCall(() async {
+      if (userId == null) {
+        throw Exception('no user!');
+      }
+      debugLog('getting files from supabase for user id: $userId');
       return await database.getMetadata(
         getDeleted: getDeleted,
-        userId: currentUserProvider.currentUserId!,
+        userId: userId!,
       );
     }, source: 'RemoteDataSource.getFileList');
   }

@@ -1,14 +1,15 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/core/utility/safe_call.dart';
 import 'package:cross_platform_project/domain/entities/user_entity.dart';
 import 'package:cross_platform_project/domain/repositories/auth_repository.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:cross_platform_project/data/data_source/auth_data_storage.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final SupabaseClient client;
-  final AuthDataStorage storage;
+  final FlutterSecureStorage storage;
 
   AuthRepositoryImpl({required this.client, required this.storage});
 
@@ -20,38 +21,39 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<bool> resumeSession() async {
+    return await storage.read(key: 'saveOnThisDevice') == 'true';
+  }
+
+  @override
   Future<Result<UserEntity>> signIn({
     required String email,
     required String password,
     required bool saveOnThisDevice,
   }) async {
     final AuthResponse response;
-    UserEntity? user = getCurrentUser();
-    if (user == null) {
-      try {
-        response = await client.auth.signInWithPassword(
-          email: email,
-          password: password,
-        );
-      } on AuthException catch (error) {
-        return Failure('error: $error');
-      }
-
-      if (saveOnThisDevice) {
-        await storage.saveTokens(
-          accessToken: response.session!.accessToken,
-          refreshToken: response.session!.refreshToken,
-        );
-      }
-      user = UserEntity(id: response.user!.id, email: response.user!.email);
+    try {
+      response = await client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+    } on AuthException catch (error) {
+      return Failure('error: $error');
     }
+    await storage.write(
+      key: 'saveOnThisDevice',
+      value: saveOnThisDevice ? 'true' : 'false',
+    );
+
+    final user = UserEntity(id: response.user!.id, email: response.user!.email);
+
     return Success(user);
   }
 
   @override
   Future<void> signOut() async {
     await client.auth.signOut();
-    await storage.clearTokens();
+    await storage.write(key: 'hasSavedSession', value: 'false');
   }
 
   @override

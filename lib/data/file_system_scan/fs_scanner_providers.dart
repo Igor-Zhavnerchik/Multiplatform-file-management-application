@@ -10,7 +10,9 @@ import 'package:cross_platform_project/data/providers/hash_service_provider.dart
 import 'package:cross_platform_project/data/providers/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final fileSystemScannerProvider = Provider<FileSystemScanner>((ref) {
+final fileSystemScannerProvider = Provider.autoDispose<FileSystemScanner>((
+  ref,
+) {
   final localFileIdService = ref.watch(localFileIdServiceProvider);
   final pathService = ref.watch(storagePathServiceProvider);
   return FileSystemScanner(
@@ -18,11 +20,15 @@ final fileSystemScannerProvider = Provider<FileSystemScanner>((ref) {
     pathService: pathService,
   );
 });
-final fileSystemWatcherProvider = Provider<FileSystemWatcher>((ref) {
+final fileSystemWatcherProvider = Provider.autoDispose<FileSystemWatcher>((
+  ref,
+) {
   final pathService = ref.watch(storagePathServiceProvider);
-  return FileSystemWatcher(pathService: pathService);
+  final watcher = FileSystemWatcher(pathService: pathService);
+  ref.onDispose(() => watcher.dispose());
+  return watcher;
 });
-final reconcilerProvider = Provider<Reconciler>((ref) {
+final reconcilerProvider = Provider.autoDispose<Reconciler>((ref) {
   final hashService = ref.watch(hashServiceProvider);
   final pathService = ref.watch(storagePathServiceProvider);
   final filesTable = ref.watch(filesTableProvider);
@@ -32,7 +38,7 @@ final reconcilerProvider = Provider<Reconciler>((ref) {
     filesTable: filesTable,
   );
 });
-final dbUpdaterProvider = Provider<DbUpdater>((ref) {
+final dbUpdaterProvider = Provider.autoDispose<DbUpdater>((ref) {
   final pathService = ref.watch(storagePathServiceProvider);
   final filesTable = ref.watch(filesTableProvider);
   final mapper = ref.watch(fileModelMapperProvider);
@@ -43,7 +49,7 @@ final dbUpdaterProvider = Provider<DbUpdater>((ref) {
   );
 });
 
-final fsScanHandlerProvider = Provider<FsScanHandler>((ref) {
+final fsScanHandlerProvider = Provider.autoDispose<FsScanHandler>((ref) {
   final scanner = ref.watch(fileSystemScannerProvider);
   final reconciler = ref.watch(reconcilerProvider);
   final updater = ref.watch(dbUpdaterProvider);

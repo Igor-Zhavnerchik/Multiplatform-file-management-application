@@ -38,8 +38,9 @@ class LocalStorageService {
     required bool isFolder,
     bool overwrite = false,
   }) async {
+    /* 
     print('current: $currentPath');
-    print('new: $newPath');
+    print('new: $newPath'); */
     final entity = getEntity(path: currentPath, isFolder: isFolder);
     final newEntity = getEntity(path: newPath, isFolder: isFolder);
     var parentDir = newEntity

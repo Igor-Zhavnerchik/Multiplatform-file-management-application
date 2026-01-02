@@ -45,6 +45,7 @@ class LocalDataSource {
   Future<Result<void>> saveFile({
     required FileModel model,
     required Stream<List<int>>? bytes,
+    bool overwrite = true,
   }) async {
     return await safeCall(() async {
       var savePath = pathService.join(
@@ -58,7 +59,7 @@ class LocalDataSource {
           path: savePath,
           isFolder: model.isFolder,
         );
-      } else {
+      } else if (overwrite) {
         await localStorage.saveBytes(
           path: savePath,
           bytes: bytes ?? Stream.empty(),
@@ -69,7 +70,6 @@ class LocalDataSource {
       model = model.copyWith(
         hash: await _getHash(model: model, filePath: savePath),
       );
-      debugLog('after hash for ${model.name}');
       final localId = await localFileIdService.getFileId(path: savePath);
       debugLog('inserting ${model.name} with id:$localId');
       await filesTable.insertFile(mapper.toInsert(model, localId));
@@ -108,7 +108,7 @@ class LocalDataSource {
       final entity = model.isFolder ? Directory(savePath) : File(savePath);
       if (!await entity.exists()) {
         debugLog('FS entity not created: $savePath');
-        throw Exception('FS entity not created: $savePath');
+        await _waitFileCreation(path: savePath);
       }
       await filesTable.insertFile(
         mapper.toInsert(
@@ -132,7 +132,10 @@ class LocalDataSource {
       if (!softDelete) {
         await filesTable.deleteFile(model.id);
       } else {
-        await filesTable.updateFile(model.id, mapper.toUpdate(model));
+        await filesTable.updateFile(
+          model.id,
+          mapper.toUpdate(model.copyWith(deletedAt: DateTime.now().toUtc())),
+        );
       }
     }, source: 'LocalDataSource.deleteFile');
   }
@@ -147,7 +150,7 @@ class LocalDataSource {
         child: model.name,
       );
       final currentPath = await pathService.getLocalPath(fileId: model.id);
-      debugLog('in update for ${model.name}');
+      /* debugLog('in update for ${model.name}'); */
       /* debugLog('    current path: $currentPath');
       debugLog('    model path: $modelPath'); */
       if (currentPath != modelPath) {
@@ -162,9 +165,7 @@ class LocalDataSource {
       model = model.copyWith(
         hash: await _getHash(model: model, filePath: modelPath),
       );
-      debugLog(
-        'inner update time for ${model.name} at ${model.updatedAt.toIso8601String()}',
-      );
+
       await filesTable.updateFile(model.id, mapper.toUpdate(model));
     }, source: 'LocalDataSource.moveFile');
   }
@@ -214,7 +215,7 @@ class LocalDataSource {
         toPath: toPath,
         isFolder: model.isFolder,
       );
-
+      //FIXME indexes for same names
       /* final lastDot = model.name.lastIndexOf('.');
       final base = model.name.substring(0, lastDot);
       final ext = model.name.substring(lastDot);
@@ -267,7 +268,6 @@ class LocalDataSource {
     required FileModel model,
     required String filePath,
   }) async {
-    debugLog('hash for ${model.name}');
     return model.isFolder
         ? null
         : await hashService.hashFile(file: File(filePath));

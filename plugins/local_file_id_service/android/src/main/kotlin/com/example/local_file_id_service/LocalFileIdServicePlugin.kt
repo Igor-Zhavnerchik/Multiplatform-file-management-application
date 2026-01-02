@@ -1,19 +1,15 @@
 package com.example.local_file_id_service
 
+import android.system.Os
+import android.system.StructStat
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import java.io.File
 
-/** LocalFileIdServicePlugin */
-class LocalFileIdServicePlugin :
-    FlutterPlugin,
-    MethodCallHandler {
-    // The MethodChannel that will the communication between Flutter and native Android
-    //
-    // This local reference serves to register the plugin with the Flutter Engine and unregister it
-    // when the Flutter Engine is detached from the Activity
+class LocalFileIdServicePlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var channel: MethodChannel
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -21,14 +17,38 @@ class LocalFileIdServicePlugin :
         channel.setMethodCallHandler(this)
     }
 
-    override fun onMethodCall(
-        call: MethodCall,
-        result: Result
-    ) {
-        if (call.method == "getPlatformVersion") {
-            result.success("Android ${android.os.Build.VERSION.RELEASE}")
-        } else {
-            result.notImplemented()
+    override fun onMethodCall(call: MethodCall, result: Result) {
+        when (call.method) {
+            "getPlatformVersion" -> {
+                result.success("Android ${android.os.Build.VERSION.RELEASE}")
+            }
+            "getFileId" -> {
+                val path = call.argument<String>("path")
+                if (path != null) {
+                    getFileId(path, result)
+                } else {
+                    result.error("INVALID_ARGUMENT", "Path is null", null)
+                }
+            }
+            else -> {
+                result.notImplemented()
+            }
+        }
+    }
+
+    private fun getFileId(path: String, result: Result) {
+        try {
+            val file = File(path)
+            if (file.exists()) {
+                // Вызов системной функции stat для получения inode
+                val stat: StructStat = Os.stat(path)
+                // Возвращаем как String, чтобы соответствовать вашему Dart-коду
+                result.success(stat.st_ino.toString())
+            } else {
+                result.error("NOT_FOUND", "File not found at path: $path", null)
+            }
+        } catch (e: Exception) {
+            result.error("SYS_ERR", "Failed to get inode: ${e.localizedMessage}", null)
         }
     }
 

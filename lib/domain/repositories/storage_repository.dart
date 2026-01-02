@@ -3,12 +3,11 @@ import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/presentation/widgets/file_operations_view/file_operations_view_model.dart';
 
 abstract class StorageRepository {
-  Future<void> init({required String currentUserId});
-
+  void init({required String userId});
   Future<void> syncronize();
   Future<Result<void>> createUserSaveState();
   Future<Result<void>> ensureRootExists();
-  Future<Result<FileEntity>> getRootFolder({required String ownerId});
+  Future<Result<FileEntity>> getRootFolder();
 
   Future<Result<void>> createFile({
     required FileEntity? parent,
@@ -28,5 +27,6 @@ abstract class StorageRepository {
     required String? parentId,
     bool onlyFolders = false,
     bool onlyFiles = false,
+    required String? ownerId,
   });
 }

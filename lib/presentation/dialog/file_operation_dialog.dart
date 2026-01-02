@@ -37,7 +37,7 @@ class ContextDialog extends ConsumerWidget {
       ContextDialogType.createFile => CreateDialog(createFolder: false),
       ContextDialogType.createFolder => CreateDialog(createFolder: true),
       ContextDialogType.addFiles => AddEntityDialog(addFolder: false),
-      ContextDialogType.addFolder => AddEntityDialog(addFolder: false),
+      ContextDialogType.addFolder => AddEntityDialog(addFolder: true),
 
       ContextDialogType.rename => RenameDialog(),
       ContextDialogType.delete => DeleteDialog(),

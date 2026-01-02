@@ -2,4 +2,6 @@ import 'package:cross_platform_project/presentation/screens/auth/auth_view_model
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final authViewModelProvider =
-    AsyncNotifierProvider<AuthViewModel, AuthViewState>(() => AuthViewModel());
+    NotifierProvider.autoDispose<AuthViewModel, AuthViewState>(
+      () => AuthViewModel(),
+    );

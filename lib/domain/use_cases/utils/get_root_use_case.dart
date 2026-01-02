@@ -8,8 +8,8 @@ class GetRootUseCase {
   final AuthRepository auth;
 
   GetRootUseCase({required this.repository, required this.auth});
-  @deprecated
+
   Future<Result<FileEntity>> call() async {
-    return await repository.getRootFolder(ownerId: (await auth.getCurrentUser())!.id);
+    return await repository.getRootFolder();
   }
 }

@@ -71,21 +71,22 @@ class Reconciler {
               ),
               _ => null,
             };
-
+            debugLog('local id: ${fsEntry!.localFileId}');
+            final dbParentId = (await filesTable.getFileById(
+              fileId: file.parentId,
+              ownerId: file.ownerId,
+            ))?.localFileId;
             if ((fsHash != file.hash && fsHash != null) ||
                 (file.name != pathService.getName(fsEntry!.path)) ||
-                ((await filesTable.getFileByLocalFileId(
-                      fsEntry.parentLocalFileId,
-                    ))?.id !=
-                    file.parentId)) {
+                (dbParentId != fsEntry.parentLocalFileId)) {
               debugLog('path: ${fsEntry!.path} decision: update');
-              /*  debugLog(
-                '    reason: ${fsHash != file.hash ? 'different hash' : 'different names'}',
+              debugLog('    reason: ');
+              debugLog(
+                'fs: hash: $fsHash, name: ${pathService.getName(fsEntry.path)}, parent id: ${fsEntry.parentLocalFileId} ',
               );
               debugLog(
-                'fs: hash: $fsHash, name: ${pathService.getName(fsEntry.path)} ',
+                'db: hash: ${file.hash}, name: ${file.name} parent id: $dbParentId',
               );
-              debugLog('db: hash: ${file.hash}, name: ${file.name} '); */
               changeList.add(DbUpdate(fs: fsEntry, file: file, hash: fsHash));
             }
           }

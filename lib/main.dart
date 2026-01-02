@@ -1,5 +1,6 @@
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/providers/app_coordinator_provider.dart';
+import 'package:cross_platform_project/core/providers/app_start_service_provider.dart';
 import 'package:cross_platform_project/core/providers/router_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,8 +33,9 @@ class App extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(appCoordinatorProvider);
-
-    final router = ref.watch(routerProvider);
+    final router = ref.watch(routerProvider); /* 
+    final appStartService = ref.watch(appStartServiceProvider);
+    appStartService.onAppStart(); */
 
     return MaterialApp.router(
       routerConfig: router,

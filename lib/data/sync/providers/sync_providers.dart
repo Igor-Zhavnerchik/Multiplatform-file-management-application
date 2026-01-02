@@ -9,22 +9,28 @@ import 'package:cross_platform_project/data/sync/sync_processor.dart';
 import 'package:cross_platform_project/data/sync/sync_status_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final syncStatusManagerProvider = Provider<SyncStatusManager>((ref) {
+final syncStatusManagerProvider = Provider.autoDispose<SyncStatusManager>((
+  ref,
+) {
   final localDataSource = ref.watch(localDataSourceProvider);
   return SyncStatusManager(localSource: localDataSource);
 });
 
-final localSyncActionSourceProvider = Provider<SyncActionSource>((ref) {
+final localSyncActionSourceProvider = Provider.autoDispose<SyncActionSource>((
+  ref,
+) {
   final localDataSource = ref.watch(localDataSourceProvider);
   return LocalSyncActionSource(localDataSource: localDataSource);
 });
 
-final remoteSyncActionSourceProvider = Provider<SyncActionSource>((ref) {
+final remoteSyncActionSourceProvider = Provider.autoDispose<SyncActionSource>((
+  ref,
+) {
   final remoteDataSource = ref.watch(remoteDataSourceProvider);
   return RemoteSyncActionSource(remoteDataSource: remoteDataSource);
 });
 
-final updateHandlerProvider = Provider<UpdateHandler>((ref) {
+final updateHandlerProvider = Provider.autoDispose<UpdateHandler>((ref) {
   final localSyncActionSource = ref.watch(localSyncActionSourceProvider);
   final remoteSyncActionSource = ref.watch(remoteSyncActionSourceProvider);
   final syncStatusManager = ref.watch(syncStatusManagerProvider);
@@ -35,7 +41,7 @@ final updateHandlerProvider = Provider<UpdateHandler>((ref) {
   );
 });
 
-final loadHandlerProvider = Provider<LoadHandler>((ref) {
+final loadHandlerProvider = Provider.autoDispose<LoadHandler>((ref) {
   final localSyncActionSource = ref.watch(localSyncActionSourceProvider);
   final remoteSyncActionSource = ref.watch(remoteSyncActionSourceProvider);
   final syncStatusManager = ref.watch(syncStatusManagerProvider);
@@ -46,7 +52,7 @@ final loadHandlerProvider = Provider<LoadHandler>((ref) {
   );
 });
 
-final deleteHandlerProvider = Provider<DeleteHandler>((ref) {
+final deleteHandlerProvider = Provider.autoDispose<DeleteHandler>((ref) {
   final localSyncActionSource = ref.watch(localSyncActionSourceProvider);
   final remoteSyncActionSource = ref.watch(remoteSyncActionSourceProvider);
   final syncStatusManager = ref.watch(syncStatusManagerProvider);
@@ -57,7 +63,7 @@ final deleteHandlerProvider = Provider<DeleteHandler>((ref) {
   );
 });
 
-final syncProcessorProvider = Provider<SyncProcessor>((ref) {
+final syncProcessorProvider = Provider.autoDispose<SyncProcessor>((ref) {
   final updateHandler = ref.watch(updateHandlerProvider);
   final loadHandler = ref.watch(loadHandlerProvider);
   final deleteHandler = ref.watch(deleteHandlerProvider);

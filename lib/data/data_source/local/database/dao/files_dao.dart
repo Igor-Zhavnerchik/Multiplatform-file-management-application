@@ -1,3 +1,4 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/data_source/local/database/tables/files.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
@@ -20,8 +21,14 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
   Future<List<DbFile>> getAllFiles() {
     return select(files).get();
   }
-  Future<DbFile?> getFileById({required String? fileId, required String ownerId}){
-    return (select(files)..where((file) => file.id.equalsNullable(fileId))).getSingleOrNull();
+
+  Future<DbFile?> getFileById({
+    required String? fileId,
+    required String ownerId,
+  }) {
+    return (select(
+      files,
+    )..where((file) => file.id.equalsNullable(fileId))).getSingleOrNull();
   }
 
   Future deleteFile(String id) {
@@ -53,6 +60,7 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
   }
 
   Stream<List<DbFile>> watchFolders(String? parentId, String ownerId) {
+    debugLog('returning files from db for user: $ownerId');
     return (select(files)..where(
           (entity) =>
               entity.parentId.equalsNullable(parentId) &
@@ -64,6 +72,7 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
   }
 
   Stream<List<DbFile>> watchFiles(String? parentId, String ownerId) {
+    debugLog('returning files from db for user: $ownerId');
     return (select(files)..where(
           (entity) =>
               entity.parentId.equalsNullable(parentId) &
@@ -75,7 +84,8 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
   }
 
   Future<String?> getNameById(String id) async {
-    final query = select(files)..where((entity) => entity.id.equals(id));
+    final query = select(files)
+      ..where((entity) => entity.id.equals(id) & entity.deletedAt.isNull());
     return (await query.getSingleOrNull())?.name;
   }
 
@@ -84,12 +94,16 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
       return null;
     }
     final query = select(files)
-      ..where((entity) => entity.localFileId.equals(localFileId));
+      ..where(
+        (entity) =>
+            entity.localFileId.equals(localFileId) & entity.deletedAt.isNull(),
+      );
     return await query.getSingleOrNull();
   }
 
   Future<String?> getParentIdbyId(String id) async {
-    final query = select(files)..where((entity) => entity.id.equals(id));
+    final query = select(files)
+      ..where((entity) => entity.id.equals(id) & entity.deletedAt.isNull());
     final parentId = (await query.getSingleOrNull())?.parentId;
     return parentId;
   }
@@ -108,5 +122,14 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
     final query = select(files)
       ..where((entity) => entity.syncStatus.equals(status.name));
     return await query.get();
+  }
+
+  Future<String?> getLocalFileId(String fileId) async {
+    final query = select(files)
+      ..where(
+        (entity) =>
+            entity.localFileId.equals(fileId) & entity.deletedAt.isNull(),
+      );
+    return (await query.getSingleOrNull())?.localFileId;
   }
 }

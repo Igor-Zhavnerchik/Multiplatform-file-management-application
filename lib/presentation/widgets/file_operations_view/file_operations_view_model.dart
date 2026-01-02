@@ -80,14 +80,19 @@ class FileOperationsState {
 }
 
 class FileOperationsViewModel extends Notifier<FileOperationsState> {
-  late final CreateFileUseCase _createFileUseCase;
-  late final DeleteFileUseCase _deleteFileUseCase;
-  late final RenameFileUseCase _renameFileUseCase;
-  late final SyncStartUseCase _syncStartUseCase;
-  late final CopyFileUseCase _copyFileUseCase;
-  late final PickExistingFilesUseCase _pickExistingFilesUseCase;
-  late final FsScanHandler _scanHandler;
-  late final SettingsService _settingsService;
+  CreateFileUseCase get _createFileUseCase =>
+      ref.read(createFileUseCaseProvider);
+  DeleteFileUseCase get _deleteFileUseCase =>
+      ref.read(deleteFileUseCaseProvider);
+  RenameFileUseCase get _renameFileUseCase =>
+      ref.read(updateFileUseCaseProvider);
+  SyncStartUseCase get _syncStartUseCase => ref.read(syncStartUseCaseProvider);
+  CopyFileUseCase get _copyFileUseCase => ref.read(copyFileUseCaseProvider);
+  PickExistingFilesUseCase get _pickExistingFilesUseCase =>
+      ref.read(pickExistingFilesUseCaseProvider);
+  FsScanHandler get _scanHandler => ref.read(fsScanHandlerProvider);
+  SettingsService get _settingsService => ref.read(settingsServiceProvider);
+
   FileCreateRequest get emptyRequest => FileCreateRequest(
     name: '',
     isFolder: false,
@@ -97,15 +102,6 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
 
   @override
   FileOperationsState build() {
-    _createFileUseCase = ref.read(createFileUseCaseProvider);
-    _deleteFileUseCase = ref.read(deleteFileUseCaseProvider);
-    _renameFileUseCase = ref.read(updateFileUseCaseProvider);
-    _syncStartUseCase = ref.read(syncStartUseCaseProvider);
-    _copyFileUseCase = ref.read(copyFileUseCaseProvider);
-    _pickExistingFilesUseCase = ref.read(pickExistingFilesUseCaseProvider);
-    _settingsService = ref.read(settingsServiceProvider);
-    _scanHandler = ref.read(fsScanHandlerProvider);
-
     return FileOperationsState(pendingCreateRequests: [emptyRequest]);
   }
 

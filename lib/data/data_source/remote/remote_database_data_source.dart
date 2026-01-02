@@ -12,6 +12,7 @@ class RemoteDatabaseDataSource {
     required String userId,
     required bool getDeleted,
   }) async {
+    debugLog('getting files metadata from supabase for user: $userId');
     var fileList = getDeleted
         ? await client
               .from(fileMetadataTable)
@@ -23,6 +24,7 @@ class RemoteDatabaseDataSource {
               .select()
               .eq('owner_id', userId)
               .isFilter('deleted_at', null);
+    debugLog('got ${fileList.length} files');
     return fileList;
   }
 

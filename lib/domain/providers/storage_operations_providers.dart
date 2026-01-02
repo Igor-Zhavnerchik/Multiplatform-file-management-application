@@ -13,54 +13,59 @@ import 'package:cross_platform_project/domain/use_cases/utils/pick_existing_file
 import 'package:cross_platform_project/domain/use_cases/utils/sync_start_use_case.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final createFileUseCaseProvider = Provider<CreateFileUseCase>((ref) {
+final createFileUseCaseProvider = Provider.autoDispose<CreateFileUseCase>((
+  ref,
+) {
   final repository = ref.watch(storageRepositoryProvider);
   return CreateFileUseCase(repository: repository);
 });
 
-final updateFileUseCaseProvider = Provider<RenameFileUseCase>((ref) {
+final updateFileUseCaseProvider = Provider.autoDispose<RenameFileUseCase>((
+  ref,
+) {
   final repository = ref.watch(storageRepositoryProvider);
   return RenameFileUseCase(repository: repository);
 });
 
-final deleteFileUseCaseProvider = Provider<DeleteFileUseCase>((ref) {
+final deleteFileUseCaseProvider = Provider.autoDispose<DeleteFileUseCase>((
+  ref,
+) {
   final repository = ref.watch(storageRepositoryProvider);
   return DeleteFileUseCase(repository: repository);
 });
 
-final syncStartUseCaseProvider = Provider<SyncStartUseCase>((ref) {
+final syncStartUseCaseProvider = Provider.autoDispose<SyncStartUseCase>((ref) {
   final repository = ref.watch(storageRepositoryProvider);
   return SyncStartUseCase(repository: repository);
 });
 
-final copyFileUseCaseProvider = Provider<CopyFileUseCase>((ref) {
+final copyFileUseCaseProvider = Provider.autoDispose<CopyFileUseCase>((ref) {
   final repository = ref.watch(storageRepositoryProvider);
   return CopyFileUseCase(repository: repository);
 });
 
-final getRootUseCaseProvider = Provider<GetRootUseCase>((ref) {
+final getRootUseCaseProvider = Provider.autoDispose<GetRootUseCase>((ref) {
   final repository = ref.watch(storageRepositoryProvider);
   final auth = ref.watch(authRepositoryProvider);
   return GetRootUseCase(repository: repository, auth: auth);
 });
 
-final openFileUseCaseProvider = Provider<OpenFileUseCase>((ref) {
+final openFileUseCaseProvider = Provider.autoDispose<OpenFileUseCase>((ref) {
   final opener = ref.watch(fileOpenServiceProvider);
   return OpenFileUseCase(opener: opener);
 });
 
-final fileOpenServiceProvider = Provider<FileOpenService>((ref) {
+final fileOpenServiceProvider = Provider.autoDispose<FileOpenService>((ref) {
   final pathService = ref.watch(storagePathServiceProvider);
   return FileOpenService(pathService: pathService);
 });
 
-final pickExistingFilesUseCaseProvider = Provider<PickExistingFilesUseCase>((
-  ref,
-) {
-  final filePickerService = ref.watch(filePickerServiceProvider);
-  final settingsService = ref.watch(settingsServiceProvider);
-  return PickExistingFilesUseCase(
-    filePickerService: filePickerService,
-    settingsService: settingsService,
-  );
-});
+final pickExistingFilesUseCaseProvider =
+    Provider.autoDispose<PickExistingFilesUseCase>((ref) {
+      final filePickerService = ref.watch(filePickerServiceProvider);
+      final settingsService = ref.watch(settingsServiceProvider);
+      return PickExistingFilesUseCase(
+        filePickerService: filePickerService,
+        settingsService: settingsService,
+      );
+    });

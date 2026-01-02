@@ -24,7 +24,7 @@ class StorageRepositoryImpl extends StorageRepository {
   final SyncProcessor syncProcessor;
   final FileModelMapper mapper;
   final UuidGenerationService uuidService;
-  late final String? currentUserId;
+  late final String currentUserId;
   StorageRepositoryImpl({
     required this.client,
     required this.remoteDataSource,
@@ -37,8 +37,9 @@ class StorageRepositoryImpl extends StorageRepository {
   });
 
   @override
-  Future<void> init({required String currentUserId}) async {
-    this.currentUserId = currentUserId;
+  void init({required String userId}) {
+    currentUserId = userId;
+    debugLog('storage repository initialized with user id: $userId');
   }
 
   Future<Result<List<FileModel>>> _getRemoteFileList() async {
@@ -89,13 +90,13 @@ class StorageRepositoryImpl extends StorageRepository {
     final List<FileModel> remoteFileList =
         (remoteFileListResult as Success).data;
     final List<FileModel> localFileList = (localFileListResult as Success).data;
-    print('local');
+    debugLog('local:');
     for (var file in localFileList) {
-      print(file.name);
+      debugLog('    ${file.name}');
     }
-    print('remote');
+    debugLog('remote:');
     for (var file in remoteFileList) {
-      print(file.name);
+      debugLog('    ${file.name}');
     }
 
     final Map<String, FileModel> remoteMap = {};
@@ -150,7 +151,7 @@ class StorageRepositoryImpl extends StorageRepository {
           source: SyncSource.local,
           payload: localModel,
         );
-      case SyncStatus.syncronized:
+      case SyncStatus.syncronized || SyncStatus.deleted:
         await syncStatusManager.updateStatus(
           model: localModel,
           status: SyncStatus.deletingLocally,
@@ -226,10 +227,13 @@ class StorageRepositoryImpl extends StorageRepository {
   Future<Result<void>> createFile({
     required FileEntity? parent,
     required FileCreateRequest request,
+    bool overwrite = true,
   }) async {
     final newFile = FileModel(
-      id: uuidService.generateId(isRoot: parent == null),
-      ownerId: parent?.ownerId ?? currentUserId!,
+      id: uuidService.generateId(
+        userRoot: parent == null ? currentUserId : null,
+      ),
+      ownerId: parent?.ownerId ?? currentUserId,
       parentId: parent?.id,
       depth: parent?.depth ?? 0 + 1,
       name: request.name,
@@ -240,9 +244,9 @@ class StorageRepositoryImpl extends StorageRepository {
       syncEnabled: request.syncEnabled,
       downloadEnabled: request.downloadEnabled,
       syncStatus: SyncStatus.created,
-      downloadStatus: request.localPath == null
-          ? DownloadStatus.notDownloaded
-          : DownloadStatus.downloaded,
+      downloadStatus: request.localPath != null || request.bytes != null
+          ? DownloadStatus.downloaded
+          : DownloadStatus.notDownloaded,
       createdAt: DateTime.now().toUtc(),
       updatedAt: DateTime.fromMicrosecondsSinceEpoch(0),
       deletedAt: null,
@@ -255,6 +259,7 @@ class StorageRepositoryImpl extends StorageRepository {
       );
     } else {
       saveResult = await localDataSource.saveFile(
+        overwrite: overwrite,
         model: newFile,
         bytes: request.bytes,
       );
@@ -347,8 +352,8 @@ class StorageRepositoryImpl extends StorageRepository {
   }
 
   @override
-  Future<Result<FileEntity>> getRootFolder({required String ownerId}) async {
-    final result = await localDataSource.getRootFolder(ownerId: ownerId);
+  Future<Result<FileEntity>> getRootFolder() async {
+    final result = await localDataSource.getRootFolder(ownerId: currentUserId);
     if (result.isFailure) {
       return Failure(
         (result as Failure).message,
@@ -361,7 +366,8 @@ class StorageRepositoryImpl extends StorageRepository {
 
   @override
   Future<Result<void>> ensureRootExists() async {
-    var result = await getRootFolder(ownerId: currentUserId!);
+    debugLog('ensuring root exists for user $currentUserId');
+    var result = await getRootFolder();
     if (result.isFailure) {
       debugLog('root not exists. creating root');
       return await createFile(
@@ -382,18 +388,21 @@ class StorageRepositoryImpl extends StorageRepository {
     required String? parentId,
     bool onlyFolders = false,
     bool onlyFiles = false,
+    required String? ownerId,
   }) {
-    return localDataSource
-        .getFileStream(
-          parentId: parentId,
-          ownerId: currentUserId!,
-          onlyFiles: onlyFiles,
-          onlyFolders: onlyFolders,
-        )
-        .map(
-          (dbList) => dbList
-              .map((dbFile) => mapper.toEntity(mapper.fromDbFile(dbFile)))
-              .toList(),
-        );
+    return ownerId != null
+        ? localDataSource
+              .getFileStream(
+                parentId: parentId,
+                ownerId: ownerId,
+                onlyFiles: onlyFiles,
+                onlyFolders: onlyFolders,
+              )
+              .map(
+                (dbList) => dbList
+                    .map((dbFile) => mapper.toEntity(mapper.fromDbFile(dbFile)))
+                    .toList(),
+              )
+        : Stream.empty();
   }
 }

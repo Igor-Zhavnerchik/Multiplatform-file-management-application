@@ -1,3 +1,4 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/data/providers/file_stream_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/presentation/dialog/file_operation_dialog.dart';
@@ -15,6 +16,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
+    debugLog('building home');
     final homeNotifier = ref.read(homeViewModelProvider.notifier);
     ref.listen(homeViewModelProvider, (prev, next) {
       if (next.openDialog) {
@@ -60,7 +62,8 @@ class DesktopHomeScreen extends ConsumerWidget {
       appBar: NavigationPanel(),
       body: Row(
         children: [
-          SizedBox(width: 250, child: FolderView()),
+          FolderView(),
+          VerticalDivider(color: theme.colorScheme.secondary),
           Expanded(child: FileView()),
         ],
       ),
@@ -68,7 +71,12 @@ class DesktopHomeScreen extends ConsumerWidget {
   }
 }
 
+enum FileViewMode { grid, list }
+
 class FileView extends ConsumerWidget {
+  final FileViewMode mode;
+  FileView({this.mode = FileViewMode.list});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final homeState = ref.watch(homeViewModelProvider);
@@ -89,26 +97,32 @@ class FileView extends ConsumerWidget {
               );
         },
         child: GridView(
-          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 250,
-          ),
+          gridDelegate: mode == FileViewMode.list
+              ? SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 1,
+                  mainAxisExtent: 60,
+                )
+              : SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 150,
+                ),
           children: [
             for (var file in children)
-              if (file.isFolder) FileViewElement(element: file),
+              if (file.isFolder) FileViewElement(element: file, mode: mode),
             for (var file in children)
-              if (!file.isFolder) FileViewElement(element: file),
+              if (!file.isFolder) FileViewElement(element: file, mode: mode),
           ],
         ),
       ),
       loading: () => CircularProgressIndicator(),
-      error: (error, stackTrace) => Text("Error: $error"),
+      error: (error, stackTrace) => Text("Error: $error, $stackTrace"),
     );
   }
 }
 
 class FileViewElement extends ConsumerWidget {
+  final FileViewMode mode;
   final FileEntity element;
-  FileViewElement({required this.element});
+  FileViewElement({required this.element, required this.mode});
 
   IconData getIcon() {
     return element.isFolder ? Icons.folder : Icons.insert_drive_file_rounded;
@@ -116,30 +130,48 @@ class FileViewElement extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onSecondaryTapDown: (details) {
-        ref.read(homeViewModelProvider.notifier)
-          ..setSelected(element)
-          ..setDialog(
-            ContextDialogType.optionMenu,
-            dialogPosition: details.globalPosition,
-          );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final iconSize = constraints.maxHeight - 20;
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onSecondaryTapDown: (details) {
+            ref.read(homeViewModelProvider.notifier)
+              ..setSelected(element)
+              ..setDialog(
+                ContextDialogType.optionMenu,
+                dialogPosition: details.globalPosition,
+              );
+          },
+
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () =>
+                ref.read(homeViewModelProvider.notifier).setSelected(element),
+            onDoubleTap: () =>
+                ref.read(homeViewModelProvider.notifier).openElement(element),
+
+            child: switch (mode) {
+              FileViewMode.grid => Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(getIcon(), size: iconSize),
+                  Text(element.name),
+                ],
+              ),
+              FileViewMode.list => Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(getIcon(), size: iconSize),
+                  Text(element.name),
+                ],
+              ),
+            },
+          ),
+        );
       },
-
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () =>
-            ref.read(homeViewModelProvider.notifier).setSelected(element),
-        onDoubleTap: () =>
-            ref.read(homeViewModelProvider.notifier).openElement(element),
-
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [Icon(getIcon()), Text(element.name)],
-        ),
-      ),
     );
   }
 }
@@ -154,8 +186,11 @@ class _FolderViewState extends ConsumerState<FolderView> {
   Widget build(BuildContext context) {
     final folderStream = ref.watch(onlyFoldersListProvider(null));
     return folderStream.when(
-      data: (data) => FolderWidget(folder: data.first),
-      error: (error, stackTrace) => Text('error: $error'),
+      data: (data) => SizedBox(
+        width: 200,
+        child: ListView(children: [FolderWidget(folder: data.first)]),
+      ),
+      error: (error, stackTrace) => Text('Error: $error, $stackTrace'),
       loading: () => CircularProgressIndicator(),
     );
   }
@@ -270,19 +305,19 @@ class NavigationPanel extends ConsumerWidget implements PreferredSizeWidget {
       backgroundColor: theme.colorScheme.secondary,
 
       actions: [
-        ElevatedButton(
+        FilledButton(
           onPressed: () =>
               ref.read(fileOperationsViewModelProvider.notifier).startScan(),
           child: Text('Scan FS'),
         ),
 
-        ElevatedButton(
+        FilledButton(
           onPressed: () =>
               ref.read(fileOperationsViewModelProvider.notifier).startSync(),
           child: Text('Syncronize'),
         ),
 
-        ElevatedButton(
+        FilledButton(
           onPressed: () => ref.read(authViewModelProvider.notifier).signOut(),
           child: Text('Sign Out'),
         ),

@@ -64,14 +64,14 @@ class AuthViewState {
   }
 }
 
-class AuthViewModel extends AsyncNotifier<AuthViewState> {
+class AuthViewModel extends Notifier<AuthViewState> {
   late final UserLoginUseCase _userLoginUseCase;
 
   late final SignOutUseCase _signOutUseCase;
   late final UserRegistrationUseCase _userRegistrationUseCase;
 
   @override
-  Future<AuthViewState> build() async {
+  AuthViewState build() {
     _userLoginUseCase = ref.read(userLoginUseCaseProvider);
     _signOutUseCase = ref.read(signOutUseCaseProvider);
     _userRegistrationUseCase = ref.read(userRegistrationUseCaseProvider);
@@ -80,68 +80,56 @@ class AuthViewModel extends AsyncNotifier<AuthViewState> {
   }
 
   void setPassword(String password) {
-    state = state.whenData((current) => current.copyWith(password: password));
+    state = state.copyWith(password: password);
   }
 
   void setConfirmPassword(String confirmPassword) {
-    state = state.whenData(
-      (current) => current.copyWith(confirmPassword: confirmPassword),
-    );
+    state = state.copyWith(confirmPassword: confirmPassword);
   }
 
   void setEmail(String email) {
-    state = state.whenData((current) => current.copyWith(email: email));
+    state = state.copyWith(email: email);
   }
 
   void setSaveOnThisDevice(bool save) {
-    state = state.whenData(
-      (current) => current.copyWith(saveOnThisDevice: save),
-    );
+    state = state.copyWith(saveOnThisDevice: save);
   }
 
   Future<void> tryLogin() async {
-    var currentState = state.value!;
-    if (currentState.email.isEmpty || currentState.password.isEmpty) {
-      state = AsyncData(
-        currentState.copyWith(
-          hasError: true,
-          errorMessage: ErrorMessage.emptyFieldError,
-        ),
+    if (state.email.isEmpty || state.password.isEmpty) {
+      state = state.copyWith(
+        hasError: true,
+        errorMessage: ErrorMessage.emptyFieldError,
       );
       return;
     }
 
     final loginResult = await _userLoginUseCase(
-      email: currentState.email,
-      password: currentState.password,
-      saveOnThisDevice: currentState.saveOnThisDevice,
+      email: state.email,
+      password: state.password,
+      saveOnThisDevice: state.saveOnThisDevice,
     );
     if (loginResult.isSuccess) {
-      state = AsyncData(
-        currentState.copyWith(hasError: false, isAuthorized: true),
-      );
+      state = state.copyWith(hasError: false, isAuthorized: true);
     } else {
-      state = AsyncData(
-        currentState.copyWith(
-          hasError: true,
-          errorMessage: ErrorMessage.invalidPasswordOrEmailError,
-          isAuthorized: false,
-        ),
+      state = state.copyWith(
+        hasError: true,
+        errorMessage: ErrorMessage.invalidPasswordOrEmailError,
+        isAuthorized: false,
       );
     }
   }
 
   Future<void> signOut() async {
+    state = state.copyWith(isAuthorized: false);
     await _signOutUseCase();
-    state = AsyncData(state.value!.copyWith(isAuthorized: false));
   }
 
   Future<void> tryRegister() async {
-    var currentState = state.value!;
-    if (currentState.password == currentState.confirmPassword) {
+    if (state.password == state.confirmPassword) {
       var regResult = await _userRegistrationUseCase(
-        email: currentState.email,
-        password: currentState.password,
+        email: state.email,
+        password: state.password,
       );
       //FIXME make alert on failed reg
       if (regResult.isSuccess) {
@@ -150,11 +138,9 @@ class AuthViewModel extends AsyncNotifier<AuthViewState> {
         debugLog('failed to register');
       }
     } else {
-      state = AsyncData(
-        state.value!.copyWith(
-          hasError: true,
-          errorMessage: ErrorMessage.differentPasswordsError,
-        ),
+      state = state.copyWith(
+        hasError: true,
+        errorMessage: ErrorMessage.differentPasswordsError,
       );
     }
   }

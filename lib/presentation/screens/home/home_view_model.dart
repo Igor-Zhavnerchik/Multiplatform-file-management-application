@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/providers/file_stream_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/providers/storage_operations_providers.dart';
@@ -54,15 +55,11 @@ class HomeViewState {
 }
 
 class HomeViewModel extends Notifier<HomeViewState> {
-  late final GetRootUseCase _getRootUseCase;
-  late final OpenFileUseCase _openFileUseCase;
-  late final HistoryNavigator _historyNavigator;
-
+  OpenFileUseCase get _openFileUseCase => ref.read(openFileUseCaseProvider);
+  HistoryNavigator get _historyNavigator => ref.read(historyNavigatorProvider);
+  GetRootUseCase get _getRootUseCase => ref.read(getRootUseCaseProvider);
   @override
   HomeViewState build() {
-    _getRootUseCase = ref.read(getRootUseCaseProvider);
-    _openFileUseCase = ref.read(openFileUseCaseProvider);
-    _historyNavigator = ref.read(historyNavigatorProvider);
     ref.listen<AsyncValue<List<FileEntity>>>(onlyFoldersListProvider(null), (
       prev,
       next,
@@ -77,6 +74,11 @@ class HomeViewModel extends Notifier<HomeViewState> {
     return HomeViewState(openDialog: false);
   }
 
+  @deprecated
+  Future<FileEntity> getRoot() async {
+    return (await _getRootUseCase() as Success).data;
+  }
+
   Future<void> setSelected(FileEntity selectedItem) async {
     state = (state.copyWith(selected: selectedItem));
     print('selected: ${selectedItem.name}');
@@ -84,7 +86,15 @@ class HomeViewModel extends Notifier<HomeViewState> {
 
   Future<void> setCurrentFolder(FileEntity currentFolder) async {
     state = (state.copyWith(currentFolder: currentFolder));
-    print('current folder: ${currentFolder.name}');
+    print(
+      'current folder: ${currentFolder.name} owner: ${currentFolder.ownerId}',
+    );
+    final children = ref.read(childrenListProvider(currentFolder.id));
+    children.whenData(
+      (data) => {
+        for (var child in data) {debugLog(child.name)},
+      },
+    );
   }
 
   Future<void> openElement(FileEntity element) async {

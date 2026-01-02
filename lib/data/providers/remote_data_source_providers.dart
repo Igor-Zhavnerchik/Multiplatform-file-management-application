@@ -9,17 +9,17 @@ import '../data_source/remote/remote_storage_data_source.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cross_platform_project/core/providers/supabase_client_provider.dart';
 
-final remoteDataSourceProvider = Provider<RemoteDataSource>((ref) {
+final remoteDataSourceProvider = Provider.autoDispose<RemoteDataSource>((ref) {
   final client = ref.watch(supabaseClientProvider);
   final storage = ref.watch(remoteStorageDataSourceProvider);
   final database = ref.watch(remoteDatabaseDataSourceProvider);
   final pathService = ref.watch(storagePathServiceProvider);
   final mapper = ref.watch(fileModelMapperProvider);
-  final userProvider = ref.watch(currentUserProvider);
+  final userId = ref.watch(currentUserIdProvider).value;
 
   return RemoteDataSource(
     client: client,
-    currentUserProvider: userProvider,
+    userId: userId,
     storage: storage,
     database: database,
     pathService: pathService,
@@ -27,18 +27,19 @@ final remoteDataSourceProvider = Provider<RemoteDataSource>((ref) {
   );
 });
 
-final remoteStorageDataSourceProvider = Provider<RemoteStorageDataSource>((
-  ref,
-) {
-  final client = ref.watch(supabaseClientProvider);
-  final bytesToStreamConverter = ref.watch(bytesToStreamConverterProvider);
-  return RemoteStorageDataSource(client: client, bytesToStreamConverter: bytesToStreamConverter);
-});
+final remoteStorageDataSourceProvider =
+    Provider.autoDispose<RemoteStorageDataSource>((ref) {
+      final client = ref.watch(supabaseClientProvider);
+      final bytesToStreamConverter = ref.watch(bytesToStreamConverterProvider);
+      return RemoteStorageDataSource(
+        client: client,
+        bytesToStreamConverter: bytesToStreamConverter,
+      );
+    });
 
-final remoteDatabaseDataSourceProvider = Provider<RemoteDatabaseDataSource>((
-  ref,
-) {
-  final client = ref.watch(supabaseClientProvider);
+final remoteDatabaseDataSourceProvider =
+    Provider.autoDispose<RemoteDatabaseDataSource>((ref) {
+      final client = ref.watch(supabaseClientProvider);
 
-  return RemoteDatabaseDataSource(client: client);
-});
+      return RemoteDatabaseDataSource(client: client);
+    });
