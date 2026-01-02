@@ -23,8 +23,10 @@ Future<void> main() async {
     anonKey:
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhc29uaHVic294am5oanhhdHJiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDYwNzM3MiwiZXhwIjoyMDc2MTgzMzcyfQ.6JiI1YaIhgQG_3a4236dK_Nh2vQsFQg2A0c7YkV4P6w",
   );
+  final container = ProviderContainer();
+  await container.read(appStartServiceProvider).onAppStart();
 
-  runApp(ProviderScope(child: App()));
+  runApp(UncontrolledProviderScope(container: container, child: App()));
 }
 
 class App extends ConsumerWidget {

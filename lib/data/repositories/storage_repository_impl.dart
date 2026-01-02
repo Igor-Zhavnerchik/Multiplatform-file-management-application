@@ -1,4 +1,5 @@
 import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/core/services/current_user_service.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
@@ -24,7 +25,8 @@ class StorageRepositoryImpl extends StorageRepository {
   final SyncProcessor syncProcessor;
   final FileModelMapper mapper;
   final UuidGenerationService uuidService;
-  late final String currentUserId;
+  final CurrentUserService currentUserService;
+  String get currentUserId => currentUserService.currentUserId;
   StorageRepositoryImpl({
     required this.client,
     required this.remoteDataSource,
@@ -34,13 +36,14 @@ class StorageRepositoryImpl extends StorageRepository {
     required this.syncProcessor,
     required this.mapper,
     required this.uuidService,
+    required this.currentUserService,
   });
-
+  /* 
   @override
   void init({required String userId}) {
     currentUserId = userId;
     debugLog('storage repository initialized with user id: $userId');
-  }
+  } */
 
   Future<Result<List<FileModel>>> _getRemoteFileList() async {
     var rawFileListResult = await remoteDataSource.getFileList();

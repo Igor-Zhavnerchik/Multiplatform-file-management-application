@@ -1,20 +1,22 @@
 import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/core/services/current_user_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 import 'package:path/path.dart' as p;
 
 class StoragePathService {
   late final String appRootPath;
   final FilesDao filesTable;
-  late final String currentUserId;
+  final CurrentUserService currentUserService;
+  String get currentUserId => currentUserService.currentUserId;
 
-  StoragePathService({required this.filesTable});
+  StoragePathService({
+    required this.filesTable,
+    required this.currentUserService,
+  });
 
-  void init({required String appRootPath, required String userId}) {
+  void init({required String appRootPath}) {
     this.appRootPath = appRootPath;
-    currentUserId = userId;
-    debugLog(
-      'Path Service INIT with user id: $userId, root: ${this.appRootPath}',
-    );
+    debugLog('Path Service INIT with root: ${this.appRootPath}');
   }
 
   String getRoot() {

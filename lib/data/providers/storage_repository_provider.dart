@@ -1,4 +1,6 @@
 import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/core/providers/current_user_service_provider.dart';
+import 'package:cross_platform_project/core/services/current_user_service.dart';
 import 'package:cross_platform_project/data/providers/current_user_provider.dart';
 import 'package:cross_platform_project/data/providers/file_model_mapper_provider.dart';
 import 'package:cross_platform_project/data/providers/uuid_generation_service_provider.dart';
@@ -20,6 +22,7 @@ final storageRepositoryProvider = Provider.autoDispose<StorageRepository>((
   final syncStatusManager = ref.watch(syncStatusManagerProvider);
   final mapper = ref.watch(fileModelMapperProvider);
   final uuidService = ref.watch(uuidGenerationServiceProvider);
+  final currentUserService = ref.watch(currentUserServiceProvider);
 
   debugLog('creating storage repository');
   return StorageRepositoryImpl(
@@ -31,5 +34,6 @@ final storageRepositoryProvider = Provider.autoDispose<StorageRepository>((
     syncStatusManager: syncStatusManager,
     mapper: mapper,
     uuidService: uuidService,
+    currentUserService: currentUserService,
   );
 });

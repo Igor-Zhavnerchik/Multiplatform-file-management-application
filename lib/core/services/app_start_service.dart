@@ -22,23 +22,16 @@ class AppStartService {
     required this.storage,
     required this.ref,
   });
-
+  /* 
   void resetAppState() {
     ref.invalidate(storagePathServiceProvider);
     ref.invalidate(storageRepositoryProvider);
     ref.read(storagePathServiceProvider);
     ref.read(storageRepositoryProvider);
-  }
+  } */
 
   //FIXME: add error handling
-  Future<Result<void>> onUserLogin({required String userId}) async {
-    resetAppState();
-    pathService.init(
-      userId: userId,
-      appRootPath: (await getApplicationDocumentsDirectory()).path,
-    );
-    storage.init(userId: userId);
-    debugLog('storage initialized');
+  Future<Result<void>> onUserLogin() async {
     await storage.ensureRootExists();
     debugLog('starting scan');
     //await fsScanHandler.executeScan();
@@ -52,6 +45,9 @@ class AppStartService {
   }
 
   Future<Result<void>> onAppStart() async {
+    pathService.init(
+      appRootPath: (await getApplicationDocumentsDirectory()).path,
+    );
     return Success(null);
   }
 }
