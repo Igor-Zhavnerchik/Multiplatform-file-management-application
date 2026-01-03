@@ -25,7 +25,7 @@ Future<void> main() async {
   );
   final container = ProviderContainer();
   await container.read(appStartServiceProvider).onAppStart();
-
+  debugLog('in main!');
   runApp(UncontrolledProviderScope(container: container, child: App()));
 }
 

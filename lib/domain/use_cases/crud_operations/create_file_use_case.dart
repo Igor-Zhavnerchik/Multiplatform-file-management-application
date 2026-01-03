@@ -1,3 +1,4 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
@@ -14,6 +15,7 @@ class CreateFileUseCase {
   }) async {
     Result result = Success(null);
     for (var request in requests) {
+      debugLog('processing creation request for ${request.name}');
       result = await repository.createFile(parent: parent, request: request);
 
       if (result is Failure) {

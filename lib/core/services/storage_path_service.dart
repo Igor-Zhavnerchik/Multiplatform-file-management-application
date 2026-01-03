@@ -61,7 +61,6 @@ class StoragePathService {
 
   Future<String> getLocalPath({required String? fileId}) async {
     if (fileId == null) {
-      debugLog('root: $appRootPath');
       return p.join(appRootPath, 'users', currentUserId);
     }
 

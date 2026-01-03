@@ -26,9 +26,8 @@ final localDataSourceProvider = Provider.autoDispose<LocalDataSource>((ref) {
   );
 });
 
-final storagePathServiceProvider = Provider.autoDispose<StoragePathService>((
-  ref,
-) {
+final storagePathServiceProvider = Provider<StoragePathService>((ref) {
+  ref.onDispose(() => debugLog('PATH SERVICE DISPOSED'));
   final filesTable = ref.watch(filesTableProvider);
   final currentUserService = ref.watch(currentUserServiceProvider);
   return StoragePathService(

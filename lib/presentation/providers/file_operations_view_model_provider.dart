@@ -2,6 +2,6 @@ import 'package:cross_platform_project/presentation/widgets/file_operations_view
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final fileOperationsViewModelProvider =
-    NotifierProvider.autoDispose<FileOperationsViewModel, FileOperationsState>(
-      () => FileOperationsViewModel(),
-    );
+    NotifierProvider<FileOperationsViewModel, FileOperationsState>(() {
+      return FileOperationsViewModel();
+    });

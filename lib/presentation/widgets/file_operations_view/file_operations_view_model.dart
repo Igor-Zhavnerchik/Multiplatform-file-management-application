@@ -102,6 +102,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
 
   @override
   FileOperationsState build() {
+    ref.onDispose(() => debugLog('DISPOSED: FILE OP VM'));
     return FileOperationsState(pendingCreateRequests: [emptyRequest]);
   }
 
@@ -110,6 +111,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
   }
 
   Future<void> createFile({required FileEntity parent}) async {
+    debugLog('VM: creating ${state.pendingCreateRequests.length} files');
     if (state.pendingCreateRequests.first.name.isNotEmpty) {
       final result = await _createFileUseCase(
         parent: parent,
