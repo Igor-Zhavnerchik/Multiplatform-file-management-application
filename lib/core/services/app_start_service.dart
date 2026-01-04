@@ -3,9 +3,8 @@ import 'package:cross_platform_project/core/services/storage_path_service.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/file_system_scan/file_system_watcher.dart';
 import 'package:cross_platform_project/data/file_system_scan/fs_scan_handler.dart';
-import 'package:cross_platform_project/data/providers/providers.dart';
-import 'package:cross_platform_project/data/providers/storage_repository_provider.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
+import 'package:cross_platform_project/domain/repositories/sync_repositry.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -14,6 +13,7 @@ class AppStartService {
   final FsScanHandler fsScanHandler;
   final StoragePathService pathService;
   final StorageRepository storage;
+  final SyncRepository sync;
   final Ref ref;
   AppStartService({
     required this.fsWatcher,
@@ -21,6 +21,7 @@ class AppStartService {
     required this.pathService,
     required this.storage,
     required this.ref,
+    required this.sync,
   });
   /* 
   void resetAppState() {
@@ -39,7 +40,7 @@ class AppStartService {
     debugLog('launching fs watcher');
     fsWatcher.watchFS();
     debugLog('launching sync');
-    storage.syncronize();
+    sync.syncronizeAll();
 
     return Success(null);
   }

@@ -19,19 +19,19 @@ class DeleteHandler {
     final Result<void> result;
     if (event.source == SyncSource.remote) {
       await syncStatusManager.updateStatus(
-        model: event.payload,
+        fileId: event.payload.id,
         status: SyncStatus.deletingLocally,
       );
       result = await local.deleteFile(model: event.payload, softDelete: false);
       if (result.isFailure) {
         await syncStatusManager.updateStatus(
-          model: event.payload,
+          fileId: event.payload.id,
           status: SyncStatus.failedLocalDelete,
         );
       }
     } else {
       await syncStatusManager.updateStatus(
-        model: event.payload,
+        fileId: event.payload.id,
         status: SyncStatus.deletingRemotely,
       );
       final localResult = await local.deleteFile(
@@ -44,7 +44,7 @@ class DeleteHandler {
       result = await remote.deleteFile(model: event.payload, softDelete: true);
       if (result.isFailure) {
         await syncStatusManager.updateStatus(
-          model: event.payload,
+          fileId: event.payload.id,
           status: SyncStatus.failedRemoteDelete,
         );
       }

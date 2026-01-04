@@ -1,7 +1,7 @@
 import 'package:cross_platform_project/core/services/file_picker_service.dart';
 import 'package:cross_platform_project/core/services/settings_service.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
-import 'package:cross_platform_project/presentation/widgets/file_operations_view/file_operations_view_model.dart';
+import 'package:cross_platform_project/presentation/view_models/file_operations_view_model.dart';
 
 class PickExistingFilesUseCase {
   final FilePickerService filePickerService;

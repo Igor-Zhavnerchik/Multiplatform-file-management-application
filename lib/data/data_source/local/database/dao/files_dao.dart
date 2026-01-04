@@ -22,10 +22,7 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
     return select(files).get();
   }
 
-  Future<DbFile?> getFileById({
-    required String? fileId,
-    required String ownerId,
-  }) {
+  Future<DbFile?> getFileById({required String? fileId}) {
     return (select(
       files,
     )..where((file) => file.id.equalsNullable(fileId))).getSingleOrNull();
@@ -60,7 +57,9 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
   }
 
   Stream<List<DbFile>> watchFolders(String? parentId, String ownerId) {
-    debugLog('returning files from db for user: $ownerId');
+    debugLog(
+      'returning files with parent id: $parentId from db for user: $ownerId',
+    );
     return (select(files)..where(
           (entity) =>
               entity.parentId.equalsNullable(parentId) &
@@ -84,8 +83,7 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
   }
 
   Future<String?> getNameById(String id) async {
-    final query = select(files)
-      ..where((entity) => entity.id.equals(id) & entity.deletedAt.isNull());
+    final query = select(files)..where((entity) => entity.id.equals(id));
     return (await query.getSingleOrNull())?.name;
   }
 
@@ -102,8 +100,7 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
   }
 
   Future<String?> getParentIdbyId(String id) async {
-    final query = select(files)
-      ..where((entity) => entity.id.equals(id) & entity.deletedAt.isNull());
+    final query = select(files)..where((entity) => entity.id.equals(id));
     final parentId = (await query.getSingleOrNull())?.parentId;
     return parentId;
   }
@@ -131,5 +128,14 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
             entity.localFileId.equals(fileId) & entity.deletedAt.isNull(),
       );
     return (await query.getSingleOrNull())?.localFileId;
+  }
+
+  Future<void> updateOnlyStatus(String id, SyncStatus status) {
+    return (update(files)..where((t) => t.id.equals(id))).write(
+      FilesCompanion(
+        syncStatus: Value(status.name),
+        // Остальные поля НЕ ТРОГАЕМ, они не затрутся
+      ),
+    );
   }
 }

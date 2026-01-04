@@ -19,7 +19,7 @@ class LoadHandler {
     final src = event.source == SyncSource.remote ? remote : local;
     final dest = event.source == SyncSource.remote ? local : remote;
     await syncStatusManager.updateStatus(
-      model: event.payload,
+      fileId: event.payload.id,
       status: event.source == SyncSource.remote
           ? SyncStatus.downloading
           : SyncStatus.uploading,
@@ -28,7 +28,7 @@ class LoadHandler {
     if (dataResult.isFailure) {
       print('read failed.\n${(dataResult as Failure).error}');
       syncStatusManager.updateStatus(
-        model: event.payload,
+        fileId: event.payload.id,
         status: event.source == SyncSource.remote
             ? SyncStatus.failedDownload
             : SyncStatus.failedUpload,
@@ -43,7 +43,7 @@ class LoadHandler {
     if (saveResult.isFailure) {
       print('write failed.\n${(saveResult as Failure).error}');
       await syncStatusManager.updateStatus(
-        model: event.payload,
+        fileId: event.payload.id,
         status: event.source == SyncSource.remote
             ? SyncStatus.failedDownload
             : SyncStatus.failedUpload,
@@ -51,7 +51,7 @@ class LoadHandler {
       return saveResult;
     }
     await syncStatusManager.updateStatus(
-      model: event.payload,
+      fileId: event.payload.id,
       status: SyncStatus.syncronized,
     );
     return Success(null);

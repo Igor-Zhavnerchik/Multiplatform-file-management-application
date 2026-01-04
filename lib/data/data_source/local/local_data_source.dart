@@ -150,9 +150,10 @@ class LocalDataSource {
         child: model.name,
       );
       final currentPath = await pathService.getLocalPath(fileId: model.id);
-      /* debugLog('in update for ${model.name}'); */
-      /* debugLog('    current path: $currentPath');
+      /* debugLog('in update for ${model.name}');
+      debugLog('    current path: $currentPath');
       debugLog('    model path: $modelPath'); */
+      //FIXME may be optimized compare only parents if different compute path
       if (currentPath != modelPath) {
         await localStorage.moveEntity(
           currentPath: currentPath,
@@ -161,13 +162,13 @@ class LocalDataSource {
           overwrite: overwrite,
         );
       }
-
-      model = model.copyWith(
-        hash: await _getHash(model: model, filePath: modelPath),
-      );
-
+      if (model.deletedAt != null) {
+        model = model.copyWith(
+          hash: await _getHash(model: model, filePath: modelPath),
+        );
+      }
       await filesTable.updateFile(model.id, mapper.toUpdate(model));
-    }, source: 'LocalDataSource.moveFile');
+    }, source: 'LocalDataSource.updateFile');
   }
 
   Future<Result<FileSystemEntity>> getFile({required FileModel model}) async {
@@ -184,6 +185,7 @@ class LocalDataSource {
     bool onlyFolders = false,
     bool onlyFiles = false,
   }) {
+    debugLog('getting stream from local ');
     if (onlyFolders) {
       return filesTable.watchFolders(parentId, ownerId);
     } else if (onlyFiles) {
@@ -271,5 +273,10 @@ class LocalDataSource {
     return model.isFolder
         ? null
         : await hashService.hashFile(file: File(filePath));
+  }
+
+  Future<FileModel?> getFileModel({required String id}) async {
+    final dbFile = await filesTable.getFileById(fileId: id);
+    return dbFile == null ? null : mapper.fromDbFile(dbFile);
   }
 }

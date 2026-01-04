@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/data/providers/file_stream_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
@@ -5,6 +7,7 @@ import 'package:cross_platform_project/presentation/dialog/file_operation_dialog
 import 'package:cross_platform_project/presentation/providers/auth_view_model_provider.dart';
 import 'package:cross_platform_project/presentation/providers/file_operations_view_model_provider.dart';
 import 'package:cross_platform_project/presentation/providers/home_view_model_provider.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -86,9 +89,17 @@ class FileView extends ConsumerWidget {
     }
     final childrenStream = ref.watch(childrenListProvider(currentFolder.id));
     return childrenStream.when(
-      data: (children) => GestureDetector(
+      data: (children) => AdaptiveGestureDetector(
         behavior: HitTestBehavior.opaque,
-        onSecondaryTapDown: (details) {
+        onSecondaryTapDownDesktop: (details) {
+          ref
+              .read(homeViewModelProvider.notifier)
+              .setDialog(
+                ContextDialogType.inFolderMenu,
+                dialogPosition: details.globalPosition,
+              );
+        },
+        onLongPressStartMobile: (details) {
           ref
               .read(homeViewModelProvider.notifier)
               .setDialog(
@@ -133,9 +144,9 @@ class FileViewElement extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final iconSize = constraints.maxHeight - 20;
-        return GestureDetector(
+        return AdaptiveGestureDetector(
           behavior: HitTestBehavior.opaque,
-          onSecondaryTapDown: (details) {
+          onSecondaryTapDownDesktop: (details) {
             ref.read(homeViewModelProvider.notifier)
               ..setSelected(element)
               ..setDialog(
@@ -143,35 +154,96 @@ class FileViewElement extends ConsumerWidget {
                 dialogPosition: details.globalPosition,
               );
           },
+          onTapDesktop: () =>
+              ref.read(homeViewModelProvider.notifier).setSelected(element),
+          onDoubleTapDesktop: () =>
+              ref.read(homeViewModelProvider.notifier).openElement(element),
 
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () =>
-                ref.read(homeViewModelProvider.notifier).setSelected(element),
-            onDoubleTap: () =>
-                ref.read(homeViewModelProvider.notifier).openElement(element),
+          onLongPressStartMobile: (details) {
+            ref.read(homeViewModelProvider.notifier)
+              ..setSelected(element)
+              ..setDialog(
+                ContextDialogType.optionMenu,
+                dialogPosition: details.globalPosition,
+              );
+          },
+          onTapMobile: () {
+            ref.read(homeViewModelProvider.notifier).openElement(element);
+          },
 
-            child: switch (mode) {
-              FileViewMode.grid => Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(getIcon(), size: iconSize),
-                  Text(element.name),
-                ],
-              ),
-              FileViewMode.list => Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(getIcon(), size: iconSize),
-                  Text(element.name),
-                ],
-              ),
-            },
-          ),
+          child: switch (mode) {
+            FileViewMode.grid => Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(getIcon(), size: iconSize),
+                Text(element.name),
+              ],
+            ),
+            FileViewMode.list => Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(getIcon(), size: iconSize),
+                Text(element.name),
+              ],
+            ),
+          },
         );
       },
+    );
+  }
+}
+
+class AdaptiveGestureDetector extends StatefulWidget {
+  final Widget child;
+  final HitTestBehavior? behavior;
+  final GestureTapDownCallback? onSecondaryTapDownDesktop;
+  final GestureLongPressStartCallback? onLongPressStartMobile;
+  final VoidCallback? onDoubleTapDesktop;
+  final VoidCallback? onDoubleTapMobile;
+  final VoidCallback? onTapDesktop;
+  final VoidCallback? onTapMobile;
+
+  AdaptiveGestureDetector({
+    required this.child,
+    this.behavior,
+    this.onSecondaryTapDownDesktop,
+    this.onLongPressStartMobile,
+    this.onDoubleTapDesktop,
+    this.onDoubleTapMobile,
+    this.onTapDesktop,
+    this.onTapMobile,
+    super.key,
+  });
+
+  @override
+  State<AdaptiveGestureDetector> createState() =>
+      _AdaptiveGestureDetectorState();
+}
+
+class _AdaptiveGestureDetectorState extends State<AdaptiveGestureDetector> {
+  bool isDesktop = true;
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (event) {
+        isDesktop =
+            event.kind == PointerDeviceKind.mouse ||
+            event.kind == PointerDeviceKind.trackpad;
+        debugLog('detected ${isDesktop ? 'desktop' : 'mobile'} pointer event');
+      },
+
+      child: GestureDetector(
+        behavior: widget.behavior,
+        onTap: isDesktop ? widget.onTapDesktop : widget.onTapMobile,
+        onDoubleTap: isDesktop
+            ? widget.onDoubleTapDesktop
+            : widget.onDoubleTapMobile,
+        onSecondaryTapDown: isDesktop ? widget.onSecondaryTapDownDesktop : null,
+        onLongPressStart: isDesktop ? null : widget.onLongPressStartMobile,
+        child: widget.child,
+      ),
     );
   }
 }
@@ -210,6 +282,7 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
 
   @override
   Widget build(BuildContext context) {
+    debugLog('building home!');
     final folderStream = ref.watch(
       onlyFoldersListProvider(
         widget.folder.id.isEmpty ? null : widget.folder.id,

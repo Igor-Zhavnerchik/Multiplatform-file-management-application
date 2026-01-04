@@ -1,4 +1,3 @@
-import 'package:cross_platform_project/data/models/remote_file_model.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 
 class FileModel {
@@ -89,24 +88,6 @@ class FileModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
-    );
-  }
-
-  static FileModel merge({
-    required FileModel localModel,
-    required RemoteFileModel remoteModel,
-  }) {
-    return localModel.copyWith(
-      ownerId: remoteModel.ownerId,
-      parentId: remoteModel.parentId,
-      name: remoteModel.name,
-      depth: remoteModel.depth,
-      mimeType: remoteModel.mimeType,
-      size: remoteModel.size,
-      hash: remoteModel.hash,
-      updatedAt: remoteModel.updatedAt,
-      downloadStatus: remoteModel.downloadStatus,
-      deletedAt: remoteModel.deletedAt,
     );
   }
 }

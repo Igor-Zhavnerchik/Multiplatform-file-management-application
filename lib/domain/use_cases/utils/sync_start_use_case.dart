@@ -1,11 +1,11 @@
-import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
+import 'package:cross_platform_project/domain/repositories/sync_repositry.dart';
 
 class SyncStartUseCase {
   SyncStartUseCase({required this.repository});
 
-  final StorageRepository repository;
+  final SyncRepository repository;
 
   Future<void> call() async {
-    await repository.syncronize();
+    await repository.syncronizeAll();
   }
 }

@@ -8,35 +8,39 @@ import 'package:cross_platform_project/data/sync/sync_handlers/delete_handler.da
 import 'package:cross_platform_project/data/sync/sync_handlers/load_handler.dart';
 import 'package:cross_platform_project/data/sync/sync_handlers/update_handler.dart';
 
-enum SyncAction { load, delete, update }
+enum SyncAction { create, load, delete, update }
 
 enum SyncSource { remote, local }
 
 class SyncEvent {
   final SyncAction action;
   final SyncSource source;
-  final int priority;
+  late final int priority;
   final FileModel payload;
   final int retry;
 
-  const SyncEvent({
+  SyncEvent({
     required this.action,
     required this.source,
-    required this.priority,
     required this.payload,
     this.retry = 0,
-  });
+  }) {
+    priority = switch (action) {
+      SyncAction.load => 30,
+      SyncAction.update => 20,
+      SyncAction.delete => 10,
+      SyncAction.create => 0,
+    };
+  }
 
   SyncEvent copyWith({
     final SyncAction? action,
     final SyncSource? source,
-    final int? priority,
     final FileModel? payload,
     final int? retry,
   }) => SyncEvent(
     action: action ?? this.action,
     source: source ?? this.source,
-    priority: priority ?? this.priority,
     payload: payload ?? this.payload,
     retry: retry ?? this.retry,
   );
@@ -66,26 +70,9 @@ class SyncProcessor {
     return _isProcessing ? _syncCompleter!.future : Future.value();
   }
 
-  void addEvent({
-    required SyncAction action,
-    required SyncSource source,
-    required FileModel payload,
-  }) {
-    _queue.add(
-      SyncEvent(
-        action: action,
-        source: source,
-        priority:
-            payload.depth * 100 +
-            switch (action) {
-              SyncAction.update => 30,
-              SyncAction.load => 20,
-              SyncAction.delete => 10,
-            },
-        payload: payload,
-      ),
-    );
-    debugLog('adding ${action.name} event for ${payload.name}');
+  void addEvent({required SyncEvent event}) {
+    _queue.add(event);
+    debugLog('adding ${event.action.name} event for ${event.payload.name}');
     _process();
   }
 
@@ -118,6 +105,7 @@ class SyncProcessor {
       SyncAction.update => await updateHandler.handle(event),
       SyncAction.load => await loadHandler.handle(event),
       SyncAction.delete => await deleteHandler.handle(event),
+      SyncAction.create => await loadHandler.handle(event),
     };
     if (result.isFailure) {
       if (event.retry >= maxRetry) {

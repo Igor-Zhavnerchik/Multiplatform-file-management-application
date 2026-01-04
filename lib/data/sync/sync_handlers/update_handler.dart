@@ -19,7 +19,7 @@ class UpdateHandler {
     final source = event.source == SyncSource.remote ? local : remote;
 
     await syncStatusManager.updateStatus(
-      model: event.payload,
+      fileId: event.payload.id,
       status: event.source == SyncSource.remote
           ? SyncStatus.updatingLocally
           : SyncStatus.updatingRemotely,
@@ -27,7 +27,7 @@ class UpdateHandler {
     final updateResult = await source.updateFile(model: event.payload);
     if (updateResult.isFailure) {
       await syncStatusManager.updateStatus(
-        model: event.payload,
+        fileId: event.payload.id,
         status: event.source == SyncSource.remote
             ? SyncStatus.failedLocalUpdate
             : SyncStatus.failedRemoteUpdate,

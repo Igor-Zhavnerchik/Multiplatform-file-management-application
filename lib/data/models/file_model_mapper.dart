@@ -1,10 +1,13 @@
+import 'package:cross_platform_project/core/services/settings_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
-import 'package:cross_platform_project/data/models/remote_file_model.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:drift/drift.dart';
 
 class FileModelMapper {
+  final SettingsService settings;
+  FileModelMapper({required this.settings});
+
   FilesCompanion toInsert(
     FileModel model,
     String localFileId, {
@@ -47,7 +50,7 @@ class FileModelMapper {
         size: Value(model.size),
         hash: Value(model.hash),
 
-        syncStatus: Value(model.syncStatus.name),
+        //syncStatus: Value(model.syncStatus.name),
         downloadStatus: Value(model.downloadStatus.name),
         syncEnabled: Value(model.syncEnabled!),
         downloadEnabled: Value(model.downloadEnabled!),
@@ -149,14 +152,12 @@ class FileModelMapper {
 
       'created_at': model.createdAt.toIso8601String(),
       'updated_at': model.updatedAt.toIso8601String(),
-      'deleted_at': model.deletedAt == null
-          ? null
-          : model.updatedAt.toIso8601String(),
+      'deleted_at': model.deletedAt?.toIso8601String(),
     };
   }
 
-  RemoteFileModel fromMetadata({required Map<String, dynamic> metadata}) {
-    return RemoteFileModel(
+  FileModel fromMetadata({required Map<String, dynamic> metadata}) {
+    return FileModel(
       id: metadata['id'],
       ownerId: metadata['owner_id'],
       parentId: metadata['parent_id'],
@@ -178,37 +179,9 @@ class FileModelMapper {
       deletedAt: metadata['deleted_at'] != null
           ? DateTime.parse(metadata['deleted_at'])
           : null,
-    );
-  }
-
-  FileModel fromRemoteFileFodel({
-    required RemoteFileModel remoteFileModel,
-    required bool syncEnabled,
-    required bool downloadEnabled,
-    required SyncStatus defaultStatus,
-  }) {
-    return FileModel(
-      id: remoteFileModel.id,
-      ownerId: remoteFileModel.ownerId,
-      parentId: remoteFileModel.parentId,
-
-      depth: remoteFileModel.depth,
-
-      name: remoteFileModel.name,
-      mimeType: remoteFileModel.mimeType,
-      isFolder: remoteFileModel.isFolder,
-      size: remoteFileModel.size,
-      hash: remoteFileModel.hash,
-
-      syncEnabled: syncEnabled,
-      downloadEnabled: downloadEnabled,
-
-      syncStatus: defaultStatus,
-      downloadStatus: remoteFileModel.downloadStatus,
-
-      createdAt: remoteFileModel.createdAt,
-      updatedAt: remoteFileModel.updatedAt,
-      deletedAt: remoteFileModel.deletedAt,
+      syncEnabled: settings.defaultSyncEnabled,
+      downloadEnabled: settings.defaultDownloadEnabled,
+      syncStatus: SyncStatus.syncronized,
     );
   }
 }

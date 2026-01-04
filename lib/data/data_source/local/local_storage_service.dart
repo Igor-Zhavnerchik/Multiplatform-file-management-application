@@ -20,7 +20,10 @@ class LocalStorageService {
     if (!await file.exists()) {
       await file.create(recursive: true);
     }
-    await file.openWrite(mode: FileMode.write).addStream(bytes);
+    final sink = file.openWrite(mode: FileMode.write);
+    await sink.addStream(bytes);
+    await sink.flush();
+    await sink.close();
   }
 
   Future<Stream<List<int>>> getBytes({required String path}) async {

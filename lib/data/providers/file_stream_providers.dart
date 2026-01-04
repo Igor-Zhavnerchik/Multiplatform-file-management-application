@@ -1,3 +1,4 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/data/providers/current_user_provider.dart';
 import 'package:cross_platform_project/data/providers/storage_repository_provider.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
@@ -20,6 +21,8 @@ final onlyFoldersListProvider = StreamProvider.autoDispose
       final storageRepository = ref.watch(storageRepositoryProvider);
 
       final userId = ref.watch(currentUserIdProvider).value;
+
+      ref.onDispose(() => debugLog('DISPOSED FOLDER STREAM PROVIDER'));
       return storageRepository.watchFileStream(
         parentId: parentId,
         onlyFolders: true,

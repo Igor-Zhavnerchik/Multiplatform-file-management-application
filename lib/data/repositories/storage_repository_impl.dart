@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/services/current_user_service.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
@@ -11,41 +13,41 @@ import 'package:cross_platform_project/data/services/uuid_generation_service.dar
 import 'package:cross_platform_project/data/sync/sync_processor.dart';
 import 'package:cross_platform_project/data/sync/sync_status_manager.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
-import 'package:cross_platform_project/domain/repositories/auth_repository.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
-import 'package:cross_platform_project/presentation/widgets/file_operations_view/file_operations_view_model.dart';
+import 'package:cross_platform_project/domain/repositories/sync_repositry.dart';
+import 'package:cross_platform_project/presentation/view_models/file_operations_view_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StorageRepositoryImpl extends StorageRepository {
   final SupabaseClient client;
   final RemoteDataSource remoteDataSource;
   final LocalDataSource localDataSource;
-  final AuthRepository auth;
   final SyncStatusManager syncStatusManager;
-  final SyncProcessor syncProcessor;
   final FileModelMapper mapper;
   final UuidGenerationService uuidService;
   final CurrentUserService currentUserService;
+  StreamController<SyncEvent>? _controller =
+      StreamController<SyncEvent>.broadcast();
+  @override
+  Stream<SyncEvent> get localSyncEventStream => _controller!.stream;
   String get currentUserId => currentUserService.currentUserId;
   StorageRepositoryImpl({
     required this.client,
     required this.remoteDataSource,
     required this.localDataSource,
-    required this.auth,
     required this.syncStatusManager,
-    required this.syncProcessor,
     required this.mapper,
     required this.uuidService,
     required this.currentUserService,
   });
-  /* 
-  @override
-  void init({required String userId}) {
-    currentUserId = userId;
-    debugLog('storage repository initialized with user id: $userId');
-  } */
 
-  Future<Result<List<FileModel>>> _getRemoteFileList() async {
+  void dispose() {
+    debugLog('DISPOSING STORAGE REPOSITORY');
+    _controller?.close();
+  }
+
+  @override
+  Future<Result<List<FileModel>>> getRemoteFileList() async {
     var rawFileListResult = await remoteDataSource.getFileList();
     if (rawFileListResult.isFailure) {
       return Failure('failed to fetch file list from server');
@@ -53,21 +55,17 @@ class StorageRepositoryImpl extends StorageRepository {
     List<FileModel> fileList =
         ((rawFileListResult as Success).data as List<Map<String, dynamic>>)
             .map<FileModel>(
-              (metadata) => mapper.fromRemoteFileFodel(
-                remoteFileModel: mapper.fromMetadata(metadata: metadata),
-                syncEnabled: true,
-                downloadEnabled: true,
-                defaultStatus: SyncStatus.syncronized,
-              ),
+              (metadata) => mapper.fromMetadata(metadata: metadata),
             )
             .toList();
     return Success(fileList);
   }
 
-  Future<Result<List<FileModel>>> _getLocalFileList() async {
+  @override
+  Future<Result<List<FileModel>>> getLocalFileList() async {
     print('getting file list');
     var rawFileListResult = await localDataSource.getFileList(
-      ownerId: currentUserId!,
+      ownerId: currentUserId,
     );
     if (rawFileListResult.isFailure) {
       return Failure('failed to fetch file list from local database');
@@ -77,153 +75,6 @@ class StorageRepositoryImpl extends StorageRepository {
             .map((dbFile) => mapper.fromDbFile(dbFile))
             .toList();
     return Success(fileList);
-  }
-
-  @override
-  Future<Result<void>> syncronize() async {
-    final remoteFileListResult = await _getRemoteFileList();
-    if (remoteFileListResult.isFailure) {
-      return remoteFileListResult;
-    }
-    final localFileListResult = await _getLocalFileList();
-    if (localFileListResult.isFailure) {
-      return localFileListResult;
-    }
-
-    final List<FileModel> remoteFileList =
-        (remoteFileListResult as Success).data;
-    final List<FileModel> localFileList = (localFileListResult as Success).data;
-    debugLog('local:');
-    for (var file in localFileList) {
-      debugLog('    ${file.name}');
-    }
-    debugLog('remote:');
-    for (var file in remoteFileList) {
-      debugLog('    ${file.name}');
-    }
-
-    final Map<String, FileModel> remoteMap = {};
-    final Map<String, FileModel> localMap = {};
-    for (var remoteFile in remoteFileList) {
-      remoteMap[remoteFile.id] = remoteFile;
-    }
-    for (var localFile in localFileList) {
-      localMap[localFile.id] = localFile;
-    }
-    final Set fileIds = {};
-    fileIds.addAll(remoteMap.keys);
-    fileIds.addAll(localMap.keys);
-
-    for (var fileId in fileIds) {
-      switch ((localMap[fileId], remoteMap[fileId])) {
-        case (FileModel localModel, null):
-          await _handleLocalOnly(localModel: localModel);
-        case (null, FileModel remoteModel):
-          await _handleRemoteOnly(remoteModel: remoteModel);
-        case (FileModel localModel, FileModel remoteModel):
-          await _handleIntersection(
-            localModel: localModel,
-            remoteModel: remoteModel,
-          );
-      }
-    }
-    return Success(null);
-  }
-
-  Future<void> _handleRemoteOnly({required FileModel remoteModel}) async {
-    await syncStatusManager.updateStatus(
-      model: remoteModel,
-      status: SyncStatus.downloading,
-    );
-    syncProcessor.addEvent(
-      action: SyncAction.load,
-      source: SyncSource.remote,
-      payload: remoteModel,
-    );
-  }
-
-  Future<void> _handleLocalOnly({required FileModel localModel}) async {
-    switch (localModel.syncStatus) {
-      case SyncStatus.created || SyncStatus.failedUploadNew:
-        await syncStatusManager.updateStatus(
-          model: localModel,
-          status: SyncStatus.uploadingNew,
-        );
-        syncProcessor.addEvent(
-          action: SyncAction.load,
-          source: SyncSource.local,
-          payload: localModel,
-        );
-      case SyncStatus.syncronized || SyncStatus.deleted:
-        await syncStatusManager.updateStatus(
-          model: localModel,
-          status: SyncStatus.deletingLocally,
-        );
-        syncProcessor.addEvent(
-          action: SyncAction.delete,
-          source: SyncSource.remote,
-          payload: localModel,
-        );
-      default:
-        break;
-    }
-  }
-
-  Future<void> _handleIntersection({
-    required FileModel localModel,
-    required FileModel remoteModel,
-  }) async {
-    switch (localModel.syncStatus) {
-      case SyncStatus.deleted:
-        await syncStatusManager.updateStatus(
-          model: localModel,
-          status: SyncStatus.deletingRemotely,
-        );
-        syncProcessor.addEvent(
-          action: SyncAction.delete,
-          source: SyncSource.local,
-          payload: localModel,
-        );
-      default:
-        /*  debugLog('for ${localModel.name}');
-        debugLog('local time: ${localModel.updatedAt.toIso8601String()}');
-        debugLog('remote time: ${remoteModel.updatedAt.toIso8601String()}'); */
-        switch (localModel.updatedAt.compareTo(remoteModel.updatedAt)) {
-          case > 0:
-            await syncStatusManager.updateStatus(
-              model: localModel,
-              status: localModel.hash == remoteModel.hash
-                  ? SyncStatus.updatingRemotely
-                  : SyncStatus.uploading,
-            );
-            syncProcessor.addEvent(
-              action: localModel.hash == remoteModel.hash
-                  ? SyncAction.update
-                  : SyncAction.load,
-              source: SyncSource.local,
-              payload: localModel,
-            );
-          case < 0:
-            await syncStatusManager.updateStatus(
-              model: localModel,
-              status: localModel.hash == remoteModel.hash
-                  ? SyncStatus.updatingLocally
-                  : SyncStatus.downloading,
-            );
-            syncProcessor.addEvent(
-              action: localModel.hash == remoteModel.hash
-                  ? SyncAction.update
-                  : SyncAction.load,
-              source: SyncSource.remote,
-              payload: remoteModel,
-            );
-          default:
-            await syncStatusManager.updateStatus(
-              model: localModel,
-              status: SyncStatus.syncronized,
-            );
-        }
-    }
   }
 
   @override
@@ -273,6 +124,14 @@ class StorageRepositoryImpl extends StorageRepository {
       );
       return saveResult;
     }
+    debugLog('emitting local create sync event');
+    _controller!.add(
+      SyncEvent(
+        action: SyncAction.create,
+        source: SyncSource.local,
+        payload: newFile,
+      ),
+    );
     return Success(null);
   }
 
@@ -280,7 +139,7 @@ class StorageRepositoryImpl extends StorageRepository {
   Future<Result<void>> deleteFile({required FileEntity entity}) async {
     final model = mapper.fromEntity(entity);
     await syncStatusManager.updateStatus(
-      model: model,
+      fileId: model.id,
       status: SyncStatus.deletingLocally,
     );
     final deleteResult = await localDataSource.deleteFile(
@@ -289,14 +148,22 @@ class StorageRepositoryImpl extends StorageRepository {
     );
     if (deleteResult.isFailure) {
       await syncStatusManager.updateStatus(
-        model: model,
+        fileId: model.id,
         status: SyncStatus.failedLocalDelete,
       );
       return deleteResult;
     }
     await syncStatusManager.updateStatus(
-      model: model,
+      fileId: model.id,
       status: SyncStatus.deleted,
+    );
+    debugLog('emitting local delete sync event');
+    _controller!.add(
+      SyncEvent(
+        action: SyncAction.delete,
+        source: SyncSource.local,
+        payload: model,
+      ),
     );
 
     return Success(null);
@@ -306,7 +173,7 @@ class StorageRepositoryImpl extends StorageRepository {
   Future<Result<void>> updateFile({required FileEntity entity}) async {
     var model = mapper.fromEntity(entity);
     await syncStatusManager.updateStatus(
-      model: model,
+      fileId: model.id,
       status: SyncStatus.updatingLocally,
     );
     model = model.copyWith(updatedAt: DateTime.now().toUtc());
@@ -315,16 +182,23 @@ class StorageRepositoryImpl extends StorageRepository {
     );
     if (updateResult.isFailure) {
       await syncStatusManager.updateStatus(
-        model: model,
+        fileId: model.id,
         status: SyncStatus.failedLocalUpdate,
       );
       return updateResult;
     }
     await syncStatusManager.updateStatus(
-      model: model,
+      fileId: model.id,
       status: SyncStatus.updated,
     );
-
+    debugLog('emitting local update sync event');
+    _controller!.add(
+      SyncEvent(
+        action: SyncAction.update,
+        source: SyncSource.local,
+        payload: model,
+      ),
+    );
     return Success(null);
   }
 
@@ -393,6 +267,7 @@ class StorageRepositoryImpl extends StorageRepository {
     bool onlyFiles = false,
     required String? ownerId,
   }) {
+    debugLog('getting file stream in storage repository');
     return ownerId != null
         ? localDataSource
               .getFileStream(
@@ -407,5 +282,10 @@ class StorageRepositoryImpl extends StorageRepository {
                     .toList(),
               )
         : Stream.empty();
+  }
+
+  @override
+  Future<FileModel?> getFileModelbyId({required String id}) async {
+    return await localDataSource.getFileModel(id: id);
   }
 }

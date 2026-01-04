@@ -12,6 +12,8 @@ class FileOpenService {
     final openResult = await OpenFilex.open(filePath);
     return openResult.type == ResultType.done
         ? Success(null)
-        : Failure('Failed to open file: ${openResult.message}');
+        : Failure(
+            'Failed to open file: ${openResult.message} reason: ${openResult.type}',
+          );
   }
 }

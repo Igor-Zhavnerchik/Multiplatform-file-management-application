@@ -1,7 +1,5 @@
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/providers/current_user_service_provider.dart';
-import 'package:cross_platform_project/core/services/current_user_service.dart';
-import 'package:cross_platform_project/data/providers/current_user_provider.dart';
 import 'package:cross_platform_project/data/providers/file_model_mapper_provider.dart';
 import 'package:cross_platform_project/data/providers/uuid_generation_service_provider.dart';
 import 'package:cross_platform_project/data/repositories/storage_repository_impl.dart';
@@ -17,23 +15,23 @@ final storageRepositoryProvider = Provider.autoDispose<StorageRepository>((
   final client = ref.watch(supabaseClientProvider);
   final remoteDataSource = ref.watch(remoteDataSourceProvider);
   final localDataSource = ref.watch(localDataSourceProvider);
-  final auth = ref.watch(authRepositoryProvider);
-  final syncProcessor = ref.watch(syncProcessorProvider);
   final syncStatusManager = ref.watch(syncStatusManagerProvider);
   final mapper = ref.watch(fileModelMapperProvider);
   final uuidService = ref.watch(uuidGenerationServiceProvider);
   final currentUserService = ref.watch(currentUserServiceProvider);
 
   debugLog('creating storage repository');
-  return StorageRepositoryImpl(
+  final repo = StorageRepositoryImpl(
     client: client,
     remoteDataSource: remoteDataSource,
     localDataSource: localDataSource,
-    auth: auth,
-    syncProcessor: syncProcessor,
     syncStatusManager: syncStatusManager,
     mapper: mapper,
     uuidService: uuidService,
     currentUserService: currentUserService,
   );
+  ref.onDispose(() {
+    repo.dispose();
+  });
+  return repo;
 });

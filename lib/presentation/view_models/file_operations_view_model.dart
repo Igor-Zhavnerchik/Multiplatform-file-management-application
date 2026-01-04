@@ -167,6 +167,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
   }
 
   Future<void> setCopyFrom({required bool isCut}) async {
+    ref.read(homeViewModelProvider.notifier).clearDialog();
     state = state.copyWith(
       copyFrom: ref.read(homeViewModelProvider).selected!,
       isCut: isCut,

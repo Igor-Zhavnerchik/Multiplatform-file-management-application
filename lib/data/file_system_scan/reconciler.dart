@@ -74,12 +74,11 @@ class Reconciler {
             debugLog('local id: ${fsEntry!.localFileId}');
             final dbParentId = (await filesTable.getFileById(
               fileId: file.parentId,
-              ownerId: file.ownerId,
             ))?.localFileId;
             if ((fsHash != file.hash && fsHash != null) ||
-                (file.name != pathService.getName(fsEntry!.path)) ||
+                (file.name != pathService.getName(fsEntry.path)) ||
                 (dbParentId != fsEntry.parentLocalFileId)) {
-              debugLog('path: ${fsEntry!.path} decision: update');
+              debugLog('path: ${fsEntry.path} decision: update');
               debugLog('    reason: ');
               debugLog(
                 'fs: hash: $fsHash, name: ${pathService.getName(fsEntry.path)}, parent id: ${fsEntry.parentLocalFileId} ',

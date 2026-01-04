@@ -107,7 +107,10 @@ class HomeViewModel extends Notifier<HomeViewState> {
         canGoForward: _historyNavigator.canGoForward,
       );
     } else {
-      await _openFileUseCase.call(file: element);
+      (await _openFileUseCase.call(file: element)).when(
+        success: (_) => debugLog('Successfully opened ${element.name}'),
+        failure: (failure, _) => debugLog(failure),
+      );
     }
   }
 

@@ -1,19 +1,19 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
-import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
-import 'package:cross_platform_project/data/models/file_model.dart';
+import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 
 class SyncStatusManager {
-  final LocalDataSource localSource;
+  final FilesDao filesTable;
 
-  SyncStatusManager({required this.localSource});
+  SyncStatusManager({required this.filesTable});
 
   Future<Result<void>> updateStatus({
-    required FileModel model,
+    required String fileId,
     required SyncStatus status,
   }) async {
-    return await localSource.updateFile(
-      model: model.copyWith(syncStatus: status),
-    );
+    debugLog('updating status for id $fileId to "$status"');
+    await filesTable.updateOnlyStatus(fileId, status);
+    return Success(null);
   }
 }
