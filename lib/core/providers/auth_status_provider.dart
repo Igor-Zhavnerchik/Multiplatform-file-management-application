@@ -14,8 +14,11 @@ final authStatusProvider = StreamProvider<AuthStatus>((ref) async* {
 
   await for (final event in client.auth.onAuthStateChange) {
     final session = event.session;
+    debugLog('session: $session');
     if (firstEmit) {
-      yield (await authRepository.resumeSession())
+      debugLog('checking on first emit');
+      debugLog('resume session: ${await authRepository.resumeSession()}');
+      yield (await authRepository.resumeSession() && session != null)
           ? AuthStatus.authenticated
           : AuthStatus.unauthenticated;
       firstEmit = false;

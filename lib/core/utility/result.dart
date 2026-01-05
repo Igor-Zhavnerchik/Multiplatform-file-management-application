@@ -6,11 +6,11 @@ sealed class Result<T> {
 
   R when<R>({
     required R Function(T data) success,
-    required R Function(String message, Object? error) failure,
+    required R Function(String message, Object? error, String? source) failure,
   }) {
     return switch (this) {
       Success<T> s => success(s.data),
-      Failure<T> f => failure(f.message, f.error),
+      Failure<T> f => failure(f.message, f.error, f.source),
     };
   }
 }

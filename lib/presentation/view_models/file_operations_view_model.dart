@@ -14,7 +14,6 @@ import 'package:cross_platform_project/domain/use_cases/crud_operations/delete_f
 import 'package:cross_platform_project/domain/use_cases/crud_operations/rename_file_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/utils/pick_existing_files_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/utils/sync_start_use_case.dart';
-import 'package:cross_platform_project/presentation/providers/home_view_model_provider.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -93,6 +92,9 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
   FsScanHandler get _scanHandler => ref.read(fsScanHandlerProvider);
   SettingsService get _settingsService => ref.read(settingsServiceProvider);
 
+  bool get defaultSyncEnabled => _settingsService.defaultSyncEnabled;
+  bool get defaultDownloadEnabled => _settingsService.defaultDownloadEnabled;
+
   FileCreateRequest get emptyRequest => FileCreateRequest(
     name: '',
     isFolder: false,
@@ -110,7 +112,14 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
     state = state.copyWith(pendingCreateRequests: [emptyRequest]);
   }
 
-  Future<void> createFile({required FileEntity parent}) async {
+  //FIXME
+  Future<Result<void>> createFile({
+    required FileEntity parent,
+    required bool isFolder,
+    required String name,
+    required bool syncEnabled,
+    required bool downloadEnabled,
+  }) async {
     debugLog('VM: creating ${state.pendingCreateRequests.length} files');
     if (state.pendingCreateRequests.first.name.isNotEmpty) {
       final result = await _createFileUseCase(
@@ -119,17 +128,18 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
       );
 
       _setDefaultCreateRequest();
+      return result;
+    } else {
+      return Failure('fail');
     }
   }
 
-  Future<void> deleteFile() async {
-    var deleted = await _deleteFileUseCase(
-      entity: ref.read(homeViewModelProvider).selected!,
-    );
-    debugLog('in delete file. deleted: $deleted');
+  Future<Result<void>> deleteFile({required FileEntity entity}) async {
+    var result = await _deleteFileUseCase(entity: entity);
+    return result;
   }
 
-  Future<void> renameFile({
+  Future<Result<void>> renameFile({
     required FileEntity entity,
     required String newName,
   }) async {
@@ -137,7 +147,10 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
       entity: entity,
       newName: newName,
     );
-    _setDefaultCreateRequest();
+    if (renameResult.isSuccess) {
+      _setDefaultCreateRequest();
+    }
+    return renameResult;
   }
 
   Future<void> setNewFileState({
@@ -166,19 +179,18 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
     }
   }
 
-  Future<void> setCopyFrom({required bool isCut}) async {
-    ref.read(homeViewModelProvider.notifier).clearDialog();
-    state = state.copyWith(
-      copyFrom: ref.read(homeViewModelProvider).selected!,
-      isCut: isCut,
-    );
+  Future<void> setCopyFrom({
+    required bool isCut,
+    required FileEntity copyFrom,
+  }) async {
+    state = state.copyWith(copyFrom: copyFrom, isCut: isCut);
   }
 
-  Future<void> copyTo() async {
+  Future<void> copyTo({required FileEntity folder}) async {
     if (state.copyFrom != null) {
       await _copyFileUseCase(
         copyFrom: state.copyFrom!,
-        copyTo: ref.read(homeViewModelProvider).currentFolder!,
+        copyTo: folder,
         isCut: state.isCut!,
       );
       state = state.copyWith(isCut: null, copyFrom: null);

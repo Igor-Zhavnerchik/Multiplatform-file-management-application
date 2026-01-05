@@ -16,4 +16,5 @@ class SyncStatusManager {
     await filesTable.updateOnlyStatus(fileId, status);
     return Success(null);
   }
+
 }

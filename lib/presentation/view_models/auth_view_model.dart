@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/domain/providers/sign_out_use_case_provider.dart';
 import 'package:cross_platform_project/domain/providers/user_login_use_case_provider.dart';
 import 'package:cross_platform_project/domain/providers/user_registration_use_case.dart';
@@ -10,57 +10,13 @@ import 'package:cross_platform_project/domain/use_cases/auth_operations/user_log
 import 'package:cross_platform_project/domain/use_cases/auth_operations/user_registration_use_case.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-enum ErrorMessage {
-  noError(null),
-  emptyFieldError('Fields can\'t be empty'),
-  invalidPasswordOrEmailError('Invalid email or password'),
-  failedLoginError('An error occured in login'),
-
-  differentPasswordsError('Passwords should match'),
-  failedRegisterError('An error occured in registration');
-
-  final String? errorMessage;
-
-  const ErrorMessage(this.errorMessage);
-}
-
 class AuthViewState {
-  final String email;
-  final String password;
-  final String confirmPassword;
-  final bool saveOnThisDevice;
-  final bool hasError;
-  final ErrorMessage errorMessage;
   final bool isAuthorized;
 
-  AuthViewState({
-    this.email = '',
-    this.password = '',
-    this.confirmPassword = '',
-    this.saveOnThisDevice = false,
-    this.hasError = false,
-    this.errorMessage = ErrorMessage.noError,
-    this.isAuthorized = false,
-  });
+  AuthViewState({this.isAuthorized = false});
 
-  AuthViewState copyWith({
-    String? email,
-    String? password,
-    String? confirmPassword,
-    bool? saveOnThisDevice,
-    bool? hasError,
-    ErrorMessage? errorMessage,
-    bool? isAuthorized,
-  }) {
-    return AuthViewState(
-      email: email ?? this.email,
-      password: password ?? this.password,
-      confirmPassword: confirmPassword ?? this.confirmPassword,
-      saveOnThisDevice: saveOnThisDevice ?? this.saveOnThisDevice,
-      hasError: hasError ?? this.hasError,
-      errorMessage: errorMessage ?? this.errorMessage,
-      isAuthorized: isAuthorized ?? this.isAuthorized,
-    );
+  AuthViewState copyWith({bool? isAuthorized}) {
+    return AuthViewState(isAuthorized: isAuthorized ?? this.isAuthorized);
   }
 }
 
@@ -79,45 +35,20 @@ class AuthViewModel extends Notifier<AuthViewState> {
     return AuthViewState();
   }
 
-  void setPassword(String password) {
-    state = state.copyWith(password: password);
-  }
-
-  void setConfirmPassword(String confirmPassword) {
-    state = state.copyWith(confirmPassword: confirmPassword);
-  }
-
-  void setEmail(String email) {
-    state = state.copyWith(email: email);
-  }
-
-  void setSaveOnThisDevice(bool save) {
-    state = state.copyWith(saveOnThisDevice: save);
-  }
-
-  Future<void> tryLogin() async {
-    if (state.email.isEmpty || state.password.isEmpty) {
-      state = state.copyWith(
-        hasError: true,
-        errorMessage: ErrorMessage.emptyFieldError,
-      );
-      return;
+  Future<Result<void>> tryLogin({
+    required String email,
+    required String password,
+    required bool saveOnThisDevice,
+  }) async {
+    if (email.trim().isEmpty || password.trim().isEmpty) {
+      return Failure('fields cannot be empty');
     }
 
-    final loginResult = await _userLoginUseCase(
-      email: state.email,
-      password: state.password,
-      saveOnThisDevice: state.saveOnThisDevice,
+    return await _userLoginUseCase(
+      email: email,
+      password: password,
+      saveOnThisDevice: saveOnThisDevice,
     );
-    if (loginResult.isSuccess) {
-      state = state.copyWith(hasError: false, isAuthorized: true);
-    } else {
-      state = state.copyWith(
-        hasError: true,
-        errorMessage: ErrorMessage.invalidPasswordOrEmailError,
-        isAuthorized: false,
-      );
-    }
   }
 
   Future<void> signOut() async {
@@ -125,23 +56,17 @@ class AuthViewModel extends Notifier<AuthViewState> {
     await _signOutUseCase();
   }
 
-  Future<void> tryRegister() async {
-    if (state.password == state.confirmPassword) {
-      var regResult = await _userRegistrationUseCase(
-        email: state.email,
-        password: state.password,
-      );
-      //FIXME make alert on failed reg
-      if (regResult.isSuccess) {
-        tryLogin();
-      } else {
-        debugLog('failed to register');
-      }
-    } else {
-      state = state.copyWith(
-        hasError: true,
-        errorMessage: ErrorMessage.differentPasswordsError,
-      );
+  Future<Result<void>> tryRegister({
+    required String email,
+    required String password,
+    required String confirm,
+  }) async {
+    if (email.trim().isEmpty || password.isEmpty || confirm.isEmpty) {
+      return Failure('Fields cannot be empty');
     }
+    if (password != confirm) {
+      return Failure('Passwords didn\'t match');
+    }
+    return await _userRegistrationUseCase(email: email, password: password);
   }
 }

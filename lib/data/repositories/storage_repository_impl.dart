@@ -14,7 +14,6 @@ import 'package:cross_platform_project/data/sync/sync_processor.dart';
 import 'package:cross_platform_project/data/sync/sync_status_manager.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
-import 'package:cross_platform_project/domain/repositories/sync_repositry.dart';
 import 'package:cross_platform_project/presentation/view_models/file_operations_view_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -178,7 +177,7 @@ class StorageRepositoryImpl extends StorageRepository {
     );
     model = model.copyWith(updatedAt: DateTime.now().toUtc());
     final updateResult = await localDataSource.updateFile(
-      model: model.copyWith(updatedAt: DateTime.now().toUtc()),
+      model: model,
     );
     if (updateResult.isFailure) {
       await syncStatusManager.updateStatus(

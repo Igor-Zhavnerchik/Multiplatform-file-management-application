@@ -28,6 +28,7 @@ dependencies:
   local_file_id_service:
     path: plugins/local_file_id_service
   open_filex: ^4.2.0
+  flutter_portal: ^1.1.4
 
 dev_dependencies:
   flutter_test:
