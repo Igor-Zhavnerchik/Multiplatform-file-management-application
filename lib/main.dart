@@ -40,6 +40,7 @@ class App extends ConsumerWidget {
     appStartService.onAppStart(); */
 
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       routerConfig: router,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(

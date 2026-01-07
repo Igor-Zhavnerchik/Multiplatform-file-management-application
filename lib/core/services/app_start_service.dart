@@ -23,13 +23,6 @@ class AppStartService {
     required this.ref,
     required this.sync,
   });
-  /* 
-  void resetAppState() {
-    ref.invalidate(storagePathServiceProvider);
-    ref.invalidate(storageRepositoryProvider);
-    ref.read(storagePathServiceProvider);
-    ref.read(storageRepositoryProvider);
-  } */
 
   //FIXME: add error handling
   Future<Result<void>> onUserLogin() async {

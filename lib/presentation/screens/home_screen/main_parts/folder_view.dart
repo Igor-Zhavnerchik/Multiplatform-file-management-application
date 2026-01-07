@@ -20,7 +20,6 @@ class FolderView extends ConsumerWidget {
         data: (data) => ListView(
           padding: const EdgeInsets.symmetric(vertical: 8),
           children: [
-            // Если data пуста, выводим заглушку, иначе первую папку (Root)
             if (data.isNotEmpty)
               FolderWidget(folder: data.first)
             else
@@ -46,7 +45,7 @@ class FolderWidget extends ConsumerStatefulWidget {
   const FolderWidget({super.key, required this.folder, this.depth = 0});
 
   final FileEntity folder;
-  final int depth; // Глубина вложенности для отступов
+  final int depth;
 
   @override
   ConsumerState<FolderWidget> createState() => _FolderWidgetState();
@@ -123,14 +122,11 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
           ),
         ),
 
-        // Вложенные папки
         if (isOpen)
           folderStream.when(
             data: (folders) => Column(
               children: folders
-                  .where(
-                    (f) => f.id != widget.folder.id,
-                  ) // Избегаем рекурсии на саму себя
+                  .where((f) => f.id != widget.folder.id)
                   .map((f) => FolderWidget(folder: f, depth: widget.depth + 1))
                   .toList(),
             ),

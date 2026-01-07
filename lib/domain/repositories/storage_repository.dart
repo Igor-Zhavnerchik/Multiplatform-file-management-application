@@ -4,6 +4,42 @@ import 'package:cross_platform_project/data/sync/sync_processor.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/presentation/view_models/file_operations_view_model.dart';
 
+class FileCreateRequest {
+  final String? localPath;
+  final Stream<List<int>>? bytes;
+  final String name;
+  final bool isFolder;
+  final bool downloadEnabled;
+  final bool syncEnabled;
+
+  FileCreateRequest({
+    required this.name,
+    this.localPath,
+    this.bytes,
+    required this.isFolder,
+    required this.downloadEnabled,
+    required this.syncEnabled,
+  });
+
+  FileCreateRequest copyWith({
+    String? localPath,
+    Stream<List<int>>? bytes,
+    String? name,
+    bool? isFolder,
+    bool? downloadEnabled,
+    bool? syncEnabled,
+  }) {
+    return FileCreateRequest(
+      name: name ?? this.name,
+      localPath: localPath ?? this.localPath,
+      bytes: bytes ?? this.bytes,
+      isFolder: isFolder ?? this.isFolder,
+      downloadEnabled: downloadEnabled ?? this.downloadEnabled,
+      syncEnabled: syncEnabled ?? this.syncEnabled,
+    );
+  }
+}
+
 abstract class StorageRepository {
   Stream<SyncEvent> get localSyncEventStream;
   /* void init({required String userId}); */

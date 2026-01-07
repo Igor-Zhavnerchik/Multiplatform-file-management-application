@@ -26,7 +26,6 @@ class _AuthScreenState extends State<AuthScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Карточка формы
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: showLogin
@@ -34,7 +33,6 @@ class _AuthScreenState extends State<AuthScreen> {
                     : RegistrationForm(key: const ValueKey('reg')),
               ),
               const SizedBox(height: 24),
-              // Переключатель
               TextButton(
                 onPressed: toggleMode,
                 child: Text.rich(

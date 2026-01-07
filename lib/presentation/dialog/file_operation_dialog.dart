@@ -87,7 +87,14 @@ class FolderOperationSelectMenu extends ConsumerWidget {
         ContextDialogOption(
           title: 'Add Files',
           icon: Icons.upload_file_rounded,
-          action: () => fileOpsVM.setPickedFiles(pickFolder: false),
+          action: () =>
+              fileOpsVM.setPickedFiles(pickFolder: false, parent: folder),
+        ),
+        ContextDialogOption(
+          title: 'Add Folder',
+          icon: Icons.upload_file_rounded,
+          action: () =>
+              fileOpsVM.setPickedFiles(pickFolder: true, parent: folder),
         ),
         ContextDialogOption(
           title: 'Paste',

@@ -14,28 +14,20 @@ class NavigationPanel extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    // Определяем, узкий ли экран (мобильный)
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
 
     return AppBar(
-      // Используем чуть более темный/насыщенный тон для контраста
       backgroundColor: colorScheme.surfaceContainerHigh,
       elevation: 0,
-      scrolledUnderElevation:
-          4, // Усиливаем тень при прокрутке контента под панелью
-      // Добавляем тонкую линию снизу для четкого отделения от контента
-      shape: Border(
-        bottom: BorderSide(
-          color: colorScheme.outlineVariant.withOpacity(0.5),
-          width: 1,
-        ),
-      ),
-
-      leadingWidth: 110,
+      centerTitle: false, // Выключаем центрирование для экономии места
+      leadingWidth: isMobile ? 90 : 110, // Уменьшаем ширину на мобилках
       leading: const NavigationControls(),
 
       title: Text(
         'File Manager',
         style: TextStyle(
-          fontSize: 18,
+          fontSize: isMobile ? 16 : 18, // Уменьшаем шрифт
           fontWeight: FontWeight.w600,
           color: colorScheme.onSurface,
         ),
@@ -45,8 +37,8 @@ class NavigationPanel extends ConsumerWidget implements PreferredSizeWidget {
         _NavigationActionButton(
           label: 'Scan',
           icon: Icons.search_rounded,
-          // Используем primary-стиль для важного действия
           isPrimary: false,
+          hideLabel: isMobile, // Скрываем текст
           onPressed: () =>
               ref.read(fileOperationsViewModelProvider.notifier).startScan(),
         ),
@@ -54,18 +46,70 @@ class NavigationPanel extends ConsumerWidget implements PreferredSizeWidget {
           label: 'Sync',
           icon: Icons.sync_rounded,
           isPrimary: true,
+          hideLabel: isMobile, // Скрываем текст
           onPressed: () =>
               ref.read(fileOperationsViewModelProvider.notifier).startSync(),
         ),
-        const VerticalDivider(width: 20, indent: 15, endIndent: 15),
+        const VerticalDivider(width: 10, indent: 20, endIndent: 20),
         IconButton(
           onPressed: () => ref.read(authViewModelProvider.notifier).signOut(),
-          icon: const Icon(Icons.logout_rounded),
+          icon: const Icon(Icons.logout_rounded, size: 20),
           tooltip: 'Sign Out',
           color: colorScheme.error,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
       ],
+    );
+  }
+}
+
+class _NavigationActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final bool isPrimary;
+  final bool hideLabel; // Добавили параметр
+
+  const _NavigationActionButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.isPrimary = false,
+    this.hideLabel = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Если нужно скрыть текст, используем IconButton, иначе кнопку с текстом
+    if (hideLabel) {
+      return IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        tooltip: label,
+        style: IconButton.styleFrom(
+          backgroundColor: isPrimary
+              ? Theme.of(context).colorScheme.primaryContainer
+              : null,
+          foregroundColor: isPrimary
+              ? Theme.of(context).colorScheme.onPrimaryContainer
+              : null,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      child: isPrimary
+          ? FilledButton.icon(
+              onPressed: onPressed,
+              icon: Icon(icon, size: 18),
+              label: Text(label),
+            )
+          : OutlinedButton.icon(
+              onPressed: onPressed,
+              icon: Icon(icon, size: 18),
+              label: Text(label),
+            ),
     );
   }
 }
@@ -109,53 +153,10 @@ class _CircleNavButton extends StatelessWidget {
     return IconButton(
       onPressed: onPressed,
       icon: Icon(icon, size: 18),
-      // Делаем кнопки полупрозрачными на фоне панели
       style: IconButton.styleFrom(
         backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.4),
         disabledBackgroundColor: Colors.transparent,
       ),
-    );
-  }
-}
-
-class _NavigationActionButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-  final bool isPrimary;
-
-  const _NavigationActionButton({
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-    this.isPrimary = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-      child: isPrimary
-          ? FilledButton.icon(
-              onPressed: onPressed,
-              icon: Icon(icon, size: 18),
-              label: Text(label),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-            )
-          : OutlinedButton.icon(
-              onPressed: onPressed,
-              icon: Icon(icon, size: 18),
-              label: Text(label),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                // Делаем рамку чуть заметнее
-                side: BorderSide(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-                ),
-              ),
-            ),
     );
   }
 }

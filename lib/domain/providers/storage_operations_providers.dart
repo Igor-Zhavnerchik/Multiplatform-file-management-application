@@ -60,7 +60,9 @@ final pickExistingFilesUseCaseProvider = Provider<PickExistingFilesUseCase>((
 ) {
   final filePickerService = ref.watch(filePickerServiceProvider);
   final settingsService = ref.watch(settingsServiceProvider);
+  final storage = ref.watch(storageRepositoryProvider);
   return PickExistingFilesUseCase(
+    storage: storage,
     filePickerService: filePickerService,
     settingsService: settingsService,
   );
