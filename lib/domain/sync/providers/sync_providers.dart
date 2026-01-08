@@ -1,13 +1,13 @@
 import 'package:cross_platform_project/data/data_source/local/database/database_providers.dart';
 import 'package:cross_platform_project/data/providers/providers.dart';
-import 'package:cross_platform_project/data/sync/sync_action_source/local_sync_action_source.dart';
-import 'package:cross_platform_project/data/sync/sync_action_source/remote_sync_action_source.dart';
-import 'package:cross_platform_project/data/sync/sync_action_source/sync_action_source.dart';
-import 'package:cross_platform_project/data/sync/sync_handlers/delete_handler.dart';
-import 'package:cross_platform_project/data/sync/sync_handlers/load_handler.dart';
-import 'package:cross_platform_project/data/sync/sync_handlers/update_handler.dart';
-import 'package:cross_platform_project/data/sync/sync_processor.dart';
-import 'package:cross_platform_project/data/sync/sync_status_manager.dart';
+import 'package:cross_platform_project/domain/sync/sync_action_source/local_sync_action_source.dart';
+import 'package:cross_platform_project/domain/sync/sync_action_source/remote_sync_action_source.dart';
+import 'package:cross_platform_project/domain/sync/sync_action_source/sync_action_source.dart';
+import 'package:cross_platform_project/domain/sync/sync_handlers/delete_handler.dart';
+import 'package:cross_platform_project/domain/sync/sync_handlers/load_handler.dart';
+import 'package:cross_platform_project/domain/sync/sync_handlers/update_handler.dart';
+import 'package:cross_platform_project/domain/sync/sync_processor.dart';
+import 'package:cross_platform_project/domain/sync/sync_status_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final syncStatusManagerProvider = Provider<SyncStatusManager>((ref) {

@@ -1,12 +1,10 @@
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/domain/repositories/auth_repository.dart';
-import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
 
 class UserRegistrationUseCase {
   final AuthRepository auth;
-  final StorageRepository storage;
 
-  UserRegistrationUseCase({required this.auth, required this.storage});
+  UserRegistrationUseCase({required this.auth});
 
   Future<Result<void>> call({
     required String email,

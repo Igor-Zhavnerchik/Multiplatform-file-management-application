@@ -1,19 +1,19 @@
 import 'package:cross_platform_project/core/utility/result.dart';
-import 'package:cross_platform_project/data/data_source/remote/remote_data_source.dart';
+import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
-import 'package:cross_platform_project/data/sync/sync_action_source/sync_action_source.dart';
+import 'package:cross_platform_project/domain/sync/sync_action_source/sync_action_source.dart';
 
-class RemoteSyncActionSource extends SyncActionSource {
-  final RemoteDataSource remoteDataSource;
+class LocalSyncActionSource extends SyncActionSource {
+  final LocalDataSource localDataSource;
 
-  RemoteSyncActionSource({required this.remoteDataSource});
+  LocalSyncActionSource({required this.localDataSource});
 
   @override
   Future<Result<void>> deleteFile({
     required FileModel model,
     bool softDelete = true,
   }) async {
-    return await remoteDataSource.deleteFile(
+    return await localDataSource.deleteFile(
       model: model,
       softDelete: softDelete,
     );
@@ -26,7 +26,7 @@ class RemoteSyncActionSource extends SyncActionSource {
     if (model.isFolder) {
       return Success(null);
     }
-    return await remoteDataSource.downloadFile(model: model);
+    return await localDataSource.getFileData(model: model);
   }
 
   @override
@@ -34,11 +34,14 @@ class RemoteSyncActionSource extends SyncActionSource {
     required FileModel model,
     Stream<List<int>>? data,
   }) async {
-    return await remoteDataSource.uploadFile(model: model);
+    return await localDataSource.saveFile(model: model, bytes: data);
   }
 
   @override
   Future<Result<void>> updateFile({required FileModel model}) async {
-    return await remoteDataSource.updateFile(model: model);
+    return await localDataSource.updateFile(
+      model: model.copyWith(updatedAt: DateTime.now().toUtc()),
+      overwrite: true,
+    );
   }
 }

@@ -4,9 +4,9 @@ import 'package:collection/collection.dart';
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
-import 'package:cross_platform_project/data/sync/sync_handlers/delete_handler.dart';
-import 'package:cross_platform_project/data/sync/sync_handlers/load_handler.dart';
-import 'package:cross_platform_project/data/sync/sync_handlers/update_handler.dart';
+import 'package:cross_platform_project/domain/sync/sync_handlers/delete_handler.dart';
+import 'package:cross_platform_project/domain/sync/sync_handlers/load_handler.dart';
+import 'package:cross_platform_project/domain/sync/sync_handlers/update_handler.dart';
 
 enum SyncAction { create, load, delete, update }
 

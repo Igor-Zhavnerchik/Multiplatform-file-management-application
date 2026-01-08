@@ -132,7 +132,7 @@ class _LoginFormState extends ConsumerState<LoginForm> {
                   saveOnThisDevice = v!;
                 }),
               ),
-              const Text('Remember me on this device'),
+              const Text('Remember me'),
             ],
           ),
           const SizedBox(height: 24),

@@ -6,6 +6,7 @@ import 'package:cross_platform_project/data/file_system_scan/reconciler.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
+import 'package:cross_platform_project/domain/sync/sync_status_manager.dart';
 import 'package:uuid/v7.dart';
 
 class DbUpdater {
@@ -13,11 +14,13 @@ class DbUpdater {
     required this.filesTable,
     required this.mapper,
     required this.pathService,
+    required this.statusManager,
   });
 
   final FilesDao filesTable;
   final FileModelMapper mapper;
   final StoragePathService pathService;
+  final SyncStatusManager statusManager;
 
   Future<void> updateDb({required List<DbChange> changeList}) async {
     //Phase 1
@@ -109,6 +112,7 @@ class DbUpdater {
     final inProgress = await filesTable.getFilesByStatus(SyncStatus.creating);
     //final queue = PriorityQueue((Dbfile arg) => arg.)
     for (var file in inProgress) {
+      debugLog('phase 2 for ${file.name}');
       await filesTable.updateFile(
         file.id,
         mapper.toUpdate(
@@ -118,10 +122,13 @@ class DbUpdater {
                 parentId: (await filesTable.getFileByLocalFileId(
                   file.tempParentId,
                 ))?.id,
-                syncStatus: SyncStatus.created,
               ),
           tempParentId: null,
         ),
+      );
+      await statusManager.updateStatus(
+        fileId: file.id,
+        status: SyncStatus.created,
       );
     }
   }

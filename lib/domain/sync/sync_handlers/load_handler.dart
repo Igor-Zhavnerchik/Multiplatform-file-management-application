@@ -1,7 +1,7 @@
 import 'package:cross_platform_project/core/utility/result.dart';
-import 'package:cross_platform_project/data/sync/sync_action_source/sync_action_source.dart';
-import 'package:cross_platform_project/data/sync/sync_processor.dart';
-import 'package:cross_platform_project/data/sync/sync_status_manager.dart';
+import 'package:cross_platform_project/domain/sync/sync_action_source/sync_action_source.dart';
+import 'package:cross_platform_project/domain/sync/sync_processor.dart';
+import 'package:cross_platform_project/domain/sync/sync_status_manager.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 
 class LoadHandler {

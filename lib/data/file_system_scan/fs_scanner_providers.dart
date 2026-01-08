@@ -8,6 +8,7 @@ import 'package:cross_platform_project/data/file_system_scan/reconciler.dart';
 import 'package:cross_platform_project/data/providers/file_model_mapper_provider.dart';
 import 'package:cross_platform_project/data/providers/hash_service_provider.dart';
 import 'package:cross_platform_project/data/providers/providers.dart';
+import 'package:cross_platform_project/domain/sync/providers/sync_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final fileSystemScannerProvider = Provider.autoDispose<FileSystemScanner>((
@@ -42,10 +43,12 @@ final dbUpdaterProvider = Provider.autoDispose<DbUpdater>((ref) {
   final pathService = ref.watch(storagePathServiceProvider);
   final filesTable = ref.watch(filesTableProvider);
   final mapper = ref.watch(fileModelMapperProvider);
+  final statusmanager = ref.watch(syncStatusManagerProvider);
   return DbUpdater(
     filesTable: filesTable,
     mapper: mapper,
     pathService: pathService,
+    statusManager: statusmanager,
   );
 });
 

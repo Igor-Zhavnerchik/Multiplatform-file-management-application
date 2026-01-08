@@ -35,6 +35,14 @@ class FileView extends ConsumerWidget {
                 position: details.globalPosition,
               );
         },
+        onLongPressStartMobile: (details) {
+          ref
+              .read(dialogViewModelProvider.notifier)
+              .showCustomDialog(
+                content: FolderOperationSelectMenu(folder: currentFolder),
+                position: details.globalPosition,
+              );
+        },
         child: GridView.builder(
           padding: const EdgeInsets.all(16),
           gridDelegate: mode == FileViewMode.list
@@ -49,8 +57,7 @@ class FileView extends ConsumerWidget {
                 ),
           itemCount: children.length,
           itemBuilder: (context, index) {
-            final file = children[index];
-            return FileViewElement(element: file, mode: mode);
+            return FileViewElement(element: children[index], mode: mode);
           },
         ),
       ),
@@ -68,37 +75,62 @@ class FileViewElement extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isSelected = ref.watch(homeViewModelProvider).selected == element;
+    final homeState = ref.watch(homeViewModelProvider);
+    final homeNotifier = ref.read(homeViewModelProvider.notifier);
+    final isSelected = homeState.selected == element;
 
     return AdaptiveGestureDetector(
       onSecondaryTapDownDesktop: (details) {
-        ref
-            .read(dialogViewModelProvider.notifier)
-            .showCustomDialog(
-              content: FileOperationSelectMenu(entity: element),
-              position: details.globalPosition,
-            );
+        _showMenu(ref, context, details.globalPosition);
       },
-      onTapDesktop: () =>
-          ref.read(homeViewModelProvider.notifier).setSelected(element),
-      onDoubleTapDesktop: () =>
-          ref.read(homeViewModelProvider.notifier).openElement(element),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {}, // Для эффекта нажатия
-        child: Container(
-          decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.primaryContainer
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+      onTapDesktop: () => homeNotifier.setSelected(element),
+      onDoubleTapDesktop: () => homeNotifier.openElement(element),
+      child: Material(
+        color: Colors.transparent, // Важно для работы InkWell
+        child: InkWell(
+          onTap: () {
+            if (isSelected) {
+              homeNotifier.openElement(element);
+            } else {
+              homeNotifier.setSelected(element);
+            }
+          },
+          onLongPress: () {
+            final RenderBox box = context.findRenderObject() as RenderBox;
+            final Offset position = box.localToGlobal(Offset.zero);
+            _showMenu(
+              ref,
+              context,
+              position + Offset(box.size.width / 2, box.size.height / 2),
+            );
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Ink(
+            // Используем Ink вместо Container для сохранения декораций при нажатии
+            decoration: BoxDecoration(
+              // Если цвет прозрачный, HitTest может провалиться, поэтому ставим хотя бы прозрачный черный
+              color: isSelected
+                  ? theme.colorScheme.primaryContainer
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+
+            child: mode == FileViewMode.grid
+                ? _buildGridItem(theme)
+                : _buildListItem(theme),
           ),
-          child: mode == FileViewMode.grid
-              ? _buildGridItem(theme)
-              : _buildListItem(theme),
         ),
       ),
     );
+  }
+
+  void _showMenu(WidgetRef ref, BuildContext context, Offset position) {
+    ref
+        .read(dialogViewModelProvider.notifier)
+        .showCustomDialog(
+          content: FileOperationSelectMenu(entity: element),
+          position: position,
+        );
   }
 
   Widget _buildGridItem(ThemeData theme) {

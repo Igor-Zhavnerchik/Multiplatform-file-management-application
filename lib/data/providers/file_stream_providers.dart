@@ -8,11 +8,11 @@ final onlyFileListProvider = StreamProvider.autoDispose
     .family<List<FileEntity>, String>((ref, parentId) {
       final storageRepository = ref.watch(storageRepositoryProvider);
 
-      final userId = ref.watch(currentUserIdProvider).value;
+      //final userId = ref.watch(currentUserIdProvider).value;
       return storageRepository.watchFileStream(
         parentId: parentId,
         onlyFiles: true,
-        ownerId: userId,
+        // ownerId: userId,
       );
     });
 
@@ -20,22 +20,22 @@ final onlyFoldersListProvider = StreamProvider.autoDispose
     .family<List<FileEntity>, String?>((ref, parentId) {
       final storageRepository = ref.watch(storageRepositoryProvider);
 
-      final userId = ref.watch(currentUserIdProvider).value;
+      //final userId = ref.watch(currentUserIdProvider).value;
 
       ref.onDispose(() => debugLog('DISPOSED FOLDER STREAM PROVIDER'));
       return storageRepository.watchFileStream(
         parentId: parentId,
         onlyFolders: true,
-        ownerId: userId,
+        //ownerId: userId,
       );
     });
 
 final childrenListProvider = StreamProvider.autoDispose
     .family<List<FileEntity>, String?>((ref, parentId) {
       final storageRepository = ref.watch(storageRepositoryProvider);
-      final userId = ref.watch(currentUserIdProvider).value;
+      //final userId = ref.watch(currentUserIdProvider).value;
       return storageRepository.watchFileStream(
         parentId: parentId,
-        ownerId: userId,
+        // ownerId: userId,
       );
     });

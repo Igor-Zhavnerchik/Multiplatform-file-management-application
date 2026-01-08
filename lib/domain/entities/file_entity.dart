@@ -8,6 +8,8 @@ enum SyncStatus {
   uploadingNew,
   uploading,
   downloading,
+  updatedLocally,
+  updatedRemotely,
   updatingLocally,
   updatingRemotely,
   deletingRemotely,

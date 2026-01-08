@@ -61,7 +61,7 @@ class StoragePathService {
 
   //FIXME fix recursion to loop
   Future<String> getLocalPath({required String? fileId}) async {
-    debugLog('getting path for id: $fileId');
+    //debugLog('getting path for id: $fileId');
     if (fileId == null) {
       return p.join(appRootPath, 'users', currentUserId);
     }

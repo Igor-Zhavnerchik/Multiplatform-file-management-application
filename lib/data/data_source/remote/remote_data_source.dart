@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/core/services/current_user_service.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/core/utility/safe_call.dart';
 import 'package:cross_platform_project/core/services/storage_path_service.dart';
@@ -14,13 +15,14 @@ class RemoteDataSource {
   final RemoteStorageDataSource storage;
   final RemoteDatabaseDataSource database;
   final SupabaseClient client;
-  final String? userId;
+  final CurrentUserService userService;
   final StoragePathService pathService;
   final FileModelMapper mapper;
+  String get currentUser => userService.currentUserId;
 
   RemoteDataSource({
     required this.client,
-    required this.userId,
+    required this.userService,
     required this.storage,
     required this.database,
     required this.pathService,
@@ -31,13 +33,10 @@ class RemoteDataSource {
     bool getDeleted = false,
   }) async {
     return await safeCall(() async {
-      if (userId == null) {
-        throw Exception('no user!');
-      }
-      debugLog('getting files from supabase for user id: $userId');
+      debugLog('getting files from supabase for user id: $currentUser');
       return await database.getMetadata(
         getDeleted: getDeleted,
-        userId: userId!,
+        userId: currentUser,
       );
     }, source: 'RemoteDataSource.getFileList');
   }

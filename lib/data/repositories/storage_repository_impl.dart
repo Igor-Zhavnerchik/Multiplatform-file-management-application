@@ -10,8 +10,8 @@ import 'package:cross_platform_project/data/data_source/remote/remote_data_sourc
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/data/services/uuid_generation_service.dart';
-import 'package:cross_platform_project/data/sync/sync_processor.dart';
-import 'package:cross_platform_project/data/sync/sync_status_manager.dart';
+import 'package:cross_platform_project/domain/sync/sync_processor.dart';
+import 'package:cross_platform_project/domain/sync/sync_status_manager.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
 import 'package:cross_platform_project/presentation/view_models/file_operations_view_model.dart';
@@ -48,16 +48,20 @@ class StorageRepositoryImpl extends StorageRepository {
   @override
   Future<Result<List<FileModel>>> getRemoteFileList() async {
     var rawFileListResult = await remoteDataSource.getFileList();
-    if (rawFileListResult.isFailure) {
-      return Failure('failed to fetch file list from server');
-    }
-    List<FileModel> fileList =
-        ((rawFileListResult as Success).data as List<Map<String, dynamic>>)
+    return rawFileListResult.when(
+      success: (data) {
+        List<FileModel> fileList = (data)
             .map<FileModel>(
               (metadata) => mapper.fromMetadata(metadata: metadata),
             )
             .toList();
-    return Success(fileList);
+        return Success(fileList);
+      },
+      failure: (msg, err, source) {
+        debugLog('$msg, error: $err source: $source');
+        return Failure(msg, error: err, source: source);
+      },
+    );
   }
 
   @override
@@ -66,14 +70,18 @@ class StorageRepositoryImpl extends StorageRepository {
     var rawFileListResult = await localDataSource.getFileList(
       ownerId: currentUserId,
     );
-    if (rawFileListResult.isFailure) {
-      return Failure('failed to fetch file list from local database');
-    }
-    List<FileModel> fileList =
-        ((rawFileListResult as Success).data as List<DbFile>)
+    return rawFileListResult.when(
+      success: (data) {
+        List<FileModel> fileList = (data)
             .map((dbFile) => mapper.fromDbFile(dbFile))
             .toList();
-    return Success(fileList);
+        return Success(fileList);
+      },
+      failure: (msg, err, source) {
+        debugLog('$msg, error: $err source: $source');
+        return Failure(msg, error: err, source: source);
+      },
+    );
   }
 
   @override
@@ -176,9 +184,7 @@ class StorageRepositoryImpl extends StorageRepository {
       status: SyncStatus.updatingLocally,
     );
     model = model.copyWith(updatedAt: DateTime.now().toUtc());
-    final updateResult = await localDataSource.updateFile(
-      model: model,
-    );
+    final updateResult = await localDataSource.updateFile(model: model);
     if (updateResult.isFailure) {
       await syncStatusManager.updateStatus(
         fileId: model.id,
@@ -264,23 +270,22 @@ class StorageRepositoryImpl extends StorageRepository {
     required String? parentId,
     bool onlyFolders = false,
     bool onlyFiles = false,
-    required String? ownerId,
+    //required String? ownerId,
   }) {
     debugLog('getting file stream in storage repository');
-    return ownerId != null
-        ? localDataSource
-              .getFileStream(
-                parentId: parentId,
-                ownerId: ownerId,
-                onlyFiles: onlyFiles,
-                onlyFolders: onlyFolders,
-              )
-              .map(
-                (dbList) => dbList
-                    .map((dbFile) => mapper.toEntity(mapper.fromDbFile(dbFile)))
-                    .toList(),
-              )
-        : Stream.empty();
+
+    return localDataSource
+        .getFileStream(
+          parentId: parentId,
+          ownerId: currentUserId,
+          onlyFiles: onlyFiles,
+          onlyFolders: onlyFolders,
+        )
+        .map(
+          (dbList) => dbList
+              .map((dbFile) => mapper.toEntity(mapper.fromDbFile(dbFile)))
+              .toList(),
+        );
   }
 
   @override

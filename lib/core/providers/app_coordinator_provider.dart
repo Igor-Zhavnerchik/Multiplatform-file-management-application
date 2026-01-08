@@ -8,15 +8,18 @@ final appCoordinatorProvider = Provider<void>((ref) {
   final router = ref.watch(routerProvider);
   final appStartService = ref.watch(appStartServiceProvider);
 
-  ref.listen(authStatusProvider, (_, next) async {
+  ref.listen(authStatusProvider, (prev, next) async {
     next.whenData((data) async {
-      if (data == AuthStatus.unauthenticated) {
-        debugLog('launching auth');
-        router.go('/auth');
-      } else {
-        debugLog('launching home');
-        await appStartService.onUserLogin();
-        router.go('/home');
+      if (data != prev?.value) {
+        debugLog('COORDINATOR: status: ${data.name}');
+        if (data == AuthStatus.unauthenticated) {
+          debugLog('launching auth');
+          router.go('/auth');
+        } else {
+          debugLog('launching home');
+          await appStartService.onUserLogin();
+          router.go('/home');
+        }
       }
     });
   });

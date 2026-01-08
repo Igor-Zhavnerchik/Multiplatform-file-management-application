@@ -1,5 +1,5 @@
 import 'package:cross_platform_project/core/converters/providers/bytes_to_stream_converter_provider.dart';
-import 'package:cross_platform_project/data/providers/current_user_provider.dart';
+import 'package:cross_platform_project/core/providers/current_user_service_provider.dart';
 import 'package:cross_platform_project/data/providers/file_model_mapper_provider.dart';
 import 'package:cross_platform_project/data/providers/providers.dart';
 
@@ -15,11 +15,11 @@ final remoteDataSourceProvider = Provider.autoDispose<RemoteDataSource>((ref) {
   final database = ref.watch(remoteDatabaseDataSourceProvider);
   final pathService = ref.watch(storagePathServiceProvider);
   final mapper = ref.watch(fileModelMapperProvider);
-  final userId = ref.watch(currentUserIdProvider).value;
+  final userService = ref.watch(currentUserServiceProvider);
 
   return RemoteDataSource(
     client: client,
-    userId: userId,
+    userService: userService,
     storage: storage,
     database: database,
     pathService: pathService,

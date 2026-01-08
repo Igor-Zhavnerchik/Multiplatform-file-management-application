@@ -21,17 +21,19 @@ class NavigationPanel extends ConsumerWidget implements PreferredSizeWidget {
       backgroundColor: colorScheme.surfaceContainerHigh,
       elevation: 0,
       centerTitle: false, // Выключаем центрирование для экономии места
-      leadingWidth: isMobile ? 90 : 110, // Уменьшаем ширину на мобилках
+      leadingWidth: 110, // Уменьшаем ширину на мобилках
       leading: const NavigationControls(),
 
-      title: Text(
-        'File Manager',
-        style: TextStyle(
-          fontSize: isMobile ? 16 : 18, // Уменьшаем шрифт
-          fontWeight: FontWeight.w600,
-          color: colorScheme.onSurface,
-        ),
-      ),
+      title: isMobile
+          ? null
+          : Text(
+              'File Manager',
+              style: TextStyle(
+                fontSize: isMobile ? 16 : 18, // Уменьшаем шрифт
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
 
       actions: [
         _NavigationActionButton(

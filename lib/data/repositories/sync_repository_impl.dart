@@ -4,8 +4,8 @@ import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_sync_event_listener.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
-import 'package:cross_platform_project/data/sync/sync_processor.dart';
-import 'package:cross_platform_project/data/sync/sync_status_manager.dart';
+import 'package:cross_platform_project/domain/sync/sync_processor.dart';
+import 'package:cross_platform_project/domain/sync/sync_status_manager.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
 import 'package:cross_platform_project/domain/repositories/sync_repositry.dart';
@@ -27,14 +27,24 @@ class SyncRepositoryImpl implements SyncRepository {
 
   @override
   Future<Result<void>> syncronizeAll() async {
+    debugLog('started sync all');
     final remoteFileListResult = await storage.getRemoteFileList();
     if (remoteFileListResult.isFailure) {
+      final f = remoteFileListResult as Failure;
+      debugLog(
+        'failed getting remote file list: ${f.message} error: ${f.error}  source: ${f.source} ',
+      );
       return remoteFileListResult;
     }
     final localFileListResult = await storage.getLocalFileList();
     if (localFileListResult.isFailure) {
+      final f = remoteFileListResult as Failure;
+      debugLog(
+        'failed getting local file list: ${f.message} error: ${f.error}  source: ${f.source} ',
+      );
       return localFileListResult;
     }
+    debugLog('sync all: got file lists');
 
     final List<FileModel> remoteFileList =
         (remoteFileListResult as Success).data;
@@ -77,6 +87,7 @@ class SyncRepositoryImpl implements SyncRepository {
       remoteSyncEventListener.listenRemoteEvents();
       _remoteStreamSubscription = remoteSyncEventListener.syncEventStream
           .listen((event) async {
+            debugLog('sync repository: catched remote ${event.action} event');
             final localFile = await storage.getFileModelbyId(
               id: event.payload.id,
             );
@@ -93,9 +104,10 @@ class SyncRepositoryImpl implements SyncRepository {
           }, onError: (e) => debugLog('Error in sync stream: $e'));
     }
     if (_localStreamSubscription == null) {
-      storage.localSyncEventStream.listen(
-        (event) => syncProcessor.addEvent(event: event),
-      );
+      storage.localSyncEventStream.listen((event) {
+        debugLog('sync repository: catched remote ${event.action} event');
+        syncProcessor.addEvent(event: event);
+      });
     }
 
     return Success(null);
@@ -172,7 +184,7 @@ class SyncRepositoryImpl implements SyncRepository {
             await syncStatusManager.updateStatus(
               fileId: localModel.id,
               status: localModel.hash == remoteModel.hash
-                  ? SyncStatus.updatingRemotely
+                  ? SyncStatus.updatedLocally
                   : SyncStatus.uploading,
             );
             syncProcessor.addEvent(
@@ -188,7 +200,7 @@ class SyncRepositoryImpl implements SyncRepository {
             await syncStatusManager.updateStatus(
               fileId: localModel.id,
               status: localModel.hash == remoteModel.hash
-                  ? SyncStatus.updatingLocally
+                  ? SyncStatus.updatedRemotely
                   : SyncStatus.downloading,
             );
             syncProcessor.addEvent(

@@ -30,7 +30,7 @@ class LocalDataSource {
     required this.localFileIdService,
   });
 
-  //FIXME get rid of waiting
+  //FIXME get rid of waiting if possible
   Future<void> _waitFileCreation({required String path}) async {
     debugLog('waiting for creation of $path');
     for (var i = 0; i < 5; i++) {
@@ -109,6 +109,11 @@ class LocalDataSource {
       if (!await entity.exists()) {
         debugLog('FS entity not created: $savePath');
         await _waitFileCreation(path: savePath);
+      }
+      if (!model.isFolder) {
+        model = model.copyWith(
+          hash: await hashService.hashFile(file: File(savePath)),
+        );
       }
       await filesTable.insertFile(
         mapper.toInsert(

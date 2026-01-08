@@ -1,6 +1,6 @@
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
-import 'package:cross_platform_project/data/sync/sync_processor.dart';
+import 'package:cross_platform_project/domain/sync/sync_processor.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/presentation/view_models/file_operations_view_model.dart';
 
@@ -69,6 +69,6 @@ abstract class StorageRepository {
     required String? parentId,
     bool onlyFolders = false,
     bool onlyFiles = false,
-    required String? ownerId,
+    //required String? ownerId,
   });
 }

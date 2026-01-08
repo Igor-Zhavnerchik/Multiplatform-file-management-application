@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
-import 'package:cross_platform_project/data/sync/sync_processor.dart';
+import 'package:cross_platform_project/domain/sync/sync_processor.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RemoteSyncEventListener {
