@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'package:cross_platform_project/data/data_source/local/database/converters/download_status_converter.dart';
+import 'package:cross_platform_project/data/data_source/local/database/converters/sync_status_converter.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
+import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';

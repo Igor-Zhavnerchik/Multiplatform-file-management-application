@@ -2,7 +2,6 @@ import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
-import 'package:cross_platform_project/presentation/view_models/file_operations_view_model.dart';
 
 class CreateFileUseCase {
   final StorageRepository repository;

@@ -1,6 +1,8 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_data_source.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
+import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:cross_platform_project/domain/sync/sync_action_source/sync_action_source.dart';
 
 class RemoteSyncActionSource extends SyncActionSource {
@@ -38,7 +40,12 @@ class RemoteSyncActionSource extends SyncActionSource {
   }
 
   @override
-  Future<Result<void>> updateFile({required FileModel model}) async {
-    return await remoteDataSource.updateFile(model: model);
+  Future<Result<void>> updateFile({required FileUpdateRequest request}) async {
+    final result = await remoteDataSource.updateFile(request: request);
+    if (result.isFailure) {
+      final fail = result as Failure;
+      debugLog('${fail.message} error: ${fail.error} source: ${fail.source}');
+    }
+    return result;
   }
 }

@@ -19,7 +19,7 @@ final createFileUseCaseProvider = Provider<CreateFileUseCase>((ref) {
   return CreateFileUseCase(repository: repository);
 });
 
-final updateFileUseCaseProvider = Provider<RenameFileUseCase>((ref) {
+final renameFileUseCaseProvider = Provider<RenameFileUseCase>((ref) {
   final repository = ref.watch(storageRepositoryProvider);
   return RenameFileUseCase(repository: repository);
 });

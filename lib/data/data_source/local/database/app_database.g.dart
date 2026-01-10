@@ -155,17 +155,15 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
-    'syncStatus',
-  );
   @override
-  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
-    'sync_status',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<SyncStatus>($FilesTable.$convertersyncStatus);
   static const VerificationMeta _syncEnabledMeta = const VerificationMeta(
     'syncEnabled',
   );
@@ -194,17 +192,15 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
       'CHECK ("download_enabled" IN (0, 1))',
     ),
   );
-  static const VerificationMeta _downloadStatusMeta = const VerificationMeta(
-    'downloadStatus',
-  );
   @override
-  late final GeneratedColumn<String> downloadStatus = GeneratedColumn<String>(
+  late final GeneratedColumnWithTypeConverter<DownloadStatus, String>
+  downloadStatus = GeneratedColumn<String>(
     'download_status',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-  );
+  ).withConverter<DownloadStatus>($FilesTable.$converterdownloadStatus);
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -341,14 +337,6 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
         deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
       );
     }
-    if (data.containsKey('sync_status')) {
-      context.handle(
-        _syncStatusMeta,
-        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_syncStatusMeta);
-    }
     if (data.containsKey('sync_enabled')) {
       context.handle(
         _syncEnabledMeta,
@@ -370,17 +358,6 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
       );
     } else if (isInserting) {
       context.missing(_downloadEnabledMeta);
-    }
-    if (data.containsKey('download_status')) {
-      context.handle(
-        _downloadStatusMeta,
-        downloadStatus.isAcceptableOrUnknown(
-          data['download_status']!,
-          _downloadStatusMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_downloadStatusMeta);
     }
     return context;
   }
@@ -447,10 +424,12 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
       ),
-      syncStatus: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sync_status'],
-      )!,
+      syncStatus: $FilesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
       syncEnabled: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}sync_enabled'],
@@ -459,10 +438,12 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
         DriftSqlType.bool,
         data['${effectivePrefix}download_enabled'],
       )!,
-      downloadStatus: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}download_status'],
-      )!,
+      downloadStatus: $FilesTable.$converterdownloadStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}download_status'],
+        )!,
+      ),
     );
   }
 
@@ -470,6 +451,11 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
   $FilesTable createAlias(String alias) {
     return $FilesTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      SyncStatusConverter();
+  static TypeConverter<DownloadStatus, String> $converterdownloadStatus =
+      DownloadStatusConverter();
 }
 
 class DbFile extends DataClass implements Insertable<DbFile> {
@@ -487,10 +473,10 @@ class DbFile extends DataClass implements Insertable<DbFile> {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
-  final String syncStatus;
+  final SyncStatus syncStatus;
   final bool syncEnabled;
   final bool downloadEnabled;
-  final String downloadStatus;
+  final DownloadStatus downloadStatus;
   const DbFile({
     required this.id,
     required this.name,
@@ -540,10 +526,18 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
-    map['sync_status'] = Variable<String>(syncStatus);
+    {
+      map['sync_status'] = Variable<String>(
+        $FilesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
     map['sync_enabled'] = Variable<bool>(syncEnabled);
     map['download_enabled'] = Variable<bool>(downloadEnabled);
-    map['download_status'] = Variable<String>(downloadStatus);
+    {
+      map['download_status'] = Variable<String>(
+        $FilesTable.$converterdownloadStatus.toSql(downloadStatus),
+      );
+    }
     return map;
   }
 
@@ -598,10 +592,12 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
-      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
       syncEnabled: serializer.fromJson<bool>(json['syncEnabled']),
       downloadEnabled: serializer.fromJson<bool>(json['downloadEnabled']),
-      downloadStatus: serializer.fromJson<String>(json['downloadStatus']),
+      downloadStatus: serializer.fromJson<DownloadStatus>(
+        json['downloadStatus'],
+      ),
     );
   }
   @override
@@ -622,10 +618,10 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
-      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
       'syncEnabled': serializer.toJson<bool>(syncEnabled),
       'downloadEnabled': serializer.toJson<bool>(downloadEnabled),
-      'downloadStatus': serializer.toJson<String>(downloadStatus),
+      'downloadStatus': serializer.toJson<DownloadStatus>(downloadStatus),
     };
   }
 
@@ -644,10 +640,10 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
-    String? syncStatus,
+    SyncStatus? syncStatus,
     bool? syncEnabled,
     bool? downloadEnabled,
-    String? downloadStatus,
+    DownloadStatus? downloadStatus,
   }) => DbFile(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -788,10 +784,10 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
-  final Value<String> syncStatus;
+  final Value<SyncStatus> syncStatus;
   final Value<bool> syncEnabled;
   final Value<bool> downloadEnabled;
-  final Value<String> downloadStatus;
+  final Value<DownloadStatus> downloadStatus;
   final Value<int> rowid;
   const FilesCompanion({
     this.id = const Value.absent(),
@@ -829,10 +825,10 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     required DateTime createdAt,
     required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
-    required String syncStatus,
+    required SyncStatus syncStatus,
     required bool syncEnabled,
     required bool downloadEnabled,
-    required String downloadStatus,
+    required DownloadStatus downloadStatus,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -905,10 +901,10 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
-    Value<String>? syncStatus,
+    Value<SyncStatus>? syncStatus,
     Value<bool>? syncEnabled,
     Value<bool>? downloadEnabled,
-    Value<String>? downloadStatus,
+    Value<DownloadStatus>? downloadStatus,
     Value<int>? rowid,
   }) {
     return FilesCompanion(
@@ -980,7 +976,9 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
     if (syncStatus.present) {
-      map['sync_status'] = Variable<String>(syncStatus.value);
+      map['sync_status'] = Variable<String>(
+        $FilesTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
     }
     if (syncEnabled.present) {
       map['sync_enabled'] = Variable<bool>(syncEnabled.value);
@@ -989,7 +987,9 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
       map['download_enabled'] = Variable<bool>(downloadEnabled.value);
     }
     if (downloadStatus.present) {
-      map['download_status'] = Variable<String>(downloadStatus.value);
+      map['download_status'] = Variable<String>(
+        $FilesTable.$converterdownloadStatus.toSql(downloadStatus.value),
+      );
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -1052,10 +1052,10 @@ typedef $$FilesTableCreateCompanionBuilder =
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<DateTime?> deletedAt,
-      required String syncStatus,
+      required SyncStatus syncStatus,
       required bool syncEnabled,
       required bool downloadEnabled,
-      required String downloadStatus,
+      required DownloadStatus downloadStatus,
       Value<int> rowid,
     });
 typedef $$FilesTableUpdateCompanionBuilder =
@@ -1074,10 +1074,10 @@ typedef $$FilesTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
-      Value<String> syncStatus,
+      Value<SyncStatus> syncStatus,
       Value<bool> syncEnabled,
       Value<bool> downloadEnabled,
-      Value<String> downloadStatus,
+      Value<DownloadStatus> downloadStatus,
       Value<int> rowid,
     });
 
@@ -1159,9 +1159,10 @@ class $$FilesTableFilterComposer extends Composer<_$AppDatabase, $FilesTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get syncStatus => $composableBuilder(
+  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
+  get syncStatus => $composableBuilder(
     column: $table.syncStatus,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
   ColumnFilters<bool> get syncEnabled => $composableBuilder(
@@ -1174,9 +1175,10 @@ class $$FilesTableFilterComposer extends Composer<_$AppDatabase, $FilesTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get downloadStatus => $composableBuilder(
+  ColumnWithTypeConverterFilters<DownloadStatus, DownloadStatus, String>
+  get downloadStatus => $composableBuilder(
     column: $table.downloadStatus,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 }
 
@@ -1335,10 +1337,11 @@ class $$FilesTableAnnotationComposer
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
-  GeneratedColumn<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => column,
-  );
+  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
+      $composableBuilder(
+        column: $table.syncStatus,
+        builder: (column) => column,
+      );
 
   GeneratedColumn<bool> get syncEnabled => $composableBuilder(
     column: $table.syncEnabled,
@@ -1350,10 +1353,11 @@ class $$FilesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get downloadStatus => $composableBuilder(
-    column: $table.downloadStatus,
-    builder: (column) => column,
-  );
+  GeneratedColumnWithTypeConverter<DownloadStatus, String> get downloadStatus =>
+      $composableBuilder(
+        column: $table.downloadStatus,
+        builder: (column) => column,
+      );
 }
 
 class $$FilesTableTableManager
@@ -1398,10 +1402,10 @@ class $$FilesTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
-                Value<String> syncStatus = const Value.absent(),
+                Value<SyncStatus> syncStatus = const Value.absent(),
                 Value<bool> syncEnabled = const Value.absent(),
                 Value<bool> downloadEnabled = const Value.absent(),
-                Value<String> downloadStatus = const Value.absent(),
+                Value<DownloadStatus> downloadStatus = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FilesCompanion(
                 id: id,
@@ -1440,10 +1444,10 @@ class $$FilesTableTableManager
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
-                required String syncStatus,
+                required SyncStatus syncStatus,
                 required bool syncEnabled,
                 required bool downloadEnabled,
-                required String downloadStatus,
+                required DownloadStatus downloadStatus,
                 Value<int> rowid = const Value.absent(),
               }) => FilesCompanion.insert(
                 id: id,

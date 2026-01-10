@@ -27,10 +27,10 @@ class FileModelMapper {
     size: Value(model.size),
     hash: Value(model.hash),
 
-    syncStatus: model.syncStatus.name,
+    syncStatus: model.syncStatus,
     downloadEnabled: model.downloadEnabled!,
 
-    downloadStatus: model.downloadStatus.name,
+    downloadStatus: model.downloadStatus,
     syncEnabled: model.syncEnabled!,
 
     createdAt: model.createdAt,
@@ -51,7 +51,7 @@ class FileModelMapper {
         hash: Value(model.hash),
 
         //syncStatus: Value(model.syncStatus.name),
-        downloadStatus: Value(model.downloadStatus.name),
+        downloadStatus: Value(model.downloadStatus),
         syncEnabled: Value(model.syncEnabled!),
         downloadEnabled: Value(model.downloadEnabled!),
 
@@ -75,8 +75,8 @@ class FileModelMapper {
     syncEnabled: dbFile.syncEnabled,
     downloadEnabled: dbFile.downloadEnabled,
 
-    syncStatus: SyncStatus.values.byName(dbFile.syncStatus),
-    downloadStatus: DownloadStatus.values.byName(dbFile.downloadStatus),
+    syncStatus: dbFile.syncStatus,
+    downloadStatus: dbFile.downloadStatus,
 
     createdAt: dbFile.createdAt.toUtc(),
     updatedAt: dbFile.updatedAt.toUtc(),

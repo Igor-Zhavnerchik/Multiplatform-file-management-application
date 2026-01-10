@@ -3,11 +3,11 @@ import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/core/utility/safe_call.dart';
 import 'package:cross_platform_project/core/services/storage_path_service.dart';
-import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 import 'package:cross_platform_project/data/data_source/local/local_file_id_service.dart/local_file_id_service.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
+import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:cross_platform_project/data/services/hash_service.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:uuid/v4.dart';
@@ -70,9 +70,12 @@ class LocalDataSource {
       model = model.copyWith(
         hash: await _getHash(model: model, filePath: savePath),
       );
-      final localId = await localFileIdService.getFileId(path: savePath);
-      debugLog('inserting ${model.name} with id:$localId');
-      await filesTable.insertFile(mapper.toInsert(model, localId));
+      if (await filesTable.getFile(fileId: model.id) == null) {
+        final localId = await localFileIdService.getFileId(path: savePath);
+
+        debugLog('inserting ${model.name} with id:$localId');
+        await filesTable.insertFile(mapper.toInsert(model, localId));
+      }
     }, source: 'LocalDataSource.saveFile');
   }
 
@@ -146,63 +149,91 @@ class LocalDataSource {
   }
 
   Future<Result<void>> updateFile({
-    required FileModel model,
-    bool overwrite = false,
+    required FileUpdateRequest request,
+    bool overwrite = true,
   }) async {
     return await safeCall(() async {
-      final modelPath = pathService.join(
-        parent: await pathService.getLocalPath(fileId: model.parentId),
-        child: model.name,
-      );
-      final currentPath = await pathService.getLocalPath(fileId: model.id);
-      /* debugLog('in update for ${model.name}');
+      debugLog('started update');
+      if ((request.parentId != null || request.name != null) && overwrite) {
+        final model = await filesTable.getFile(fileId: request.id);
+        if (model == null) {
+          throw Exception('file to update not found id: ${request.id}');
+        }
+        final modelPath = pathService.join(
+          parent: await pathService.getLocalPath(
+            fileId: request.parentId ?? model.parentId,
+          ),
+          child: request.name ?? model.name,
+        );
+        final currentPath = await pathService.getLocalPath(fileId: model.id);
+
+        /* debugLog('in update for ${model.name}');
       debugLog('    current path: $currentPath');
       debugLog('    model path: $modelPath'); */
-      //FIXME may be optimized compare only parents if different compute path
-      if (currentPath != modelPath) {
-        await localStorage.moveEntity(
-          currentPath: currentPath,
-          newPath: modelPath,
-          isFolder: model.isFolder,
-          overwrite: overwrite,
-        );
+        //FIXME may be optimized compare only parents if different compute path
+        if (currentPath != modelPath) {
+          await localStorage.moveEntity(
+            currentPath: currentPath,
+            newPath: modelPath,
+            isFolder: model.isFolder,
+            overwrite: overwrite,
+          );
+        }
       }
-      if (model.deletedAt != null) {
-        model = model.copyWith(
-          hash: await _getHash(model: model, filePath: modelPath),
-        );
-      }
-      await filesTable.updateFile(model.id, mapper.toUpdate(model));
+      await filesTable.updateFile(request.id, request.toCompanion());
     }, source: 'LocalDataSource.updateFile');
   }
 
-  Future<Result<FileSystemEntity>> getFile({required FileModel model}) async {
+  Future<Result<FileModel?>> getFile({
+    String? fileId,
+    String? localFileId,
+  }) async {
     return await safeCall(() async {
-      var getPath = await pathService.getLocalPath(fileId: model.id);
-
-      return localStorage.getEntity(path: getPath, isFolder: model.isFolder);
+      final file = await filesTable.getFile(
+        fileId: fileId,
+        localFileId: localFileId,
+      );
+      return file == null ? null : mapper.fromDbFile(file);
     }, source: 'LocalDataSource.getFile');
   }
 
-  Stream<List<DbFile>> getFileStream({
+  Stream<List<FileModel>> getFileStream({
     required String? parentId,
     required String ownerId,
     bool onlyFolders = false,
     bool onlyFiles = false,
   }) {
     debugLog('getting stream from local ');
-    if (onlyFolders) {
-      return filesTable.watchFolders(parentId, ownerId);
-    } else if (onlyFiles) {
-      return filesTable.watchFiles(parentId, ownerId);
-    } else {
-      return filesTable.watchChildren(parentId, ownerId);
-    }
+    return filesTable
+        .watchChildren(
+          parentId: parentId,
+          ownerId: ownerId,
+          typeFilter: switch ((onlyFolders, onlyFiles)) {
+            (false, false) => TypeFilter.all,
+            (true, false) => TypeFilter.onlyFolders,
+            (false, true) => TypeFilter.onlyFolders,
+            (true, true) => throw Exception(
+              'onlyFiles and onlyFolders cannot be set to true at the same time',
+            ),
+          },
+        )
+        .map(
+          (fileList) =>
+              fileList.map((dbFile) => mapper.fromDbFile(dbFile)).toList(),
+        );
   }
 
-  Future<Result<List<DbFile>>> getFileList({required String ownerId}) async {
+  Future<Result<List<FileModel>>> getFileList({
+    required String ownerId,
+    bool includeDeleted = false,
+  }) async {
     return await safeCall(() async {
-      return await filesTable.getFilesByOwner(ownerId);
+      return (await filesTable.selectFiles(
+        ownerId: ownerId,
+        deleteFilter: includeDeleted
+            ? DeleteFilter.include
+            : DeleteFilter.exclude,
+      )).map((file) => mapper.fromDbFile(file)).toList();
     }, source: 'LocalDataSource.getFileList');
   }
 
@@ -245,8 +276,8 @@ class LocalDataSource {
       );
       if (model.isFolder) {
         final childrenList = await filesTable.getChildren(
-          model.id,
-          model.ownerId,
+          parentId: model.id,
+          ownerId: model.ownerId,
         );
         for (var child in childrenList.map(
           (dbFile) => mapper.fromDbFile(dbFile),
@@ -266,7 +297,10 @@ class LocalDataSource {
 
   Future<Result<FileModel>> getRootFolder({required String ownerId}) async {
     return safeCall(() async {
-      final root = (await filesTable.getChildren(null, ownerId)).first;
+      final root = (await filesTable.getChildren(
+        parentId: null,
+        ownerId: ownerId,
+      )).first;
       return mapper.fromDbFile(root);
     }, source: 'LocalDataSource.getrootFolder');
   }
@@ -281,7 +315,7 @@ class LocalDataSource {
   }
 
   Future<FileModel?> getFileModel({required String id}) async {
-    final dbFile = await filesTable.getFileById(fileId: id);
+    final dbFile = await filesTable.getFile(fileId: id);
     return dbFile == null ? null : mapper.fromDbFile(dbFile);
   }
 }

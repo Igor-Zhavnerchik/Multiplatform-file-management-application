@@ -1,44 +1,52 @@
 import 'dart:io';
 
+import 'package:cross_platform_project/application/db_snapshot_getter.dart';
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/services/storage_path_service.dart';
-import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
-import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
+import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
 import 'package:cross_platform_project/data/file_system_scan/file_system_scanner.dart';
 import 'package:cross_platform_project/data/services/hash_service.dart';
 
-sealed class DbChange {}
+sealed class DbChange {
+  final int depth;
+  DbChange({required this.depth});
+}
 
 class DbUpdate extends DbChange {
-  DbUpdate({required this.fs, required this.file, required this.hash});
-  final DbFile file;
+  DbUpdate({
+    required this.fs,
+    required this.file,
+    required this.hash,
+    required super.depth,
+  });
+  final DbSnapshotEntry file;
   final FSEntry fs;
   final String? hash;
 }
 
 class DbCreate extends DbChange {
-  DbCreate({required this.fs, required this.hash});
+  DbCreate({required this.fs, required this.hash, required super.depth});
   final FSEntry fs;
   final String? hash;
 }
 
 class DbDelete extends DbChange {
-  DbDelete({required this.file});
-  final DbFile file;
+  DbDelete({required this.file, required super.depth});
+  final DbSnapshotEntry file;
 }
 
 class Reconciler {
   Reconciler({
     required this.hashService,
     required this.pathService,
-    required this.filesTable,
+    required this.localDataSource,
   });
   final HashService hashService;
   final StoragePathService pathService;
-  final FilesDao filesTable;
+  final LocalDataSource localDataSource;
 
   Future<List<DbChange>> detectDbChanges({
-    required Map<String, DbFile> dbSnapshot,
+    required Map<String, DbSnapshotEntry> dbSnapshot,
     required Map<String, FSEntry> fsSnapshot,
   }) async {
     debugLog('started reconsciling');
@@ -57,13 +65,14 @@ class Reconciler {
             DbCreate(
               fs: file,
               hash: await hashService.hashFile(file: File(file.path)),
+              depth: file.depth,
             ),
           );
           debugLog('path: ${fsEntry!.path} decision: create file');
         case ((ExistingFolder folder, null)):
-          changeList.add(DbCreate(fs: folder, hash: null));
+          changeList.add(DbCreate(fs: folder, hash: null, depth: folder.depth));
           debugLog('path: ${fsEntry!.path} decision: create folder');
-        case ((ExistingFile() || ExistingFolder()), DbFile file):
+        case ((ExistingFile() || ExistingFolder()), DbSnapshotEntry dbFile):
           {
             final fsHash = switch (fsEntry) {
               ExistingFile file => await hashService.hashFile(
@@ -72,26 +81,30 @@ class Reconciler {
               _ => null,
             };
             debugLog('local id: ${fsEntry!.localFileId}');
-            final dbParentId = (await filesTable.getFileById(
-              fileId: file.parentId,
-            ))?.localFileId;
-            if ((fsHash != file.hash && fsHash != null) ||
-                (file.name != pathService.getName(fsEntry.path)) ||
-                (dbParentId != fsEntry.parentLocalFileId)) {
+            if ((fsHash != dbFile.hash && fsHash != null) ||
+                (dbFile.name != pathService.getName(fsEntry.path)) ||
+                (dbFile.parentLocalFileId != fsEntry.parentLocalFileId)) {
               debugLog('path: ${fsEntry.path} decision: update');
               debugLog('    reason: ');
               debugLog(
                 'fs: hash: $fsHash, name: ${pathService.getName(fsEntry.path)}, parent id: ${fsEntry.parentLocalFileId} ',
               );
               debugLog(
-                'db: hash: ${file.hash}, name: ${file.name} parent id: $dbParentId',
+                'db: hash: ${dbFile.hash}, name: ${dbFile.name} parent id: ${dbFile.parentLocalFileId}',
               );
-              changeList.add(DbUpdate(fs: fsEntry, file: file, hash: fsHash));
+              changeList.add(
+                DbUpdate(
+                  fs: fsEntry,
+                  file: dbFile,
+                  hash: fsHash,
+                  depth: fsEntry.depth,
+                ),
+              );
             }
           }
-        case ((null, DbFile file)):
+        case ((null, DbSnapshotEntry file)):
           {
-            changeList.add(DbDelete(file: file));
+            changeList.add(DbDelete(file: file, depth: 0));
             debugLog('file name: ${file.name} decision: delete');
           }
       }

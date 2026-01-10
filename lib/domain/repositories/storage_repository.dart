@@ -1,8 +1,8 @@
 import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
+import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:cross_platform_project/domain/sync/sync_processor.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
-import 'package:cross_platform_project/presentation/view_models/file_operations_view_model.dart';
 
 class FileCreateRequest {
   final String? localPath;
@@ -50,6 +50,7 @@ abstract class StorageRepository {
   Future<Result<void>> createFile({
     required FileEntity? parent,
     required FileCreateRequest request,
+    bool overwrite,
   });
 
   Future<Result<void>> copyFile({
@@ -63,7 +64,10 @@ abstract class StorageRepository {
   Future<Result<List<FileModel>>> getLocalFileList();
 
   Future<Result<void>> deleteFile({required FileEntity entity});
-  Future<Result<void>> updateFile({required FileEntity entity});
+  Future<Result<void>> updateFile({
+    required FileUpdateRequest request,
+    bool overwrite,
+  });
 
   Stream<List<FileEntity>> watchFileStream({
     required String? parentId,

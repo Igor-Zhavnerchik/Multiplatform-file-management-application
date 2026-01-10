@@ -3,18 +3,17 @@ import 'dart:async';
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/services/current_user_service.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
-import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_data_source.dart';
 
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
+import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:cross_platform_project/data/services/uuid_generation_service.dart';
 import 'package:cross_platform_project/domain/sync/sync_processor.dart';
 import 'package:cross_platform_project/domain/sync/sync_status_manager.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
-import 'package:cross_platform_project/presentation/view_models/file_operations_view_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StorageRepositoryImpl extends StorageRepository {
@@ -66,16 +65,14 @@ class StorageRepositoryImpl extends StorageRepository {
 
   @override
   Future<Result<List<FileModel>>> getLocalFileList() async {
-    print('getting file list');
+    debugLog('getting file list');
     var rawFileListResult = await localDataSource.getFileList(
       ownerId: currentUserId,
+      includeDeleted: true,
     );
     return rawFileListResult.when(
       success: (data) {
-        List<FileModel> fileList = (data)
-            .map((dbFile) => mapper.fromDbFile(dbFile))
-            .toList();
-        return Success(fileList);
+        return Success(data);
       },
       failure: (msg, err, source) {
         debugLog('$msg, error: $err source: $source');
@@ -109,7 +106,7 @@ class StorageRepositoryImpl extends StorageRepository {
           ? DownloadStatus.downloaded
           : DownloadStatus.notDownloaded,
       createdAt: DateTime.now().toUtc(),
-      updatedAt: DateTime.fromMicrosecondsSinceEpoch(0),
+      updatedAt: DateTime.fromMicrosecondsSinceEpoch(0).toUtc(),
       deletedAt: null,
     );
     final Result<void> saveResult;
@@ -177,33 +174,58 @@ class StorageRepositoryImpl extends StorageRepository {
   }
 
   @override
-  Future<Result<void>> updateFile({required FileEntity entity}) async {
-    var model = mapper.fromEntity(entity);
+  Future<Result<void>> updateFile({
+    required FileUpdateRequest request,
+    bool overwrite = true,
+  }) async {
+    debugLog('started updating for ${request.id}');
+    debugLog('name: ${request.name}');
+    final oldModel = await localDataSource.getFile(fileId: request.id);
     await syncStatusManager.updateStatus(
-      fileId: model.id,
+      fileId: request.id,
       status: SyncStatus.updatingLocally,
     );
-    model = model.copyWith(updatedAt: DateTime.now().toUtc());
-    final updateResult = await localDataSource.updateFile(model: model);
+    final updateResult = await localDataSource.updateFile(
+      request: request.copyWith(updatedAt: DateTime.now().toUtc()),
+      overwrite: overwrite,
+    );
     if (updateResult.isFailure) {
       await syncStatusManager.updateStatus(
-        fileId: model.id,
+        fileId: request.id,
         status: SyncStatus.failedLocalUpdate,
       );
       return updateResult;
     }
     await syncStatusManager.updateStatus(
-      fileId: model.id,
+      fileId: request.id,
       status: SyncStatus.updated,
     );
-    debugLog('emitting local update sync event');
-    _controller!.add(
-      SyncEvent(
-        action: SyncAction.update,
-        source: SyncSource.local,
-        payload: model,
-      ),
+    final updatedModel = await localDataSource.getFile(fileId: request.id);
+
+    updatedModel.when(
+      success: (model) {
+        debugLog('emitting local update sync event');
+        if (((oldModel as Success).data as FileModel).hash == model?.hash) {
+          debugLog('sending update event');
+        } else {
+          debugLog('sending load event');
+        }
+        _controller?.add(
+          SyncEvent(
+            action:
+                ((oldModel as Success).data as FileModel).hash == model?.hash
+                ? SyncAction.update
+                : SyncAction.load,
+            source: SyncSource.local,
+            payload: model!,
+          ),
+        );
+      },
+      failure: (msg, err, source) {
+        debugLog('Failed to get updated model for sync event: $msg');
+      },
     );
+
     return Success(null);
   }
 
@@ -281,11 +303,7 @@ class StorageRepositoryImpl extends StorageRepository {
           onlyFiles: onlyFiles,
           onlyFolders: onlyFolders,
         )
-        .map(
-          (dbList) => dbList
-              .map((dbFile) => mapper.toEntity(mapper.fromDbFile(dbFile)))
-              .toList(),
-        );
+        .map((model) => model.map((model) => mapper.toEntity(model)).toList());
   }
 
   @override

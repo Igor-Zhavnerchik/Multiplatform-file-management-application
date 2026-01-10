@@ -9,6 +9,7 @@ import 'package:cross_platform_project/data/data_source/remote/remote_database_d
 import 'package:cross_platform_project/data/data_source/remote/remote_storage_data_source.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
+import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RemoteDataSource {
@@ -63,9 +64,9 @@ class RemoteDataSource {
     }, source: 'RemoteDataSource.uploadFile');
   }
 
-  Future<Result<void>> updateFile({required FileModel model}) async {
+  Future<Result<void>> updateFile({required FileUpdateRequest request}) async {
     return await safeCall(() async {
-      await database.uploadMetadata(metadata: mapper.toMetadata(model: model));
+      await database.uploadMetadata(metadata: request.toMetadata());
     }, source: 'RemoteDataSource.updateFile');
   }
 

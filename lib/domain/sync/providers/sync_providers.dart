@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/data/data_source/local/database/database_providers.dart';
+import 'package:cross_platform_project/data/providers/file_model_mapper_provider.dart';
 import 'package:cross_platform_project/data/providers/providers.dart';
 import 'package:cross_platform_project/domain/sync/sync_action_source/local_sync_action_source.dart';
 import 'package:cross_platform_project/domain/sync/sync_action_source/remote_sync_action_source.dart';
@@ -11,8 +11,8 @@ import 'package:cross_platform_project/domain/sync/sync_status_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final syncStatusManagerProvider = Provider<SyncStatusManager>((ref) {
-  final filesTable = ref.watch(filesTableProvider);
-  return SyncStatusManager(filesTable: filesTable);
+  final localDataSource = ref.watch(localDataSourceProvider);
+  return SyncStatusManager(localDataSource: localDataSource);
 });
 
 final localSyncActionSourceProvider = Provider<SyncActionSource>((ref) {
@@ -29,10 +29,12 @@ final updateHandlerProvider = Provider<UpdateHandler>((ref) {
   final localSyncActionSource = ref.watch(localSyncActionSourceProvider);
   final remoteSyncActionSource = ref.watch(remoteSyncActionSourceProvider);
   final syncStatusManager = ref.watch(syncStatusManagerProvider);
+  final mapper = ref.watch(fileModelMapperProvider);
   return UpdateHandler(
     local: localSyncActionSource,
     remote: remoteSyncActionSource,
     syncStatusManager: syncStatusManager,
+    mapper: mapper,
   );
 });
 

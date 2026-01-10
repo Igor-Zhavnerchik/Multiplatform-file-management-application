@@ -1,3 +1,5 @@
+import 'package:cross_platform_project/data/data_source/local/database/converters/download_status_converter.dart';
+import 'package:cross_platform_project/data/data_source/local/database/converters/sync_status_converter.dart';
 import 'package:drift/drift.dart';
 
 @DataClassName('DbFile')
@@ -19,10 +21,10 @@ class Files extends Table {
   DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
 
-  TextColumn get syncStatus => text()();
+  TextColumn get syncStatus => text().map(SyncStatusConverter())();
   BoolColumn get syncEnabled => boolean()();
   BoolColumn get downloadEnabled => boolean()();
-  TextColumn get downloadStatus => text()();
+  TextColumn get downloadStatus => text().map(DownloadStatusConverter())();
 
   @override
   Set<Column> get primaryKey => {id};

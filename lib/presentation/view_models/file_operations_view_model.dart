@@ -42,7 +42,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
   DeleteFileUseCase get _deleteFileUseCase =>
       ref.read(deleteFileUseCaseProvider);
   RenameFileUseCase get _renameFileUseCase =>
-      ref.read(updateFileUseCaseProvider);
+      ref.read(renameFileUseCaseProvider);
   SyncStartUseCase get _syncStartUseCase => ref.read(syncStartUseCaseProvider);
   CopyFileUseCase get _copyFileUseCase => ref.read(copyFileUseCaseProvider);
   PickExistingFilesUseCase get _pickExistingFilesUseCase =>

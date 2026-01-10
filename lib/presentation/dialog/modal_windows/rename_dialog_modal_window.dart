@@ -25,7 +25,6 @@ class _RenameDialogState extends ConsumerState<RenameDialog> {
     newName = widget.entity.name;
     _controller = TextEditingController(text: newName);
 
-    // Решение FIXME: выделяем имя без расширения
     final lastDotIndex = newName.lastIndexOf('.');
     final endOffset = (lastDotIndex > 0 && !widget.entity.isFolder)
         ? lastDotIndex

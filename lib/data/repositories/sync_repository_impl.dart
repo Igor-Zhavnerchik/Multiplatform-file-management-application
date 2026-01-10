@@ -88,27 +88,33 @@ class SyncRepositoryImpl implements SyncRepository {
       _remoteStreamSubscription = remoteSyncEventListener.syncEventStream
           .listen((event) async {
             debugLog('sync repository: catched remote ${event.action} event');
+            debugLog('new check');
             final localFile = await storage.getFileModelbyId(
               id: event.payload.id,
             );
+
             if (!switch (event.action) {
               SyncAction.create => localFile != null,
               SyncAction.delete => localFile == null,
               SyncAction.update =>
                 (localFile == null ||
                     localFile.updatedAt.compareTo(event.payload.updatedAt) > 0),
-              SyncAction.load => true,
+              SyncAction.load => false,
             }) {
+              debugLog('local hash: ${localFile?.hash}');
+              debugLog('remote hash: ${event.payload.hash}');
+              if (localFile != null && localFile.hash != event.payload.hash) {
+                debugLog('detected hash change => changed event action');
+                event = event.copyWith(action: SyncAction.load);
+              }
               syncProcessor.addEvent(event: event);
             }
           }, onError: (e) => debugLog('Error in sync stream: $e'));
     }
-    if (_localStreamSubscription == null) {
-      storage.localSyncEventStream.listen((event) {
-        debugLog('sync repository: catched remote ${event.action} event');
-        syncProcessor.addEvent(event: event);
-      });
-    }
+    _localStreamSubscription ??= storage.localSyncEventStream.listen((event) {
+      debugLog('sync repository: catched local ${event.action} event');
+      syncProcessor.addEvent(event: event);
+    });
 
     return Success(null);
   }
@@ -158,6 +164,7 @@ class SyncRepositoryImpl implements SyncRepository {
     }
   }
 
+  //FIXME delete status changes
   Future<void> _handleIntersection({
     required FileModel localModel,
     required FileModel remoteModel,
@@ -176,9 +183,9 @@ class SyncRepositoryImpl implements SyncRepository {
           ),
         );
       default:
-        /*  debugLog('for ${localModel.n)ame}');
+        debugLog('for ${localModel.name}');
         debugLog('local time: ${localModel.updatedAt.toIso8601String()}');
-        debugLog('remote time: ${remoteModel.updatedAt.toIso8601String()}'); */
+        debugLog('remote time: ${remoteModel.updatedAt.toIso8601String()}');
         switch (localModel.updatedAt.compareTo(remoteModel.updatedAt)) {
           case > 0:
             await syncStatusManager.updateStatus(

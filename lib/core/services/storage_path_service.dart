@@ -60,16 +60,14 @@ class StoragePathService {
   }
 
   //FIXME fix recursion to loop
+  //FIXME fix direct dao access
   Future<String> getLocalPath({required String? fileId}) async {
     //debugLog('getting path for id: $fileId');
     if (fileId == null) {
       return p.join(appRootPath, 'users', currentUserId);
     }
-
-    return p.join(
-      await getLocalPath(fileId: await filesTable.getParentIdbyId(fileId)),
-      await filesTable.getNameById(fileId),
-    );
+    final file = await filesTable.getFile(fileId: fileId);
+    return p.join(await getLocalPath(fileId: file!.parentId), file.name);
   }
 
   Future<String> getOwnerIdByPath({required String path}) async {

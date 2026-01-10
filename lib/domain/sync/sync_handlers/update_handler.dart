@@ -1,4 +1,7 @@
+import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/data/models/file_model_mapper.dart';
+import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:cross_platform_project/domain/sync/sync_action_source/sync_action_source.dart';
 import 'package:cross_platform_project/domain/sync/sync_processor.dart';
 import 'package:cross_platform_project/domain/sync/sync_status_manager.dart';
@@ -8,11 +11,13 @@ class UpdateHandler {
   SyncActionSource local;
   SyncActionSource remote;
   SyncStatusManager syncStatusManager;
+  FileModelMapper mapper;
 
   UpdateHandler({
     required this.local,
     required this.remote,
     required this.syncStatusManager,
+    required this.mapper,
   });
 
   Future<Result<void>> handle(SyncEvent event) async {
@@ -24,19 +29,19 @@ class UpdateHandler {
           ? SyncStatus.updatingLocally
           : SyncStatus.updatingRemotely,
     );
-    final updateResult = await source.updateFile(model: event.payload);
-    if (updateResult.isFailure) {
-      await syncStatusManager.updateStatus(
-        fileId: event.payload.id,
-        status: event.source == SyncSource.remote
-            ? SyncStatus.failedLocalUpdate
-            : SyncStatus.failedRemoteUpdate,
-      );
-    }
+    debugLog('handling update event for ${event.payload.name}');
+    final updateResult = await source.updateFile(
+      request: mapper.toUpdateRequest(event.payload),
+    );
     await syncStatusManager.updateStatus(
       fileId: event.payload.id,
-      status: SyncStatus.syncronized,
+      status: updateResult.isSuccess
+          ? SyncStatus.syncronized
+          : event.source == SyncSource.remote
+          ? SyncStatus.failedLocalUpdate
+          : SyncStatus.failedRemoteUpdate,
     );
+
     return updateResult;
   }
 }
