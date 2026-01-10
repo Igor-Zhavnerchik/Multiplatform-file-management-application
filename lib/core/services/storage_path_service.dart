@@ -31,11 +31,6 @@ class StoragePathService {
     return normalize(path);
   }
 
-  @deprecated
-  String resolve({required String relPath, bool forRemote = false}) {
-    return normalize(p.join(appRootPath, relPath), forRemote: forRemote);
-  }
-
   String join({
     required String parent,
     required String child,
@@ -67,6 +62,7 @@ class StoragePathService {
       return p.join(appRootPath, 'users', currentUserId);
     }
     final file = await filesTable.getFile(fileId: fileId);
+    debugLog('for ${file?.name} parent id: ${file?.parentId}');
     return p.join(await getLocalPath(fileId: file!.parentId), file.name);
   }
 

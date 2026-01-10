@@ -36,7 +36,9 @@ class UpdateHandler {
     await syncStatusManager.updateStatus(
       fileId: event.payload.id,
       status: updateResult.isSuccess
-          ? SyncStatus.syncronized
+          ? event.payload.deletedAt == null
+                ? SyncStatus.syncronized
+                : SyncStatus.deleted
           : event.source == SyncSource.remote
           ? SyncStatus.failedLocalUpdate
           : SyncStatus.failedRemoteUpdate,

@@ -14,7 +14,7 @@ class FolderView extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withOpacity(0.5),
+        color: theme.colorScheme.surface.withValues(alpha: 0.5),
       ),
       child: folderStream.when(
         data: (data) => ListView(
@@ -79,7 +79,7 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
             height: 40,
             padding: EdgeInsets.only(left: 4.0 + (widget.depth * 12)),
             color: isCurrent
-                ? theme.colorScheme.primaryContainer.withOpacity(0.3)
+                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
                 : null,
             child: Row(
               children: [
@@ -98,7 +98,7 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
                   size: 20,
                   color: isCurrent
                       ? theme.colorScheme.primary
-                      : theme.colorScheme.primary.withOpacity(0.7),
+                      : theme.colorScheme.primary.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -138,7 +138,7 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
                 child: CircularProgressIndicator(strokeWidth: 1),
               ),
             ),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
       ],
     );

@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/providers/file_stream_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/providers/storage_operations_providers.dart';
-import 'package:cross_platform_project/domain/use_cases/utils/get_root_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/utils/open_file_use_case.dart';
 import 'package:cross_platform_project/presentation/providers/history_navigator_provider.dart';
 import 'package:cross_platform_project/presentation/services/history_navigator.dart';
@@ -43,7 +41,6 @@ class HomeViewState {
 class HomeViewModel extends Notifier<HomeViewState> {
   OpenFileUseCase get _openFileUseCase => ref.read(openFileUseCaseProvider);
   HistoryNavigator get _historyNavigator => ref.read(historyNavigatorProvider);
-  GetRootUseCase get _getRootUseCase => ref.read(getRootUseCaseProvider);
   @override
   HomeViewState build() {
     ref.listen<AsyncValue<List<FileEntity>>>(onlyFoldersListProvider(null), (
@@ -58,11 +55,6 @@ class HomeViewModel extends Notifier<HomeViewState> {
       });
     });
     return HomeViewState();
-  }
-
-  @deprecated
-  Future<FileEntity> getRoot() async {
-    return (await _getRootUseCase() as Success).data;
   }
 
   Future<void> setSelected(FileEntity selectedItem) async {

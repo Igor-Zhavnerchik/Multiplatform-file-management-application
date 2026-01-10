@@ -54,7 +54,7 @@ class _RenameDialogState extends ConsumerState<RenameDialog> {
     if (!mounted) return;
     result.when(
       success: (_) => ref.read(dialogViewModelProvider.notifier).hide(),
-      failure: (msg, _, __) => setState(() {
+      failure: (msg, _, _) => setState(() {
         errorMessage = msg;
         isLoading = false;
       }),

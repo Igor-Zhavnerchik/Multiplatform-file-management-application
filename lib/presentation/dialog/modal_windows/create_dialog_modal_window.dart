@@ -156,7 +156,7 @@ class _CreateDialogState extends ConsumerState<CreateDialog> {
 
     result.when(
       success: (_) => ref.read(dialogViewModelProvider.notifier).hide(),
-      failure: (msg, _, __) => setState(() {
+      failure: (msg, _, _) => setState(() {
         errorMessage = msg;
         isLoading = false;
       }),

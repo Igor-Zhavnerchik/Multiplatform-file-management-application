@@ -67,6 +67,7 @@ class LocalDataSource {
       }
 
       await _waitFileCreation(path: savePath);
+
       model = model.copyWith(
         hash: await _getHash(model: model, filePath: savePath),
       );
@@ -75,6 +76,8 @@ class LocalDataSource {
 
         debugLog('inserting ${model.name} with id:$localId');
         await filesTable.insertFile(mapper.toInsert(model, localId));
+      } else {
+        await filesTable.updateFile(model.id, mapper.toUpdate(model));
       }
     }, source: 'LocalDataSource.saveFile');
   }

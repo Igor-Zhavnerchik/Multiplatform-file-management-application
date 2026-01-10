@@ -41,7 +41,9 @@ class LoadHandler {
       data: (dataResult as Success).data,
     );
     if (saveResult.isFailure) {
-      print('write failed.\n${(saveResult as Failure).error}');
+      print(
+        'write failed.\n${(saveResult as Failure).error} source: ${saveResult.source}',
+      );
       await syncStatusManager.updateStatus(
         fileId: event.payload.id,
         status: event.source == SyncSource.remote

@@ -2,7 +2,6 @@ import 'package:cross_platform_project/core/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
-import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
 import 'package:cross_platform_project/domain/sync/sync_action_source/sync_action_source.dart';
 
 class LocalSyncActionSource extends SyncActionSource {

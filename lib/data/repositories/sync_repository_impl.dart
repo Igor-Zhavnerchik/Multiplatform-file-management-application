@@ -88,7 +88,7 @@ class SyncRepositoryImpl implements SyncRepository {
       _remoteStreamSubscription = remoteSyncEventListener.syncEventStream
           .listen((event) async {
             debugLog('sync repository: catched remote ${event.action} event');
-            debugLog('new check');
+            debugLog('new checkk');
             final localFile = await storage.getFileModelbyId(
               id: event.payload.id,
             );

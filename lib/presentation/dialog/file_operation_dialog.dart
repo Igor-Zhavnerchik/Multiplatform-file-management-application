@@ -177,12 +177,16 @@ class ContextDialogOption extends ConsumerWidget {
       enabled: enabled,
       dense: true,
       leading: icon != null
-          ? Icon(icon, color: color.withOpacity(enabled ? 1 : 0.5), size: 20)
+          ? Icon(
+              icon,
+              color: color.withValues(alpha: enabled ? 1 : 0.5),
+              size: 20,
+            )
           : null,
       title: Text(
         title,
         style: TextStyle(
-          color: color.withOpacity(enabled ? 1 : 0.5),
+          color: color.withValues(alpha: enabled ? 1 : 0.5),
           fontWeight: FontWeight.w500,
         ),
       ),

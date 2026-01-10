@@ -156,7 +156,9 @@ class _CircleNavButton extends StatelessWidget {
       onPressed: onPressed,
       icon: Icon(icon, size: 18),
       style: IconButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.4),
+        backgroundColor: Theme.of(
+          context,
+        ).colorScheme.surface.withValues(alpha: 0.4),
         disabledBackgroundColor: Colors.transparent,
       ),
     );
