@@ -10,7 +10,6 @@ class FileCreateRequest {
   final String name;
   final bool isFolder;
   final bool downloadEnabled;
-  final bool syncEnabled;
 
   FileCreateRequest({
     required this.name,
@@ -18,7 +17,6 @@ class FileCreateRequest {
     this.bytes,
     required this.isFolder,
     required this.downloadEnabled,
-    required this.syncEnabled,
   });
 
   FileCreateRequest copyWith({
@@ -27,7 +25,6 @@ class FileCreateRequest {
     String? name,
     bool? isFolder,
     bool? downloadEnabled,
-    bool? syncEnabled,
   }) {
     return FileCreateRequest(
       name: name ?? this.name,
@@ -35,7 +32,6 @@ class FileCreateRequest {
       bytes: bytes ?? this.bytes,
       isFolder: isFolder ?? this.isFolder,
       downloadEnabled: downloadEnabled ?? this.downloadEnabled,
-      syncEnabled: syncEnabled ?? this.syncEnabled,
     );
   }
 }
@@ -45,7 +41,6 @@ abstract class StorageRepository {
   /* void init({required String userId}); */
   Future<Result<void>> createUserSaveState();
   Future<Result<void>> ensureRootExists();
-  Future<Result<FileEntity>> getRootFolder();
 
   Future<Result<void>> createFile({
     required FileEntity? parent,
@@ -56,7 +51,7 @@ abstract class StorageRepository {
   Future<Result<void>> copyFile({
     required FileEntity newParent,
     required FileEntity entity,
-    required bool deleteOrigin,
+    required bool isCut,
   });
 
   Future<FileModel?> getFileModelbyId({required String id});

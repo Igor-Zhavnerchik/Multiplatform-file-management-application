@@ -4,25 +4,31 @@ import 'package:cross_platform_project/presentation/dialog/modal_windows/delete_
 import 'package:cross_platform_project/presentation/dialog/modal_windows/rename_dialog_modal_window.dart';
 import 'package:cross_platform_project/presentation/providers/dialog_view_model_provider.dart';
 import 'package:cross_platform_project/presentation/providers/file_operations_view_model_provider.dart';
+import 'package:cross_platform_project/presentation/providers/home_view_model_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/* 
-class AlertDialog extends ConsumerWidget {
-  final String? message;
-  AlertDialog({this.message});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return CenteredPopUpMenu(children: [Text(message ?? 'Alert!')]);
-  }
-} */
-
-class FileOperationSelectMenu extends ConsumerWidget {
+class FileOperationSelectMenu extends ConsumerStatefulWidget {
   const FileOperationSelectMenu({required this.entity, super.key});
   final FileEntity entity;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FileOperationSelectMenu> createState() =>
+      _FileOperationSelectMenuState();
+}
+
+class _FileOperationSelectMenuState
+    extends ConsumerState<FileOperationSelectMenu> {
+  late bool downloadEnabled;
+
+  @override
+  void initState() {
+    super.initState();
+    downloadEnabled = widget.entity.downloadEnabled;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final dialogVM = ref.read(dialogViewModelProvider.notifier);
     final fileOpsVM = ref.read(fileOperationsViewModelProvider.notifier);
 
@@ -31,26 +37,42 @@ class FileOperationSelectMenu extends ConsumerWidget {
         ContextDialogOption(
           title: 'Rename',
           icon: Icons.edit_outlined,
-          action: () =>
-              dialogVM.showCustomDialog(content: RenameDialog(entity: entity)),
+          action: () => dialogVM.showCustomDialog(
+            content: RenameDialog(entity: widget.entity),
+          ),
         ),
         ContextDialogOption(
           title: 'Copy',
           icon: Icons.copy_rounded,
-          action: () => fileOpsVM.setCopyFrom(isCut: false, copyFrom: entity),
+          action: () =>
+              fileOpsVM.setCopyFrom(isCut: false, copyFrom: widget.entity),
         ),
         ContextDialogOption(
           title: 'Cut',
           icon: Icons.content_cut_rounded,
-          action: () => fileOpsVM.setCopyFrom(isCut: true, copyFrom: entity),
+          action: () =>
+              fileOpsVM.setCopyFrom(isCut: true, copyFrom: widget.entity),
         ),
         const Divider(height: 1),
+        ContextDialogSwitch(
+          title: 'Auto-Download',
+          icon: Icons.cloud_download_outlined,
+          value: downloadEnabled,
+          onChanged: (value) {
+            setState(() => downloadEnabled = value);
+            fileOpsVM.setDownloadEnable(
+              entity: widget.entity,
+              isEnabled: value,
+            );
+          },
+        ),
         ContextDialogOption(
           title: 'Delete',
           icon: Icons.delete_outline_rounded,
           isDestructive: true,
-          action: () =>
-              dialogVM.showCustomDialog(content: DeleteDialog(entity: entity)),
+          action: () => dialogVM.showCustomDialog(
+            content: DeleteDialog(entity: widget.entity),
+          ),
         ),
       ],
     );
@@ -117,8 +139,7 @@ class ContextDialogMenu extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: Container(
-        // Ограничиваем ширину выпадающего меню
-        constraints: const BoxConstraints(maxWidth: 250, minWidth: 160),
+        constraints: const BoxConstraints(maxWidth: 250, minWidth: 180),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
@@ -133,13 +154,11 @@ class ContextDialogMenu extends StatelessWidget {
             ),
           ],
         ),
-        // Используем Clip.antiAlias чтобы ListTile не вылезал за скругления
         clipBehavior: Clip.antiAlias,
         child: IntrinsicWidth(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment
-                .stretch, // А здесь stretch нужен для ListTile
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: children,
           ),
         ),
@@ -160,37 +179,108 @@ class ContextDialogOption extends ConsumerWidget {
 
   final String title;
   final VoidCallback action;
-  final IconData? icon; // Заменил на IconData для удобства
+  final IconData? icon;
   final bool isDestructive;
   final bool enabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final color = isDestructive ? colorScheme.error : colorScheme.onSurface;
 
-    return ListTile(
-      onTap: () {
-        ref.read(dialogViewModelProvider.notifier).hide();
-        action();
-      },
-      enabled: enabled,
-      dense: true,
-      leading: icon != null
-          ? Icon(
-              icon,
-              color: color.withValues(alpha: enabled ? 1 : 0.5),
-              size: 20,
-            )
-          : null,
-      title: Text(
-        title,
-        style: TextStyle(
-          color: color.withValues(alpha: enabled ? 1 : 0.5),
-          fontWeight: FontWeight.w500,
+    return Material(
+      color: Colors.transparent, // Важно для просвечивания фона меню
+      child: ListTile(
+        onTap: enabled
+            ? () {
+                ref.read(dialogViewModelProvider.notifier).hide();
+                action();
+              }
+            : null,
+        enabled: enabled,
+        dense: true,
+        // Явно задаем hoverColor, так как в теме он может быть прозрачным
+        hoverColor: color.withValues(alpha: 0.1),
+        mouseCursor: enabled
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
+        leading: icon != null
+            ? Icon(
+                icon,
+                color: color.withValues(alpha: enabled ? 1 : 0.5),
+                size: 20,
+              )
+            : null,
+        title: Text(
+          title,
+          style: TextStyle(
+            color: color.withValues(alpha: enabled ? 1 : 0.5),
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
-      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
+class ContextDialogSwitch extends StatelessWidget {
+  const ContextDialogSwitch({
+    required this.title,
+    required this.value,
+    required this.onChanged,
+    this.icon,
+    super.key,
+  });
+
+  final String title;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onChanged(!value),
+        hoverColor: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 20, color: theme.colorScheme.onSurface),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              // Отключаем реакцию самого свитча на жесты,
+              // так как их обрабатывает InkWell всей строки
+              IgnorePointer(
+                child: Transform.scale(
+                  scale: 0.7,
+                  child: Switch(
+                    value: value,
+                    onChanged: (_) {},
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -204,20 +294,14 @@ class ModalDialogWindow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Center(
-      // Центрируем для модальных окон
       child: Material(
         color: Colors.transparent,
         child: Container(
           padding: const EdgeInsets.all(24),
-          constraints: const BoxConstraints(
-            maxWidth: 400, // Ограничиваем максимальную ширину диалога
-            minWidth: 280, // Но не даем ему быть слишком узким
-          ),
+          constraints: const BoxConstraints(maxWidth: 400, minWidth: 280),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(
-              24,
-            ), // В Material 3 скругления больше
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),
@@ -230,9 +314,8 @@ class ModalDialogWindow extends StatelessWidget {
             ],
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min, // Схлопываем по высоте
-            crossAxisAlignment:
-                CrossAxisAlignment.start, // Контент не растягивается вширь
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: children,
           ),
         ),

@@ -48,7 +48,6 @@ class FsChangeApplier {
               name: pathService.getName(change.fs.path),
               isFolder: change.fs is ExistingFolder,
               downloadEnabled: true,
-              syncEnabled: true,
             ),
           );
         case DbUpdate():

@@ -3,17 +3,22 @@ import 'package:cross_platform_project/data/repositories/requests/update_file_re
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
 
-class RenameFileUseCase {
+class UpdateFileUseCase {
   final StorageRepository repository;
 
-  RenameFileUseCase({required this.repository});
+  UpdateFileUseCase({required this.repository});
 
   Future<Result<void>> call({
     required FileEntity entity,
-    required String newName,
+    String? newName,
+    bool? downloadEnabled,
   }) async {
     return await repository.updateFile(
-      request: FileUpdateRequest(id: entity.id, name: newName),
+      request: FileUpdateRequest(
+        id: entity.id,
+        name: newName,
+        downloadEnabled: downloadEnabled,
+      ),
     );
   }
 }

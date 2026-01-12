@@ -73,8 +73,8 @@ class LocalStorageService {
   }) async {
     FileSystemEntity entity = getEntity(path: path, isFolder: isFolder);
     isFolder
-        ? (entity as Directory).create(recursive: true)
-        : (entity as File).create();
+        ? await (entity as Directory).create(recursive: true)
+        : await (entity as File).create();
   }
 
   Future<void> copyEntity({

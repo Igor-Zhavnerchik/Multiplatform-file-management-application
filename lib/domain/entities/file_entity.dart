@@ -39,7 +39,6 @@ class FileEntity {
   final int? size;
   final String? hash;
 
-  final bool syncEnabled;
   final bool downloadEnabled;
 
   final SyncStatus syncStatus;
@@ -61,7 +60,6 @@ class FileEntity {
     required this.size,
     required this.hash,
 
-    required this.syncEnabled,
     required this.downloadEnabled,
 
     required this.syncStatus,
@@ -84,7 +82,6 @@ class FileEntity {
     int? size,
     String? hash,
 
-    bool? syncEnabled,
     bool? downloadEnabled,
 
     SyncStatus? syncStatus,
@@ -106,7 +103,6 @@ class FileEntity {
       size: size ?? this.size,
       hash: hash ?? this.hash,
 
-      syncEnabled: syncEnabled ?? this.syncEnabled,
       downloadEnabled: downloadEnabled ?? this.downloadEnabled,
 
       syncStatus: syncStatus ?? this.syncStatus,

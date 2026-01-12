@@ -31,7 +31,6 @@ class FileModelMapper {
     downloadEnabled: model.downloadEnabled!,
 
     downloadStatus: model.downloadStatus,
-    syncEnabled: model.syncEnabled!,
 
     createdAt: model.createdAt,
     updatedAt: model.updatedAt,
@@ -52,7 +51,6 @@ class FileModelMapper {
 
         //syncStatus: Value(model.syncStatus.name),
         downloadStatus: Value(model.downloadStatus),
-        syncEnabled: Value(model.syncEnabled!),
         downloadEnabled: Value(model.downloadEnabled!),
 
         updatedAt: Value(model.updatedAt),
@@ -72,7 +70,6 @@ class FileModelMapper {
     size: dbFile.size,
     hash: dbFile.hash,
 
-    syncEnabled: dbFile.syncEnabled,
     downloadEnabled: dbFile.downloadEnabled,
 
     syncStatus: dbFile.syncStatus,
@@ -97,7 +94,6 @@ class FileModelMapper {
       size: model.size,
       hash: model.hash,
 
-      syncEnabled: model.syncEnabled!,
       downloadStatus: model.downloadStatus,
 
       syncStatus: model.syncStatus,
@@ -123,7 +119,6 @@ class FileModelMapper {
       size: entity.size,
       hash: entity.hash,
 
-      syncEnabled: entity.syncEnabled,
       downloadEnabled: entity.downloadEnabled,
 
       syncStatus: entity.syncStatus,
@@ -179,7 +174,6 @@ class FileModelMapper {
       deletedAt: metadata['deleted_at'] != null
           ? DateTime.parse(metadata['deleted_at'])
           : null,
-      syncEnabled: settings.defaultSyncEnabled,
       downloadEnabled: settings.defaultDownloadEnabled,
       syncStatus: SyncStatus.syncronized,
     );

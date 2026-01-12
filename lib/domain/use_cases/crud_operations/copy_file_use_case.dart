@@ -15,7 +15,7 @@ class CopyFileUseCase {
     return await repository.copyFile(
       newParent: copyTo,
       entity: copyFrom,
-      deleteOrigin: isCut,
+      isCut: isCut,
     );
   }
 }

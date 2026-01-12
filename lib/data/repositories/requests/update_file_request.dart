@@ -92,7 +92,6 @@ class FileUpdateRequest {
       isFolder: isFolder != null ? Value(isFolder!) : Value.absent(),
       size: size != null ? Value(size!) : Value.absent(),
       hash: hash != null ? Value(hash!) : Value.absent(),
-      syncEnabled: syncEnabled != null ? Value(syncEnabled!) : Value.absent(),
       downloadEnabled: downloadEnabled != null
           ? Value(downloadEnabled!)
           : Value.absent(),
@@ -119,7 +118,6 @@ extension FileUpdateRequestFromModelMapper on FileModelMapper {
       isFolder: model.isFolder,
       size: model.size,
       hash: model.hash,
-      syncEnabled: model.syncEnabled,
       downloadEnabled: model.downloadEnabled,
       syncStatus: model.syncStatus,
       downloadStatus: model.downloadStatus,

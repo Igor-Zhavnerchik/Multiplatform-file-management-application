@@ -40,6 +40,7 @@ class FolderView extends ConsumerWidget {
     );
   }
 }
+// ... (остальной импорт без изменений)
 
 class FolderWidget extends ConsumerStatefulWidget {
   const FolderWidget({super.key, required this.folder, this.depth = 0});
@@ -71,10 +72,10 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
       children: [
         // Основная строка папки
         InkWell(
-          onTap: () {
-            ref.read(homeViewModelProvider.notifier).openElement(widget.folder);
-            setState(() => isOpen = !isOpen);
-          },
+          // Теперь нажатие по всей строке только навигирует в папку
+          onTap: () => ref
+              .read(homeViewModelProvider.notifier)
+              .openElement(widget.folder),
           child: Container(
             height: 40,
             padding: EdgeInsets.only(left: 4.0 + (widget.depth * 12)),
@@ -83,16 +84,30 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
                 : null,
             child: Row(
               children: [
-                // Иконка развертывания
-                RotationTransition(
-                  turns: AlwaysStoppedAnimation(isOpen ? 0.25 : 0),
-                  child: Icon(
-                    Icons.keyboard_arrow_right_rounded,
-                    size: 18,
-                    color: theme.colorScheme.onSurfaceVariant,
+                // Иконка развертывания ОБЕРНУТА в GestureDetector
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    // Это предотвращает срабатывание onTap у InkWell (навигацию)
+                    // и меняет только локальное состояние раскрытия
+                    setState(() => isOpen = !isOpen);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 8,
+                    ),
+                    child: RotationTransition(
+                      turns: AlwaysStoppedAnimation(isOpen ? 0.25 : 0),
+                      child: Icon(
+                        Icons.keyboard_arrow_right_rounded,
+                        size: 20, // Немного увеличил для удобства нажатия
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 2),
                 Icon(
                   isCurrent ? Icons.folder_open_rounded : Icons.folder_rounded,
                   size: 20,
@@ -122,6 +137,7 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
           ),
         ),
 
+        // Рекурсивное отображение подпапок
         if (isOpen)
           folderStream.when(
             data: (folders) => Column(
@@ -130,9 +146,13 @@ class _FolderWidgetState extends ConsumerState<FolderWidget> {
                   .map((f) => FolderWidget(folder: f, depth: widget.depth + 1))
                   .toList(),
             ),
-            loading: () => const Padding(
-              padding: EdgeInsets.only(left: 20, top: 4, bottom: 4),
-              child: SizedBox(
+            loading: () => Padding(
+              padding: EdgeInsets.only(
+                left: 40.0 + (widget.depth * 12),
+                top: 4,
+                bottom: 4,
+              ),
+              child: const SizedBox(
                 width: 12,
                 height: 12,
                 child: CircularProgressIndicator(strokeWidth: 1),

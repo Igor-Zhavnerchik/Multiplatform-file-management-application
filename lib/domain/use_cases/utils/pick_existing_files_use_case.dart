@@ -34,7 +34,6 @@ class PickExistingFilesUseCase {
               isFolder: pickedfile.isFolder,
               localPath: pickedfile.path,
               downloadEnabled: settingsService.defaultDownloadEnabled,
-              syncEnabled: settingsService.defaultSyncEnabled,
               bytes: pickedfile.bytes,
             ),
           );

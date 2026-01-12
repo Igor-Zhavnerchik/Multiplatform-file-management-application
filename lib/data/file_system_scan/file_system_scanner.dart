@@ -61,6 +61,7 @@ class FileSystemScanner {
         entries.addAll(await _scanUserPath(path: file.path, depth: 0));
       }
     }
+
     return entries;
   }
 

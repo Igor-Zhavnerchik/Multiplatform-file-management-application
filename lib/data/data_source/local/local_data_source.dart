@@ -9,8 +9,6 @@ import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:cross_platform_project/data/services/hash_service.dart';
-import 'package:cross_platform_project/domain/entities/file_entity.dart';
-import 'package:uuid/v4.dart';
 import '../local/local_storage_service.dart';
 
 class LocalDataSource {
@@ -29,18 +27,15 @@ class LocalDataSource {
     required this.hashService,
     required this.localFileIdService,
   });
-
-  //FIXME get rid of waiting if possible
-  Future<void> _waitFileCreation({required String path}) async {
-    debugLog('waiting for creation of $path');
-    for (var i = 0; i < 5; i++) {
-      if (await File(path).exists() || await Directory(path).exists()) {
-        return;
-      }
-      await Future.delayed(const Duration(milliseconds: 20));
-    }
-    throw Exception('file $path not created in given timeframe');
-  }
+  //FIXME indexes for same names
+  /* final lastDot = model.name.lastIndexOf('.');
+      final base = model.name.substring(0, lastDot);
+      final ext = model.name.substring(lastDot);
+      final siblings = await filesTable.getChildren(newParentModel.id, model.ownerId);
+      for(var sibling in siblings){
+        final number = (regex.firstMatch(model.name)?.group(1)).;
+        if(number != null && number > max_same_name)
+      } */
 
   Future<Result<void>> saveFile({
     required FileModel model,
@@ -64,13 +59,12 @@ class LocalDataSource {
           path: savePath,
           bytes: bytes ?? Stream.empty(),
         );
+        model = model.copyWith(
+          hash: await _getHash(model: model, filePath: savePath),
+          size: model.isFolder ? null : await File(savePath).length(),
+        );
       }
 
-      await _waitFileCreation(path: savePath);
-
-      model = model.copyWith(
-        hash: await _getHash(model: model, filePath: savePath),
-      );
       if (await filesTable.getFile(fileId: model.id) == null) {
         final localId = await localFileIdService.getFileId(path: savePath);
 
@@ -111,14 +105,10 @@ class LocalDataSource {
         hash: await _getHash(model: model, filePath: savePath),
       );
 
-      final entity = model.isFolder ? Directory(savePath) : File(savePath);
-      if (!await entity.exists()) {
-        debugLog('FS entity not created: $savePath');
-        await _waitFileCreation(path: savePath);
-      }
       if (!model.isFolder) {
         model = model.copyWith(
           hash: await hashService.hashFile(file: File(savePath)),
+          size: await File(savePath).length(),
         );
       }
       await filesTable.insertFile(
@@ -170,10 +160,6 @@ class LocalDataSource {
         );
         final currentPath = await pathService.getLocalPath(fileId: model.id);
 
-        /* debugLog('in update for ${model.name}');
-      debugLog('    current path: $currentPath');
-      debugLog('    model path: $modelPath'); */
-        //FIXME may be optimized compare only parents if different compute path
         if (currentPath != modelPath) {
           await localStorage.moveEntity(
             currentPath: currentPath,
@@ -238,64 +224,6 @@ class LocalDataSource {
             : DeleteFilter.exclude,
       )).map((file) => mapper.fromDbFile(file)).toList();
     }, source: 'LocalDataSource.getFileList');
-  }
-
-  Future<Result<void>> copyFile({
-    required FileModel newParentModel,
-    required FileModel model,
-    required bool deleteOrigin,
-  }) async {
-    return await safeCall(() async {
-      final fromPath = await pathService.getLocalPath(fileId: model.id);
-      final toPath = pathService.join(
-        parent: await pathService.getLocalPath(fileId: newParentModel.id),
-        child: pathService.getName(fromPath),
-      );
-      await localStorage.copyEntity(
-        fromPath: fromPath,
-        toPath: toPath,
-        isFolder: model.isFolder,
-      );
-      //FIXME indexes for same names
-      /* final lastDot = model.name.lastIndexOf('.');
-      final base = model.name.substring(0, lastDot);
-      final ext = model.name.substring(lastDot);
-      final siblings = await filesTable.getChildren(newParentModel.id, model.ownerId);
-      for(var sibling in siblings){
-        final number = (regex.firstMatch(model.name)?.group(1)).;
-        if(number != null && number > max_same_name)
-      } */
-      await filesTable.insertFile(
-        mapper.toInsert(
-          //FIXME
-          model.copyWith(
-            id: UuidV4().generate(),
-            parentId: newParentModel.id,
-            depth: newParentModel.depth + 1,
-            syncStatus: SyncStatus.created,
-          ),
-          await localFileIdService.getFileId(path: toPath),
-        ),
-      );
-      if (model.isFolder) {
-        final childrenList = await filesTable.getChildren(
-          parentId: model.id,
-          ownerId: model.ownerId,
-        );
-        for (var child in childrenList.map(
-          (dbFile) => mapper.fromDbFile(dbFile),
-        )) {
-          await copyFile(
-            newParentModel: model,
-            model: child,
-            deleteOrigin: false,
-          );
-        }
-      }
-      if (deleteOrigin) {
-        await deleteFile(model: model);
-      }
-    }, source: 'LocalDataSource.copyFile');
   }
 
   Future<Result<FileModel>> getRootFolder({required String ownerId}) async {

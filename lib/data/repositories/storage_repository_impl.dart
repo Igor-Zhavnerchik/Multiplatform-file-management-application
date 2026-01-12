@@ -99,14 +99,13 @@ class StorageRepositoryImpl extends StorageRepository {
       hash: null,
       mimeType: null,
       isFolder: request.isFolder,
-      syncEnabled: request.syncEnabled,
       downloadEnabled: request.downloadEnabled,
       syncStatus: SyncStatus.created,
       downloadStatus: request.localPath != null || request.bytes != null
           ? DownloadStatus.downloaded
           : DownloadStatus.notDownloaded,
       createdAt: DateTime.now().toUtc(),
-      updatedAt: DateTime.fromMicrosecondsSinceEpoch(0).toUtc(),
+      updatedAt: DateTime.now().toUtc(),
       deletedAt: null,
     );
     final Result<void> saveResult;
@@ -233,20 +232,36 @@ class StorageRepositoryImpl extends StorageRepository {
   Future<Result<void>> copyFile({
     required FileEntity newParent,
     required FileEntity entity,
-    required bool deleteOrigin,
+    required bool isCut,
   }) async {
-    final newParentModel = mapper.fromEntity(newParent);
-    final model = mapper.fromEntity(entity);
-    final result = await localDataSource.copyFile(
-      model: model,
-      newParentModel: newParentModel,
-      deleteOrigin: deleteOrigin,
-    );
-    if (result.isFailure) {
-      return Failure('Failed to copy to ${newParent.name} from ${entity.name}');
+    late final Result<void> copyResult;
+    if (isCut) {
+      copyResult = await updateFile(
+        request: FileUpdateRequest(id: entity.id, parentId: newParent.id),
+      );
     } else {
-      return Success(null);
+      final dataStreamResult = await localDataSource.getFileData(
+        model: mapper.fromEntity(entity),
+      );
+      copyResult = await dataStreamResult.when(
+        success: (dataStream) async {
+          return await createFile(
+            parent: newParent,
+            request: FileCreateRequest(
+              name: entity.name,
+              isFolder: entity.isFolder,
+              downloadEnabled: entity.downloadEnabled,
+              bytes: dataStream,
+            ),
+          );
+        },
+        failure: (_, _, _) => dataStreamResult,
+      );
+      if (dataStreamResult.isFailure) {
+        return dataStreamResult;
+      }
     }
+    return copyResult;
   }
 
   @override
@@ -255,7 +270,6 @@ class StorageRepositoryImpl extends StorageRepository {
     return result;
   }
 
-  @override
   Future<Result<FileEntity>> getRootFolder() async {
     final result = await localDataSource.getRootFolder(ownerId: currentUserId);
     if (result.isFailure) {
@@ -280,7 +294,6 @@ class StorageRepositoryImpl extends StorageRepository {
           name: 'Storage',
           isFolder: true,
           downloadEnabled: true,
-          syncEnabled: true,
         ),
       );
     }

@@ -1,6 +1,6 @@
 import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:cross_platform_project/core/providers/supabase_client_provider.dart';
-import 'package:cross_platform_project/data/providers/auth_repository_provider.dart';
+import 'package:cross_platform_project/data/repositories/providers/auth_repository_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum AuthStatus { authenticated, unauthenticated }

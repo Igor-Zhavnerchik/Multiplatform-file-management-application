@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/core/providers/settings_service_provider.dart';
 import 'package:cross_platform_project/data/providers/file_stream_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
-import 'package:cross_platform_project/domain/providers/storage_operations_providers.dart';
 import 'package:cross_platform_project/domain/use_cases/utils/open_file_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/utils/set_settings_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/utils/utils_use_cases_providers.dart';
 import 'package:cross_platform_project/presentation/providers/history_navigator_provider.dart';
 import 'package:cross_platform_project/presentation/services/history_navigator.dart';
 
@@ -15,12 +17,14 @@ class HomeViewState {
 
   FileEntity? selected;
   FileEntity? currentFolder;
+  bool defaultDownloadEnabled;
 
   HomeViewState({
     this.selected,
     this.currentFolder,
     this.canGoBack = false,
     this.canGoForward = false,
+    this.defaultDownloadEnabled = false,
   });
 
   HomeViewState copyWith({
@@ -28,19 +32,25 @@ class HomeViewState {
     FileEntity? currentFolder,
     bool? canGoBack,
     bool? canGoForward,
+    bool? defaultDownloadEnabled,
   }) {
     return HomeViewState(
       selected: selected ?? this.selected,
       currentFolder: currentFolder ?? this.currentFolder,
       canGoBack: canGoBack ?? this.canGoBack,
       canGoForward: canGoForward ?? this.canGoForward,
+      defaultDownloadEnabled:
+          defaultDownloadEnabled ?? this.defaultDownloadEnabled,
     );
   }
 }
 
 class HomeViewModel extends Notifier<HomeViewState> {
   OpenFileUseCase get _openFileUseCase => ref.read(openFileUseCaseProvider);
+  SetSettingsUseCase get _setSettingsUseCase =>
+      ref.read(setSettingsUseCaseProvider);
   HistoryNavigator get _historyNavigator => ref.read(historyNavigatorProvider);
+
   @override
   HomeViewState build() {
     ref.listen<AsyncValue<List<FileEntity>>>(onlyFoldersListProvider(null), (
@@ -54,12 +64,19 @@ class HomeViewModel extends Notifier<HomeViewState> {
         }
       });
     });
+    ref.listen<AsyncValue<bool>>(settingsStreamProvider, (prev, next) {
+      next.whenData((value) {
+        state = state.copyWith(defaultDownloadEnabled: value);
+        debugLog('HomeViewModel: defaultDownloadEnabled updated to $value');
+      });
+    });
+
     return HomeViewState();
   }
 
-  Future<void> setSelected(FileEntity selectedItem) async {
+  Future<void> setSelected(FileEntity? selectedItem) async {
     state = (state.copyWith(selected: selectedItem));
-    print('selected: ${selectedItem.name}');
+    print('selected: ${selectedItem?.name}');
   }
 
   Future<void> setCurrentFolder(FileEntity currentFolder) async {
@@ -91,6 +108,18 @@ class HomeViewModel extends Notifier<HomeViewState> {
             debugLog('$msg error: $err source: $source '),
       );
     }
+  }
+
+  Future<void> toggleDefaultDownload(bool value) async {
+    // Вызываем Use Case (в котором внутри SettingsService.setDefaultDownloadEnabled)
+    final result = await _setSettingsUseCase.call(
+      defaultDownloadEnabled: value,
+    );
+
+    result.when(
+      success: (_) => debugLog('Setting updated successfully'),
+      failure: (msg, err, src) => debugLog('Failed to update setting: $msg'),
+    );
   }
 
   Future<void> goBack() async {

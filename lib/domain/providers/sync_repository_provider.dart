@@ -1,5 +1,5 @@
 import 'package:cross_platform_project/data/providers/remote_sync_event_listener_provider.dart';
-import 'package:cross_platform_project/data/providers/storage_repository_provider.dart';
+import 'package:cross_platform_project/data/repositories/providers/storage_repository_provider.dart';
 import 'package:cross_platform_project/data/repositories/sync_repository_impl.dart';
 import 'package:cross_platform_project/domain/sync/providers/sync_providers.dart';
 import 'package:cross_platform_project/domain/repositories/sync_repositry.dart';

@@ -1,5 +1,6 @@
-import 'package:cross_platform_project/data/providers/file_model_mapper_provider.dart';
-import 'package:cross_platform_project/data/providers/providers.dart';
+import 'package:cross_platform_project/data/models/providers/file_model_mapper_provider.dart';
+import 'package:cross_platform_project/data/providers/local_data_source_providers.dart';
+import 'package:cross_platform_project/data/providers/remote_data_source_providers.dart';
 import 'package:cross_platform_project/domain/sync/sync_action_source/local_sync_action_source.dart';
 import 'package:cross_platform_project/domain/sync/sync_action_source/remote_sync_action_source.dart';
 import 'package:cross_platform_project/domain/sync/sync_action_source/sync_action_source.dart';

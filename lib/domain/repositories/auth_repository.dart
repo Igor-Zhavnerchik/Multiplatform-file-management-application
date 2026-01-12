@@ -15,4 +15,5 @@ abstract class AuthRepository {
   });
 
   Future<bool> resumeSession();
+  Future<void> ensureUserEntryExists();
 }

@@ -12,9 +12,10 @@ import 'package:cross_platform_project/domain/repositories/storage_repository.da
 import 'package:cross_platform_project/domain/use_cases/crud_operations/copy_file_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/crud_operations/create_file_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/crud_operations/delete_file_use_case.dart';
-import 'package:cross_platform_project/domain/use_cases/crud_operations/rename_file_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/crud_operations/update_file_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/utils/pick_existing_files_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/utils/sync_start_use_case.dart';
+import 'package:cross_platform_project/domain/use_cases/utils/utils_use_cases_providers.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -41,8 +42,8 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
       ref.read(createFileUseCaseProvider);
   DeleteFileUseCase get _deleteFileUseCase =>
       ref.read(deleteFileUseCaseProvider);
-  RenameFileUseCase get _renameFileUseCase =>
-      ref.read(renameFileUseCaseProvider);
+  UpdateFileUseCase get _updateFileUseCase =>
+      ref.read(updateFileUseCaseProvider);
   SyncStartUseCase get _syncStartUseCase => ref.read(syncStartUseCaseProvider);
   CopyFileUseCase get _copyFileUseCase => ref.read(copyFileUseCaseProvider);
   PickExistingFilesUseCase get _pickExistingFilesUseCase =>
@@ -50,7 +51,6 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
   FsScanHandler get _scanHandler => ref.read(fsScanHandlerProvider);
   SettingsService get _settingsService => ref.read(settingsServiceProvider);
 
-  bool get defaultSyncEnabled => _settingsService.defaultSyncEnabled;
   bool get defaultDownloadEnabled => _settingsService.defaultDownloadEnabled;
 
   @override
@@ -63,7 +63,6 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
     required FileEntity parent,
     required bool isFolder,
     required String name,
-    required bool syncEnabled,
     required bool downloadEnabled,
   }) async {
     debugLog('VM: creating $name in ${parent.name}');
@@ -74,7 +73,6 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
           name: name,
           isFolder: isFolder,
           downloadEnabled: downloadEnabled,
-          syncEnabled: syncEnabled,
         ),
       ],
     );
@@ -91,9 +89,20 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
     required FileEntity entity,
     required String newName,
   }) async {
-    var renameResult = await _renameFileUseCase(
+    var renameResult = await _updateFileUseCase(
       entity: entity,
       newName: newName,
+    );
+    return renameResult;
+  }
+
+  Future<Result<void>> setDownloadEnable({
+    required FileEntity entity,
+    required bool isEnabled,
+  }) async {
+    var renameResult = await _updateFileUseCase(
+      entity: entity,
+      downloadEnabled: isEnabled,
     );
     return renameResult;
   }

@@ -5,10 +5,10 @@ import 'package:cross_platform_project/data/file_system_scan/file_system_scanner
 import 'package:cross_platform_project/data/file_system_scan/file_system_watcher.dart';
 import 'package:cross_platform_project/data/file_system_scan/fs_scan_handler.dart';
 import 'package:cross_platform_project/data/file_system_scan/reconciler.dart';
-import 'package:cross_platform_project/data/providers/file_model_mapper_provider.dart';
-import 'package:cross_platform_project/data/providers/hash_service_provider.dart';
-import 'package:cross_platform_project/data/providers/providers.dart';
-import 'package:cross_platform_project/data/providers/storage_repository_provider.dart';
+import 'package:cross_platform_project/data/models/providers/file_model_mapper_provider.dart';
+import 'package:cross_platform_project/data/services/providers/hash_service_provider.dart';
+import 'package:cross_platform_project/data/providers/local_data_source_providers.dart';
+import 'package:cross_platform_project/data/repositories/providers/storage_repository_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final fileSystemScannerProvider = Provider.autoDispose<FileSystemScanner>((

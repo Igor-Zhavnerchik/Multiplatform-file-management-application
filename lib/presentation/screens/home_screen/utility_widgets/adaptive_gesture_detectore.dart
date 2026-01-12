@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:cross_platform_project/core/debug/debugger.dart';
 import 'package:flutter/material.dart';
 
 class AdaptiveGestureDetector extends StatefulWidget {
@@ -32,6 +31,7 @@ class AdaptiveGestureDetector extends StatefulWidget {
 
 class _AdaptiveGestureDetectorState extends State<AdaptiveGestureDetector> {
   bool isDesktop = true;
+
   @override
   Widget build(BuildContext context) {
     return Listener(
@@ -39,23 +39,37 @@ class _AdaptiveGestureDetectorState extends State<AdaptiveGestureDetector> {
         isDesktop =
             event.kind == PointerDeviceKind.mouse ||
             event.kind == PointerDeviceKind.trackpad;
-        debugLog('detected ${isDesktop ? 'desktop' : 'mobile'} pointer event');
-      },
 
-      child: GestureDetector(
-        behavior: widget.behavior,
-        onTap: () {
+        // buttons == 1 — это левая кнопка мыши
+        // buttons == 0 — это касание пальцем (в зависимости от платформы)
+        final isLeftClick = event.buttons == 1;
+        final isTouch = event.kind == PointerDeviceKind.touch;
+
+        if (isLeftClick || isTouch) {
           if (isDesktop) {
             widget.onTapDesktop?.call();
           } else {
             widget.onTapMobile?.call();
           }
-        },
+        }
+      },
+      child: GestureDetector(
+        behavior: widget.behavior ?? HitTestBehavior.opaque,
+        // Оставляем onDoubleTap — он будет работать параллельно с Listener
         onDoubleTap: isDesktop
             ? widget.onDoubleTapDesktop
             : widget.onDoubleTapMobile,
+
+        // ПКМ теперь снова будет ловиться здесь
         onSecondaryTapDown: isDesktop ? widget.onSecondaryTapDownDesktop : null,
+
         onLongPressStart: isDesktop ? null : widget.onLongPressStartMobile,
+
+        // ВАЖНО: onTap в GestureDetector оставляем пустым,
+        // чтобы он не конфликтовал с onDoubleTap и не создавал задержку,
+        // так как логику выбора мы уже перенесли в Listener.
+        onTap: () {},
+
         child: widget.child,
       ),
     );

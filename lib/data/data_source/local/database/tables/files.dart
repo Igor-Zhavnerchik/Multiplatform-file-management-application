@@ -22,7 +22,6 @@ class Files extends Table {
   DateTimeColumn get deletedAt => dateTime().nullable()();
 
   TextColumn get syncStatus => text().map(SyncStatusConverter())();
-  BoolColumn get syncEnabled => boolean()();
   BoolColumn get downloadEnabled => boolean()();
   TextColumn get downloadStatus => text().map(DownloadStatusConverter())();
 

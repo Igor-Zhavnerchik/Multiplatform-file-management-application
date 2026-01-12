@@ -164,20 +164,6 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
         type: DriftSqlType.string,
         requiredDuringInsert: true,
       ).withConverter<SyncStatus>($FilesTable.$convertersyncStatus);
-  static const VerificationMeta _syncEnabledMeta = const VerificationMeta(
-    'syncEnabled',
-  );
-  @override
-  late final GeneratedColumn<bool> syncEnabled = GeneratedColumn<bool>(
-    'sync_enabled',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("sync_enabled" IN (0, 1))',
-    ),
-  );
   static const VerificationMeta _downloadEnabledMeta = const VerificationMeta(
     'downloadEnabled',
   );
@@ -218,7 +204,6 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
     updatedAt,
     deletedAt,
     syncStatus,
-    syncEnabled,
     downloadEnabled,
     downloadStatus,
   ];
@@ -337,17 +322,6 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
         deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
       );
     }
-    if (data.containsKey('sync_enabled')) {
-      context.handle(
-        _syncEnabledMeta,
-        syncEnabled.isAcceptableOrUnknown(
-          data['sync_enabled']!,
-          _syncEnabledMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_syncEnabledMeta);
-    }
     if (data.containsKey('download_enabled')) {
       context.handle(
         _downloadEnabledMeta,
@@ -430,10 +404,6 @@ class $FilesTable extends Files with TableInfo<$FilesTable, DbFile> {
           data['${effectivePrefix}sync_status'],
         )!,
       ),
-      syncEnabled: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}sync_enabled'],
-      )!,
       downloadEnabled: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}download_enabled'],
@@ -474,7 +444,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
   final DateTime updatedAt;
   final DateTime? deletedAt;
   final SyncStatus syncStatus;
-  final bool syncEnabled;
   final bool downloadEnabled;
   final DownloadStatus downloadStatus;
   const DbFile({
@@ -493,7 +462,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     required this.updatedAt,
     this.deletedAt,
     required this.syncStatus,
-    required this.syncEnabled,
     required this.downloadEnabled,
     required this.downloadStatus,
   });
@@ -531,7 +499,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
         $FilesTable.$convertersyncStatus.toSql(syncStatus),
       );
     }
-    map['sync_enabled'] = Variable<bool>(syncEnabled);
     map['download_enabled'] = Variable<bool>(downloadEnabled);
     {
       map['download_status'] = Variable<String>(
@@ -566,7 +533,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
           ? const Value.absent()
           : Value(deletedAt),
       syncStatus: Value(syncStatus),
-      syncEnabled: Value(syncEnabled),
       downloadEnabled: Value(downloadEnabled),
       downloadStatus: Value(downloadStatus),
     );
@@ -593,7 +559,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
-      syncEnabled: serializer.fromJson<bool>(json['syncEnabled']),
       downloadEnabled: serializer.fromJson<bool>(json['downloadEnabled']),
       downloadStatus: serializer.fromJson<DownloadStatus>(
         json['downloadStatus'],
@@ -619,7 +584,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
-      'syncEnabled': serializer.toJson<bool>(syncEnabled),
       'downloadEnabled': serializer.toJson<bool>(downloadEnabled),
       'downloadStatus': serializer.toJson<DownloadStatus>(downloadStatus),
     };
@@ -641,7 +605,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
     SyncStatus? syncStatus,
-    bool? syncEnabled,
     bool? downloadEnabled,
     DownloadStatus? downloadStatus,
   }) => DbFile(
@@ -660,7 +623,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     syncStatus: syncStatus ?? this.syncStatus,
-    syncEnabled: syncEnabled ?? this.syncEnabled,
     downloadEnabled: downloadEnabled ?? this.downloadEnabled,
     downloadStatus: downloadStatus ?? this.downloadStatus,
   );
@@ -687,9 +649,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
-      syncEnabled: data.syncEnabled.present
-          ? data.syncEnabled.value
-          : this.syncEnabled,
       downloadEnabled: data.downloadEnabled.present
           ? data.downloadEnabled.value
           : this.downloadEnabled,
@@ -717,7 +676,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
-          ..write('syncEnabled: $syncEnabled, ')
           ..write('downloadEnabled: $downloadEnabled, ')
           ..write('downloadStatus: $downloadStatus')
           ..write(')'))
@@ -741,7 +699,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
     updatedAt,
     deletedAt,
     syncStatus,
-    syncEnabled,
     downloadEnabled,
     downloadStatus,
   );
@@ -764,7 +721,6 @@ class DbFile extends DataClass implements Insertable<DbFile> {
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.syncStatus == this.syncStatus &&
-          other.syncEnabled == this.syncEnabled &&
           other.downloadEnabled == this.downloadEnabled &&
           other.downloadStatus == this.downloadStatus);
 }
@@ -785,7 +741,6 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
   final Value<SyncStatus> syncStatus;
-  final Value<bool> syncEnabled;
   final Value<bool> downloadEnabled;
   final Value<DownloadStatus> downloadStatus;
   final Value<int> rowid;
@@ -805,7 +760,6 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
-    this.syncEnabled = const Value.absent(),
     this.downloadEnabled = const Value.absent(),
     this.downloadStatus = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -826,7 +780,6 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
     required SyncStatus syncStatus,
-    required bool syncEnabled,
     required bool downloadEnabled,
     required DownloadStatus downloadStatus,
     this.rowid = const Value.absent(),
@@ -839,7 +792,6 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt),
        syncStatus = Value(syncStatus),
-       syncEnabled = Value(syncEnabled),
        downloadEnabled = Value(downloadEnabled),
        downloadStatus = Value(downloadStatus);
   static Insertable<DbFile> custom({
@@ -858,7 +810,6 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
     Expression<String>? syncStatus,
-    Expression<bool>? syncEnabled,
     Expression<bool>? downloadEnabled,
     Expression<String>? downloadStatus,
     Expression<int>? rowid,
@@ -879,7 +830,6 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
-      if (syncEnabled != null) 'sync_enabled': syncEnabled,
       if (downloadEnabled != null) 'download_enabled': downloadEnabled,
       if (downloadStatus != null) 'download_status': downloadStatus,
       if (rowid != null) 'rowid': rowid,
@@ -902,7 +852,6 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
     Value<SyncStatus>? syncStatus,
-    Value<bool>? syncEnabled,
     Value<bool>? downloadEnabled,
     Value<DownloadStatus>? downloadStatus,
     Value<int>? rowid,
@@ -923,7 +872,6 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       syncStatus: syncStatus ?? this.syncStatus,
-      syncEnabled: syncEnabled ?? this.syncEnabled,
       downloadEnabled: downloadEnabled ?? this.downloadEnabled,
       downloadStatus: downloadStatus ?? this.downloadStatus,
       rowid: rowid ?? this.rowid,
@@ -980,9 +928,6 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
         $FilesTable.$convertersyncStatus.toSql(syncStatus.value),
       );
     }
-    if (syncEnabled.present) {
-      map['sync_enabled'] = Variable<bool>(syncEnabled.value);
-    }
     if (downloadEnabled.present) {
       map['download_enabled'] = Variable<bool>(downloadEnabled.value);
     }
@@ -1015,9 +960,281 @@ class FilesCompanion extends UpdateCompanion<DbFile> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
-          ..write('syncEnabled: $syncEnabled, ')
           ..write('downloadEnabled: $downloadEnabled, ')
           ..write('downloadStatus: $downloadStatus, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $UsersTable extends Users with TableInfo<$UsersTable, DbUser> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UsersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _emailMeta = const VerificationMeta('email');
+  @override
+  late final GeneratedColumn<String> email = GeneratedColumn<String>(
+    'email',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _defaultDownloadEnabledMeta =
+      const VerificationMeta('defaultDownloadEnabled');
+  @override
+  late final GeneratedColumn<bool> defaultDownloadEnabled =
+      GeneratedColumn<bool>(
+        'default_download_enabled',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("default_download_enabled" IN (0, 1))',
+        ),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [id, email, defaultDownloadEnabled];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'users';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DbUser> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('email')) {
+      context.handle(
+        _emailMeta,
+        email.isAcceptableOrUnknown(data['email']!, _emailMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_emailMeta);
+    }
+    if (data.containsKey('default_download_enabled')) {
+      context.handle(
+        _defaultDownloadEnabledMeta,
+        defaultDownloadEnabled.isAcceptableOrUnknown(
+          data['default_download_enabled']!,
+          _defaultDownloadEnabledMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_defaultDownloadEnabledMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DbUser map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DbUser(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      email: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}email'],
+      )!,
+      defaultDownloadEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}default_download_enabled'],
+      )!,
+    );
+  }
+
+  @override
+  $UsersTable createAlias(String alias) {
+    return $UsersTable(attachedDatabase, alias);
+  }
+}
+
+class DbUser extends DataClass implements Insertable<DbUser> {
+  final String id;
+  final String email;
+  final bool defaultDownloadEnabled;
+  const DbUser({
+    required this.id,
+    required this.email,
+    required this.defaultDownloadEnabled,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['email'] = Variable<String>(email);
+    map['default_download_enabled'] = Variable<bool>(defaultDownloadEnabled);
+    return map;
+  }
+
+  UsersCompanion toCompanion(bool nullToAbsent) {
+    return UsersCompanion(
+      id: Value(id),
+      email: Value(email),
+      defaultDownloadEnabled: Value(defaultDownloadEnabled),
+    );
+  }
+
+  factory DbUser.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DbUser(
+      id: serializer.fromJson<String>(json['id']),
+      email: serializer.fromJson<String>(json['email']),
+      defaultDownloadEnabled: serializer.fromJson<bool>(
+        json['defaultDownloadEnabled'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'email': serializer.toJson<String>(email),
+      'defaultDownloadEnabled': serializer.toJson<bool>(defaultDownloadEnabled),
+    };
+  }
+
+  DbUser copyWith({String? id, String? email, bool? defaultDownloadEnabled}) =>
+      DbUser(
+        id: id ?? this.id,
+        email: email ?? this.email,
+        defaultDownloadEnabled:
+            defaultDownloadEnabled ?? this.defaultDownloadEnabled,
+      );
+  DbUser copyWithCompanion(UsersCompanion data) {
+    return DbUser(
+      id: data.id.present ? data.id.value : this.id,
+      email: data.email.present ? data.email.value : this.email,
+      defaultDownloadEnabled: data.defaultDownloadEnabled.present
+          ? data.defaultDownloadEnabled.value
+          : this.defaultDownloadEnabled,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DbUser(')
+          ..write('id: $id, ')
+          ..write('email: $email, ')
+          ..write('defaultDownloadEnabled: $defaultDownloadEnabled')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, email, defaultDownloadEnabled);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DbUser &&
+          other.id == this.id &&
+          other.email == this.email &&
+          other.defaultDownloadEnabled == this.defaultDownloadEnabled);
+}
+
+class UsersCompanion extends UpdateCompanion<DbUser> {
+  final Value<String> id;
+  final Value<String> email;
+  final Value<bool> defaultDownloadEnabled;
+  final Value<int> rowid;
+  const UsersCompanion({
+    this.id = const Value.absent(),
+    this.email = const Value.absent(),
+    this.defaultDownloadEnabled = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UsersCompanion.insert({
+    required String id,
+    required String email,
+    required bool defaultDownloadEnabled,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       email = Value(email),
+       defaultDownloadEnabled = Value(defaultDownloadEnabled);
+  static Insertable<DbUser> custom({
+    Expression<String>? id,
+    Expression<String>? email,
+    Expression<bool>? defaultDownloadEnabled,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (email != null) 'email': email,
+      if (defaultDownloadEnabled != null)
+        'default_download_enabled': defaultDownloadEnabled,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UsersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? email,
+    Value<bool>? defaultDownloadEnabled,
+    Value<int>? rowid,
+  }) {
+    return UsersCompanion(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      defaultDownloadEnabled:
+          defaultDownloadEnabled ?? this.defaultDownloadEnabled,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (email.present) {
+      map['email'] = Variable<String>(email.value);
+    }
+    if (defaultDownloadEnabled.present) {
+      map['default_download_enabled'] = Variable<bool>(
+        defaultDownloadEnabled.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UsersCompanion(')
+          ..write('id: $id, ')
+          ..write('email: $email, ')
+          ..write('defaultDownloadEnabled: $defaultDownloadEnabled, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1028,12 +1245,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $FilesTable files = $FilesTable(this);
+  late final $UsersTable users = $UsersTable(this);
   late final FilesDao filesDao = FilesDao(this as AppDatabase);
+  late final UsersDao usersDao = UsersDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [files];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [files, users];
 }
 
 typedef $$FilesTableCreateCompanionBuilder =
@@ -1053,7 +1272,6 @@ typedef $$FilesTableCreateCompanionBuilder =
       required DateTime updatedAt,
       Value<DateTime?> deletedAt,
       required SyncStatus syncStatus,
-      required bool syncEnabled,
       required bool downloadEnabled,
       required DownloadStatus downloadStatus,
       Value<int> rowid,
@@ -1075,7 +1293,6 @@ typedef $$FilesTableUpdateCompanionBuilder =
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
       Value<SyncStatus> syncStatus,
-      Value<bool> syncEnabled,
       Value<bool> downloadEnabled,
       Value<DownloadStatus> downloadStatus,
       Value<int> rowid,
@@ -1163,11 +1380,6 @@ class $$FilesTableFilterComposer extends Composer<_$AppDatabase, $FilesTable> {
   get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<bool> get syncEnabled => $composableBuilder(
-    column: $table.syncEnabled,
-    builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<bool> get downloadEnabled => $composableBuilder(
@@ -1266,11 +1478,6 @@ class $$FilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get syncEnabled => $composableBuilder(
-    column: $table.syncEnabled,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<bool> get downloadEnabled => $composableBuilder(
     column: $table.downloadEnabled,
     builder: (column) => ColumnOrderings(column),
@@ -1343,11 +1550,6 @@ class $$FilesTableAnnotationComposer
         builder: (column) => column,
       );
 
-  GeneratedColumn<bool> get syncEnabled => $composableBuilder(
-    column: $table.syncEnabled,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<bool> get downloadEnabled => $composableBuilder(
     column: $table.downloadEnabled,
     builder: (column) => column,
@@ -1403,7 +1605,6 @@ class $$FilesTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<SyncStatus> syncStatus = const Value.absent(),
-                Value<bool> syncEnabled = const Value.absent(),
                 Value<bool> downloadEnabled = const Value.absent(),
                 Value<DownloadStatus> downloadStatus = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -1423,7 +1624,6 @@ class $$FilesTableTableManager
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
-                syncEnabled: syncEnabled,
                 downloadEnabled: downloadEnabled,
                 downloadStatus: downloadStatus,
                 rowid: rowid,
@@ -1445,7 +1645,6 @@ class $$FilesTableTableManager
                 required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
                 required SyncStatus syncStatus,
-                required bool syncEnabled,
                 required bool downloadEnabled,
                 required DownloadStatus downloadStatus,
                 Value<int> rowid = const Value.absent(),
@@ -1465,7 +1664,6 @@ class $$FilesTableTableManager
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
-                syncEnabled: syncEnabled,
                 downloadEnabled: downloadEnabled,
                 downloadStatus: downloadStatus,
                 rowid: rowid,
@@ -1492,10 +1690,169 @@ typedef $$FilesTableProcessedTableManager =
       DbFile,
       PrefetchHooks Function()
     >;
+typedef $$UsersTableCreateCompanionBuilder =
+    UsersCompanion Function({
+      required String id,
+      required String email,
+      required bool defaultDownloadEnabled,
+      Value<int> rowid,
+    });
+typedef $$UsersTableUpdateCompanionBuilder =
+    UsersCompanion Function({
+      Value<String> id,
+      Value<String> email,
+      Value<bool> defaultDownloadEnabled,
+      Value<int> rowid,
+    });
+
+class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
+  $$UsersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get defaultDownloadEnabled => $composableBuilder(
+    column: $table.defaultDownloadEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$UsersTableOrderingComposer
+    extends Composer<_$AppDatabase, $UsersTable> {
+  $$UsersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get defaultDownloadEnabled => $composableBuilder(
+    column: $table.defaultDownloadEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$UsersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UsersTable> {
+  $$UsersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get email =>
+      $composableBuilder(column: $table.email, builder: (column) => column);
+
+  GeneratedColumn<bool> get defaultDownloadEnabled => $composableBuilder(
+    column: $table.defaultDownloadEnabled,
+    builder: (column) => column,
+  );
+}
+
+class $$UsersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UsersTable,
+          DbUser,
+          $$UsersTableFilterComposer,
+          $$UsersTableOrderingComposer,
+          $$UsersTableAnnotationComposer,
+          $$UsersTableCreateCompanionBuilder,
+          $$UsersTableUpdateCompanionBuilder,
+          (DbUser, BaseReferences<_$AppDatabase, $UsersTable, DbUser>),
+          DbUser,
+          PrefetchHooks Function()
+        > {
+  $$UsersTableTableManager(_$AppDatabase db, $UsersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UsersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UsersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UsersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> email = const Value.absent(),
+                Value<bool> defaultDownloadEnabled = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UsersCompanion(
+                id: id,
+                email: email,
+                defaultDownloadEnabled: defaultDownloadEnabled,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String email,
+                required bool defaultDownloadEnabled,
+                Value<int> rowid = const Value.absent(),
+              }) => UsersCompanion.insert(
+                id: id,
+                email: email,
+                defaultDownloadEnabled: defaultDownloadEnabled,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$UsersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UsersTable,
+      DbUser,
+      $$UsersTableFilterComposer,
+      $$UsersTableOrderingComposer,
+      $$UsersTableAnnotationComposer,
+      $$UsersTableCreateCompanionBuilder,
+      $$UsersTableUpdateCompanionBuilder,
+      (DbUser, BaseReferences<_$AppDatabase, $UsersTable, DbUser>),
+      DbUser,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
   $$FilesTableTableManager get files =>
       $$FilesTableTableManager(_db, _db.files);
+  $$UsersTableTableManager get users =>
+      $$UsersTableTableManager(_db, _db.users);
 }

@@ -1,5 +1,6 @@
 import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
+import 'package:cross_platform_project/data/data_source/local/database/dao/users_dao.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) => AppDatabase());
@@ -7,4 +8,9 @@ final databaseProvider = Provider<AppDatabase>((ref) => AppDatabase());
 final filesTableProvider = Provider<FilesDao>((ref) {
   final database = ref.watch(databaseProvider);
   return FilesDao(database);
+});
+
+final usersTableProvider = Provider<UsersDao>((ref) {
+  final database = ref.watch(databaseProvider);
+  return UsersDao(database);
 });

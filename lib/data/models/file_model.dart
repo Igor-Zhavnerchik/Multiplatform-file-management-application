@@ -12,7 +12,6 @@ class FileModel {
   final int? size;
   final String? hash;
 
-  final bool? syncEnabled;
   final bool? downloadEnabled;
 
   final SyncStatus syncStatus;
@@ -34,7 +33,6 @@ class FileModel {
     required this.size,
     required this.hash,
 
-    required this.syncEnabled,
     required this.downloadEnabled,
 
     required this.syncStatus,
@@ -79,7 +77,6 @@ class FileModel {
       size: size ?? this.size,
       hash: hash ?? this.hash,
 
-      syncEnabled: syncEnabled ?? this.syncEnabled,
       downloadEnabled: downloadEnabled ?? this.downloadEnabled,
 
       syncStatus: syncStatus ?? this.syncStatus,

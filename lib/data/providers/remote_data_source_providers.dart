@@ -1,7 +1,7 @@
 import 'package:cross_platform_project/core/converters/providers/bytes_to_stream_converter_provider.dart';
 import 'package:cross_platform_project/core/providers/current_user_service_provider.dart';
-import 'package:cross_platform_project/data/providers/file_model_mapper_provider.dart';
-import 'package:cross_platform_project/data/providers/providers.dart';
+import 'package:cross_platform_project/data/models/providers/file_model_mapper_provider.dart';
+import 'package:cross_platform_project/data/providers/local_data_source_providers.dart';
 
 import '../data_source/remote/remote_data_source.dart';
 import '../data_source/remote/remote_database_data_source.dart';
