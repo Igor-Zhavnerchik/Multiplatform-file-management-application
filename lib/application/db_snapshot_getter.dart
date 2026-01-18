@@ -1,3 +1,4 @@
+import 'package:cross_platform_project/core/services/current_user_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 
 class DbSnapshotEntry {
@@ -26,11 +27,14 @@ class DbSnapshotEntry {
 
 class DbSnapshotGetter {
   final FilesDao filesTable;
+  final CurrentUserService userService;
 
-  DbSnapshotGetter({required this.filesTable});
+  DbSnapshotGetter({required this.filesTable, required this.userService});
 
   Future<Map<String, DbSnapshotEntry>> getDbSnapshot() async {
-    final dbFiles = await filesTable.getAllFiles();
+    final dbFiles = await filesTable.selectFiles(
+      ownerId: userService.currentUserId,
+    );
 
     return {
       for (final file in dbFiles)
