@@ -52,20 +52,18 @@ class FileSystemScanner {
 
   Future<Map<String, FSEntry>> scan() async {
     final Map<String, FSEntry> entries = {};
-    final userPaths = await pathService.getUsersStorageDirectories();
+    final userPath = await pathService.getUsersStorageDirectory();
     Directory userDir;
-    for (var userPath in userPaths) {
-      debugLog('scanning user path $userPath');
-      userDir = Directory(userPath);
-      await for (var file in userDir.list()) {
-        entries.addAll(await _scanUserPath(path: file.path, depth: 0));
-      }
+    debugLog('scanning user path $userPath');
+    userDir = Directory(userPath);
+    await for (var file in userDir.list()) {
+      entries.addAll(await _scan(path: file.path, depth: 0));
     }
 
     return entries;
   }
 
-  Future<Map<String, FSEntry>> _scanUserPath({
+  Future<Map<String, FSEntry>> _scan({
     required String path,
     required int depth,
     String? fromParent,
@@ -96,7 +94,7 @@ class FileSystemScanner {
         );
         await for (var file in Directory(path).list()) {
           entries.addAll(
-            await _scanUserPath(
+            await _scan(
               path: file.path,
               depth: depth + 1,
               fromParent: localFileId,

@@ -4,7 +4,6 @@ import 'package:cross_platform_project/presentation/dialog/modal_windows/delete_
 import 'package:cross_platform_project/presentation/dialog/modal_windows/rename_dialog_modal_window.dart';
 import 'package:cross_platform_project/presentation/providers/dialog_view_model_provider.dart';
 import 'package:cross_platform_project/presentation/providers/file_operations_view_model_provider.dart';
-import 'package:cross_platform_project/presentation/providers/home_view_model_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

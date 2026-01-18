@@ -13,6 +13,35 @@
 
 namespace {
 
+std::wstring Utf8ToWide(const std::string& utf8) {
+  if (utf8.empty()) {
+    return std::wstring();
+  }
+
+  int sizeNeeded = MultiByteToWideChar(
+      CP_UTF8,
+      0,
+      utf8.data(),
+      static_cast<int>(utf8.size()),
+      nullptr,
+      0);
+
+  if (sizeNeeded <= 0) {
+    return std::wstring();
+  }
+
+  std::wstring wide(sizeNeeded, 0);
+  MultiByteToWideChar(
+      CP_UTF8,
+      0,
+      utf8.data(),
+      static_cast<int>(utf8.size()),
+      &wide[0],
+      sizeNeeded);
+
+  return wide;
+}
+
 std::string GetFileId(const std::wstring& path) {
   HANDLE hFile = CreateFileW(
       path.c_str(),
@@ -98,8 +127,11 @@ void LocalFileIdServicePlugin::HandleMethodCall(
     return;
   }
 
-  // Naive UTF-8 -> UTF-16 conversion (OK for ASCII paths; improve later if needed)
-  std::wstring widePath(pathUtf8->begin(), pathUtf8->end());
+  std::wstring widePath = Utf8ToWide(*pathUtf8);
+  if (widePath.empty()) {
+    result->Error("invalid_args", "Failed to convert path to UTF-16");
+    return;
+  }
 
   auto fileId = GetFileId(widePath);
   if (fileId.empty()) {

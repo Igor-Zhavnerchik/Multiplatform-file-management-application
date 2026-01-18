@@ -28,6 +28,20 @@ class RemoteDatabaseDataSource {
     return fileList;
   }
 
+  Future<Map<String, dynamic>?> getSingleMetadata({
+    required String userId,
+    required String fileId,
+  }) async {
+    final file = await client
+        .from(fileMetadataTable)
+        .select()
+        .eq('owner_id', userId)
+        .eq('id', fileId)
+        .not('deleted_at', 'is', null)
+        .maybeSingle();
+    return file == null ? null : Map<String, dynamic>.from(file);
+  }
+
   Future<void> uploadMetadata({required Map<String, dynamic> metadata}) async {
     debugLog('updating metadata for ${metadata['name']}');
     var res = await client

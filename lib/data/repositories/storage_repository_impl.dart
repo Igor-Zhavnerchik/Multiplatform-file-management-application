@@ -46,15 +46,10 @@ class StorageRepositoryImpl extends StorageRepository {
 
   @override
   Future<Result<List<FileModel>>> getRemoteFileList() async {
-    var rawFileListResult = await remoteDataSource.getFileList();
-    return rawFileListResult.when(
+    var remoteFileListResult = await remoteDataSource.getFileList();
+    return remoteFileListResult.when(
       success: (data) {
-        List<FileModel> fileList = (data)
-            .map<FileModel>(
-              (metadata) => mapper.fromMetadata(metadata: metadata),
-            )
-            .toList();
-        return Success(fileList);
+        return Success(data);
       },
       failure: (msg, err, source) {
         debugLog('$msg, error: $err source: $source');
@@ -82,28 +77,27 @@ class StorageRepositoryImpl extends StorageRepository {
   }
 
   @override
-  Future<Result<void>> createFile({
+  Future<Result<FileEntity>> createFile({
     required FileEntity? parent,
     required FileCreateRequest request,
     bool overwrite = true,
   }) async {
+    final newFileId = uuidService.generateId(
+      userRoot: parent == null ? currentUserId : null,
+    );
     final newFile = FileModel(
-      id: uuidService.generateId(
-        userRoot: parent == null ? currentUserId : null,
-      ),
+      id: newFileId,
       ownerId: parent?.ownerId ?? currentUserId,
       parentId: parent?.id,
-      depth: parent?.depth ?? 0 + 1,
+      depth: parent?.depth ?? 0 + 1, //FIXME
       name: request.name,
-      size: null, //FIXME
+      size: null,
       hash: null,
       mimeType: null,
       isFolder: request.isFolder,
       downloadEnabled: request.downloadEnabled,
       syncStatus: SyncStatus.created,
-      downloadStatus: request.localPath != null || request.bytes != null
-          ? DownloadStatus.downloaded
-          : DownloadStatus.notDownloaded,
+      downloadStatus: DownloadStatus.downloaded,
       createdAt: DateTime.now().toUtc(),
       updatedAt: DateTime.now().toUtc(),
       deletedAt: null,
@@ -125,17 +119,23 @@ class StorageRepositoryImpl extends StorageRepository {
       debugLog(
         '${(saveResult as Failure).message}, error: ${saveResult.error}, source: ${saveResult.source}',
       );
-      return saveResult;
+      return Failure(
+        saveResult.message,
+        error: saveResult.error,
+        source: saveResult.source,
+      );
     }
     debugLog('emitting local create sync event');
+    final createdFile =
+        (await localDataSource.getFile(fileId: newFileId)) as Success;
     _controller!.add(
       SyncEvent(
         action: SyncAction.create,
         source: SyncSource.local,
-        payload: newFile,
+        payload: createdFile.data,
       ),
     );
-    return Success(null);
+    return Success(mapper.toEntity(createdFile.data));
   }
 
   @override
@@ -145,11 +145,39 @@ class StorageRepositoryImpl extends StorageRepository {
       fileId: model.id,
       status: SyncStatus.deletingLocally,
     );
+
+    if (model.isFolder) {
+      final childrenResult = await localDataSource.getChildren(
+        ownerId: model.ownerId,
+        parentId: model.id,
+      );
+      final Result<void> result = await childrenResult.when(
+        success: (children) async {
+          for (var child in children) {
+            final result = await deleteFile(entity: mapper.toEntity(child));
+            if (result.isFailure) {
+              return result;
+            }
+          }
+
+          return Success(null);
+        },
+        failure: (msg, err, source) {
+          debugLog('$msg error: $err  mource: $source');
+          return Failure(msg, error: err, source: source);
+        },
+      );
+      if (result.isFailure) {
+        return result;
+      }
+    }
     final deleteResult = await localDataSource.deleteFile(
       model: model.copyWith(deletedAt: DateTime.now().toUtc()),
       softDelete: true,
     );
     if (deleteResult.isFailure) {
+      final fail = deleteResult as Failure;
+      debugLog('${fail.message} error: ${fail.error} source: ${fail.source}');
       await syncStatusManager.updateStatus(
         fileId: model.id,
         status: SyncStatus.failedLocalDelete,
@@ -160,7 +188,7 @@ class StorageRepositoryImpl extends StorageRepository {
       fileId: model.id,
       status: SyncStatus.deleted,
     );
-    debugLog('emitting local delete sync event');
+    debugLog('emitting local delete sync event for ${model.name}');
     _controller!.add(
       SyncEvent(
         action: SyncAction.delete,
@@ -203,23 +231,36 @@ class StorageRepositoryImpl extends StorageRepository {
 
     updatedModel.when(
       success: (model) {
-        debugLog('emitting local update sync event');
-        if (((oldModel as Success).data as FileModel).hash == model?.hash) {
-          debugLog('sending update event');
-        } else {
-          debugLog('sending load event');
+        debugLog('AFTER UPDATE download enabled: ${model!.downloadEnabled}');
+
+        if (request.downloadEnabled == null) {
+          if (((oldModel as Success).data as FileModel).hash == model.hash) {
+            debugLog('sending update event');
+          } else {
+            debugLog('sending load event');
+          }
+          _controller?.add(
+            SyncEvent(
+              action:
+                  ((oldModel as Success).data as FileModel).hash == model.hash
+                  ? SyncAction.update
+                  : SyncAction.load,
+              source: SyncSource.local,
+              payload: model,
+            ),
+          );
+        } else if (request.downloadEnabled!) {
+          debugLog('loading after enabling download');
+          _controller?.add(
+            SyncEvent(
+              action: SyncAction.load,
+              source: SyncSource.remote,
+              payload: model,
+            ),
+          );
         }
-        _controller?.add(
-          SyncEvent(
-            action:
-                ((oldModel as Success).data as FileModel).hash == model?.hash
-                ? SyncAction.update
-                : SyncAction.load,
-            source: SyncSource.local,
-            payload: model!,
-          ),
-        );
       },
+
       failure: (msg, err, source) {
         debugLog('Failed to get updated model for sync event: $msg');
       },
@@ -234,31 +275,48 @@ class StorageRepositoryImpl extends StorageRepository {
     required FileEntity entity,
     required bool isCut,
   }) async {
+    debugLog('in copy for ${entity.name}');
     late final Result<void> copyResult;
     if (isCut) {
       copyResult = await updateFile(
         request: FileUpdateRequest(id: entity.id, parentId: newParent.id),
       );
     } else {
-      final dataStreamResult = await localDataSource.getFileData(
-        model: mapper.fromEntity(entity),
+      copyResult = await createFile(
+        parent: newParent,
+        request: FileCreateRequest(
+          name: entity.name,
+          isFolder: entity.isFolder,
+          downloadEnabled: entity.downloadEnabled,
+          bytes: entity.isFolder
+              ? null
+              : (await localDataSource.getFileData(
+                          model: mapper.fromEntity(entity),
+                        )
+                        as Success)
+                    .data,
+        ),
       );
-      copyResult = await dataStreamResult.when(
-        success: (dataStream) async {
-          return await createFile(
-            parent: newParent,
-            request: FileCreateRequest(
-              name: entity.name,
-              isFolder: entity.isFolder,
-              downloadEnabled: entity.downloadEnabled,
-              bytes: dataStream,
+
+      if (copyResult.isFailure) {
+        return copyResult;
+      } else if (entity.isFolder) {
+        final childrenResult = await localDataSource.getChildren(
+          ownerId: currentUserId,
+          parentId: entity.id,
+        );
+        if (childrenResult.isFailure) {
+          return childrenResult;
+        }
+        for (var child in (childrenResult as Success).data) {
+          copyFile(
+            newParent: mapper.toEntity(
+              (copyResult as Success).data as FileModel,
             ),
+            entity: mapper.toEntity(child as FileModel),
+            isCut: false,
           );
-        },
-        failure: (_, _, _) => dataStreamResult,
-      );
-      if (dataStreamResult.isFailure) {
-        return dataStreamResult;
+        }
       }
     }
     return copyResult;
@@ -322,5 +380,16 @@ class StorageRepositoryImpl extends StorageRepository {
   @override
   Future<FileModel?> getFileModelbyId({required String id}) async {
     return await localDataSource.getFileModel(id: id);
+  }
+
+  @override
+  Future<FileModel?> getRemoteModel({required String id}) async {
+    return (await remoteDataSource.getFile(fileId: id)).when(
+      success: (data) => data,
+      failure: (msg, err, source) {
+        debugLog('$msg error: $err source: $source');
+        return null;
+      },
+    );
   }
 }

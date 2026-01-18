@@ -13,7 +13,7 @@ class UsersDao extends DatabaseAccessor<AppDatabase> with _$UsersDaoMixin {
         UsersCompanion.insert(
           id: userId,
           email: email,
-          defaultDownloadEnabled: true,
+          defaultDownloadEnabled: false,
         ),
       );
 

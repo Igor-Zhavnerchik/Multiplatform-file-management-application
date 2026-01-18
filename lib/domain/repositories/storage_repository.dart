@@ -42,7 +42,7 @@ abstract class StorageRepository {
   Future<Result<void>> createUserSaveState();
   Future<Result<void>> ensureRootExists();
 
-  Future<Result<void>> createFile({
+  Future<Result<FileEntity>> createFile({
     required FileEntity? parent,
     required FileCreateRequest request,
     bool overwrite,
@@ -55,6 +55,7 @@ abstract class StorageRepository {
   });
 
   Future<FileModel?> getFileModelbyId({required String id});
+  Future<FileModel?> getRemoteModel({required String id});
   Future<Result<List<FileModel>>> getRemoteFileList();
   Future<Result<List<FileModel>>> getLocalFileList();
 

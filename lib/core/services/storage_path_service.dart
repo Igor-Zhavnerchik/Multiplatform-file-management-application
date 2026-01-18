@@ -85,8 +85,7 @@ class StoragePathService {
     return res;
   }
 
-  Future<List<String>> getUsersStorageDirectories() async {
-    final users = await filesTable.getAllUserIds();
-    return users.map((userId) => p.join(appRootPath, 'users', userId)).toList();
+  Future<String> getUsersStorageDirectory() async {
+    return p.join(appRootPath, 'users', currentUserId);
   }
 }

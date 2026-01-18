@@ -14,6 +14,7 @@ class FileView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final homeState = ref.watch(homeViewModelProvider);
     final currentFolder = homeState.currentFolder;
+    final isMobile = MediaQuery.of(context).size.width <= 500;
 
     if (currentFolder == null) {
       return const Center(child: CircularProgressIndicator());
@@ -24,19 +25,19 @@ class FileView extends ConsumerWidget {
     return childrenStream.when(
       data: (children) => Column(
         children: [
-          if (children.isNotEmpty) const _FileTableHeader(),
+          if (children.isNotEmpty && !isMobile) const _FileTableHeader(),
           Expanded(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () =>
                   ref.read(homeViewModelProvider.notifier).setSelected(null),
               onSecondaryTapDown: (details) {
-                // ПЕРЕДАЕМ context ДЛЯ РАСЧЕТА ЭКРАНА
                 _showMenu(
                   ref,
                   context,
                   FolderOperationSelectMenu(folder: currentFolder),
                   details.globalPosition,
+                  isFile: false,
                 );
               },
               child: children.isEmpty
@@ -59,72 +60,33 @@ class FileView extends ConsumerWidget {
       error: (e, _) => Center(child: Text("Error: $e")),
     );
   }
-
-  void _showMenu(
-    WidgetRef ref,
-    BuildContext context,
-    Widget content,
-    Offset position,
-  ) {
-    final screenSize = MediaQuery.of(context).size;
-    const double menuWidth = 220;
-    const double menuHeight = 180; // Для меню папки
-
-    double finalX = position.dx;
-    double finalY = position.dy;
-
-    if (finalX + menuWidth > screenSize.width - 10)
-      finalX = screenSize.width - menuWidth - 10;
-    if (finalY + menuHeight > screenSize.height - 20)
-      finalY = position.dy - menuHeight;
-
-    if (finalY < 10) finalY = 10;
-
-    ref
-        .read(dialogViewModelProvider.notifier)
-        .showCustomDialog(content: content, position: Offset(finalX, finalY));
-  }
 }
 
-/// Заголовок таблицы (Desktop)
-class _FileTableHeader extends StatelessWidget {
-  const _FileTableHeader();
+void _showMenu(
+  WidgetRef ref,
+  BuildContext context,
+  Widget content,
+  Offset position, {
+  required bool isFile,
+}) {
+  final screenSize = MediaQuery.of(context).size;
+  const double menuWidth = 220;
+  final double menuHeight = isFile ? 280 : 180;
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final style = theme.textTheme.labelMedium?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.bold,
-    );
+  double finalX = position.dx;
+  double finalY = position.dy;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: theme.colorScheme.outlineVariant,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(flex: 3, child: Text('NAME', style: style)),
-          const SizedBox(width: 16),
-          SizedBox(
-            width: 100,
-            child: Text('SIZE', style: style, textAlign: TextAlign.right),
-          ),
-          const SizedBox(width: 16),
-          SizedBox(
-            width: 140,
-            child: Text('MODIFIED', style: style, textAlign: TextAlign.right),
-          ),
-        ],
-      ),
-    );
+  if (finalX + menuWidth > screenSize.width - 10) {
+    finalX = screenSize.width - menuWidth - 10;
   }
+  if (finalY + menuHeight > screenSize.height - 20) {
+    finalY = position.dy - menuHeight;
+  }
+  if (finalY < 10) finalY = 10;
+
+  ref
+      .read(dialogViewModelProvider.notifier)
+      .showCustomDialog(content: content, position: Offset(finalX, finalY));
 }
 
 class FileViewElement extends ConsumerWidget {
@@ -152,22 +114,23 @@ class FileViewElement extends ConsumerWidget {
         }
       },
       child: GestureDetector(
-        // Используем GestureDetector для жестов вместо InkWell
         onTap: isMobile ? () => homeNotifier.openElement(element) : null,
         onDoubleTap: !isMobile ? () => homeNotifier.openElement(element) : null,
         onSecondaryTapDown: (details) {
-          _showAdaptiveMenu(
+          _showMenu(
             ref,
             context,
+            isSelected
+                ? FileOperationSelectMenu(entity: element)
+                : FolderOperationSelectMenu(folder: parentFolder),
             details.globalPosition,
             isFile: isSelected,
           );
         },
         child: Ink(
-          // Ink теперь отвечает только за фон и отрисовку
           decoration: BoxDecoration(
             color: isSelected
-                ? theme.colorScheme.primaryContainer.withOpacity(0.4)
+                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
@@ -183,64 +146,26 @@ class FileViewElement extends ConsumerWidget {
     );
   }
 
-  void _showAdaptiveMenu(
-    WidgetRef ref,
-    BuildContext context,
-    Offset position, {
-    required bool isFile,
-    Size? buttonSize,
-  }) {
-    final screenSize = MediaQuery.of(context).size;
-
-    // Определяем примерные размеры меню (можно чуть с запасом)
-    const double menuWidth = 220;
-    // Меню папки обычно короче меню файла, но возьмем среднее
-    final double menuHeight = isFile ? 250 : 180;
-
-    double finalX = position.dx;
-    double finalY = position.dy;
-
-    // Проверка по горизонтали (чтобы не уходило за правый край)
-    if (finalX + menuWidth > screenSize.width - 10) {
-      finalX = screenSize.width - menuWidth - 10;
-    }
-    if (finalX < 10) finalX = 10;
-
-    // КЛЮЧЕВОЙ МОМЕНТ: Проверка по вертикали
-    // Если точка нажатия + высота меню больше высоты экрана
-    if (finalY + menuHeight > screenSize.height - 20) {
-      // Отображаем меню НАД курсором
-      finalY = position.dy - menuHeight;
-    }
-
-    // Дополнительная страховка, чтобы меню не ушло выше верхнего края
-    if (finalY < 10) finalY = 10;
-
-    ref
-        .read(dialogViewModelProvider.notifier)
-        .showCustomDialog(
-          content: isFile
-              ? FileOperationSelectMenu(entity: element)
-              : FolderOperationSelectMenu(folder: parentFolder),
-          position: Offset(finalX, finalY),
-        );
-  }
-
   Widget _buildDesktopListItem(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          Icon(
-            element.isFolder
-                ? Icons.folder_rounded
-                : Icons.insert_drive_file_rounded,
-            color: element.isFolder
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurfaceVariant,
+          _SyncStatusOverlay(
+            status: _getStatusInfo(theme),
+            child: Icon(
+              element.isFolder
+                  ? Icons.folder_rounded
+                  : Icons.insert_drive_file_rounded,
+              size: 24,
+              color: element.isFolder
+                  ? theme.colorScheme.primary
+                  : _getIconColor(theme),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
+            flex: 3,
             child: Text(
               element.name,
               maxLines: 1,
@@ -252,13 +177,16 @@ class FileViewElement extends ConsumerWidget {
             child: Text(
               element.isFolder ? '--' : _formatSize(element.size),
               textAlign: TextAlign.right,
+              style: theme.textTheme.bodySmall,
             ),
           ),
+          const SizedBox(width: 16),
           SizedBox(
             width: 140,
             child: Text(
               _formatDate(element.updatedAt),
               textAlign: TextAlign.right,
+              style: theme.textTheme.bodySmall,
             ),
           ),
         ],
@@ -280,14 +208,13 @@ class FileViewElement extends ConsumerWidget {
               size: 36,
               color: element.isFolder
                   ? theme.colorScheme.primary
-                  : _getTextColor(theme),
+                  : _getIconColor(theme),
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   element.name,
@@ -305,34 +232,25 @@ class FileViewElement extends ConsumerWidget {
               ],
             ),
           ),
-          Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.more_vert),
-              onPressed: () {
-                ref.read(homeViewModelProvider.notifier).setSelected(element);
-                final RenderBox box = context.findRenderObject() as RenderBox;
-                final Offset position = box.localToGlobal(Offset.zero);
-                _showAdaptiveMenu(
-                  ref,
-                  context,
-                  position,
-                  isFile: true,
-                  buttonSize: box.size,
-                );
-              },
-            ),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () {
+              ref.read(homeViewModelProvider.notifier).setSelected(element);
+              _showMenu(
+                ref,
+                ScaffoldMessenger.of(ref.context).context,
+                FileOperationSelectMenu(entity: element),
+                Offset.zero,
+                isFile: true,
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Color _getTextColor(ThemeData theme) {
-    if (element.downloadStatus == DownloadStatus.notDownloaded) {
-      return theme.colorScheme.onSurfaceVariant;
-    }
-    return theme.colorScheme.onSurface;
-  }
+  Color _getIconColor(ThemeData theme) => theme.colorScheme.onSurfaceVariant;
 
   _StatusInfo? _getStatusInfo(ThemeData theme) {
     switch (element.syncStatus) {
@@ -372,21 +290,15 @@ class FileViewElement extends ConsumerWidget {
     return '${size.toStringAsFixed(1)} ${units[unitIndex]}';
   }
 
-  String _formatDate(DateTime dateTime) {
-    return DateFormat('dd.MM.yyyy HH:mm').format(dateTime.toLocal());
-  }
+  String _formatDate(DateTime dateTime) =>
+      DateFormat('dd.MM.yyyy HH:mm').format(dateTime.toLocal());
 }
 
 class _SyncStatusOverlay extends StatelessWidget {
   final Widget child;
   final _StatusInfo? status;
-  final double size;
 
-  const _SyncStatusOverlay({
-    required this.child,
-    required this.status,
-    this.size = 12,
-  });
+  const _SyncStatusOverlay({required this.child, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -396,15 +308,15 @@ class _SyncStatusOverlay extends StatelessWidget {
       children: [
         child,
         Positioned(
-          right: -1,
-          bottom: -1,
+          right: -2,
+          bottom: -2,
           child: Container(
             padding: const EdgeInsets.all(1),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               shape: BoxShape.circle,
             ),
-            child: Icon(status!.icon, size: size, color: status!.color),
+            child: Icon(status!.icon, color: status!.color),
           ),
         ),
       ],
@@ -416,4 +328,42 @@ class _StatusInfo {
   final IconData icon;
   final Color color;
   const _StatusInfo({required this.icon, required this.color});
+}
+
+class _FileTableHeader extends StatelessWidget {
+  const _FileTableHeader();
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.labelMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.bold,
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: Text('NAME', style: style)),
+          const SizedBox(width: 16),
+          SizedBox(
+            width: 100,
+            child: Text('SIZE', style: style, textAlign: TextAlign.right),
+          ),
+          const SizedBox(width: 16),
+          SizedBox(
+            width: 140,
+            child: Text('MODIFIED', style: style, textAlign: TextAlign.right),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -24,7 +24,10 @@ class LoadHandler {
           ? SyncStatus.downloading
           : SyncStatus.uploading,
     );
-    final dataResult = await src.readFile(model: event.payload);
+    final dataResult =
+        event.source == SyncSource.remote && event.payload.downloadEnabled!
+        ? await src.readFile(model: event.payload)
+        : Success(null);
     if (dataResult.isFailure) {
       print('read failed.\n${(dataResult as Failure).error}');
       syncStatusManager.updateStatus(

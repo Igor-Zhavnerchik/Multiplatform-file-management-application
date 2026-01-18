@@ -129,6 +129,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
 
   Future<void> copyTo({required FileEntity folder}) async {
     if (state.copyFrom != null) {
+      debugLog('copy started');
       await _copyFileUseCase(
         copyFrom: state.copyFrom!,
         copyTo: folder,

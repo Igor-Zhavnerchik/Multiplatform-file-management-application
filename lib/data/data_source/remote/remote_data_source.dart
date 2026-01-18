@@ -30,16 +30,27 @@ class RemoteDataSource {
     required this.mapper,
   });
 
-  Future<Result<List<Map<String, dynamic>>>> getFileList({
-    bool getDeleted = false,
-  }) async {
+  Future<Result<List<FileModel>>> getFileList({bool getDeleted = false}) async {
     return await safeCall(() async {
       debugLog('getting files from supabase for user id: $currentUser');
-      return await database.getMetadata(
+      final rawData = await database.getMetadata(
         getDeleted: getDeleted,
         userId: currentUser,
       );
+      return rawData
+          .map<FileModel>((metadata) => mapper.fromMetadata(metadata: metadata))
+          .toList();
     }, source: 'RemoteDataSource.getFileList');
+  }
+
+  Future<Result<FileModel?>> getFile({required String fileId}) async {
+    return await safeCall(() async {
+      final file = await database.getSingleMetadata(
+        userId: currentUser,
+        fileId: fileId,
+      );
+      return file == null ? null : mapper.fromMetadata(metadata: file);
+    }, source: 'RemoteDataSource.getFile');
   }
 
   Future<Result<Stream<List<int>>>> downloadFile({

@@ -56,7 +56,7 @@ class SyncProcessor {
   bool _isProcessing = false;
 
   //FIXME to 3
-  final int maxRetry = 0;
+  final int maxRetry = 3;
 
   SyncProcessor({
     required this.updateHandler,

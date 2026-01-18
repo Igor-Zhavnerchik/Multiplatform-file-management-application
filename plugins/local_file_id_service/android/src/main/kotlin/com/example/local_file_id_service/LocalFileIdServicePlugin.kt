@@ -37,20 +37,22 @@ class LocalFileIdServicePlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun getFileId(path: String, result: Result) {
-        try {
-            val file = File(path)
-            if (file.exists()) {
-                // Вызов системной функции stat для получения inode
-                val stat: StructStat = Os.stat(path)
-                // Возвращаем как String, чтобы соответствовать вашему Dart-коду
-                result.success(stat.st_ino.toString())
-            } else {
-                result.error("NOT_FOUND", "File not found at path: $path", null)
-            }
-        } catch (e: Exception) {
-            result.error("SYS_ERR", "Failed to get inode: ${e.localizedMessage}", null)
+    try {
+        val file = File(path)
+        if (!file.exists()) {
+            result.error("NOT_FOUND", "File not found at path: $path", null)
+            return
         }
+
+        val stat = Os.stat(path)
+        val fileId = "${stat.st_dev}-${stat.st_ino}"
+        result.success(fileId)
+
+    } catch (e: Exception) {
+        result.error("SYS_ERR", "Failed to get file id: ${e.localizedMessage}", null)
     }
+}
+
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)

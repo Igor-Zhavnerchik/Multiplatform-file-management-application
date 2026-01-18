@@ -27,15 +27,44 @@ class LocalDataSource {
     required this.hashService,
     required this.localFileIdService,
   });
-  //FIXME indexes for same names
-  /* final lastDot = model.name.lastIndexOf('.');
-      final base = model.name.substring(0, lastDot);
-      final ext = model.name.substring(lastDot);
-      final siblings = await filesTable.getChildren(newParentModel.id, model.ownerId);
-      for(var sibling in siblings){
-        final number = (regex.firstMatch(model.name)?.group(1)).;
-        if(number != null && number > max_same_name)
-      } */
+
+  Future<String> _makeUniqueName({
+    required String name,
+    required String? parentId,
+    required String ownerId,
+  }) async {
+    final int lastDot = name.lastIndexOf('.');
+
+    final String base = lastDot != -1 ? name.substring(0, lastDot) : name;
+    final String ext = lastDot != -1 ? name.substring(lastDot) : '';
+
+    final siblings = await filesTable.getChildren(
+      parentId: parentId,
+      ownerId: ownerId,
+    );
+
+    // Если такого имени нет — возвращаем сразу
+    final hasSame = siblings.any((e) => e.name == name);
+    if (!hasSame) return name;
+
+    final RegExp regex = RegExp(
+      '^${RegExp.escape(base)} \\((\\d+)\\)${RegExp.escape(ext)}\$',
+    );
+
+    int maxIndex = 0;
+
+    for (final sibling in siblings) {
+      final match = regex.firstMatch(sibling.name);
+      if (match == null) continue;
+
+      final index = int.tryParse(match.group(1)!);
+      if (index != null && index > maxIndex) {
+        maxIndex = index;
+      }
+    }
+
+    return '$base (${maxIndex + 1})$ext';
+  }
 
   Future<Result<void>> saveFile({
     required FileModel model,
@@ -43,6 +72,13 @@ class LocalDataSource {
     bool overwrite = true,
   }) async {
     return await safeCall(() async {
+      model = model.copyWith(
+        name: await _makeUniqueName(
+          name: model.name,
+          parentId: model.parentId,
+          ownerId: model.ownerId,
+        ),
+      );
       var savePath = pathService.join(
         parent: await pathService.getLocalPath(fileId: model.parentId),
         child: model.name,
@@ -61,8 +97,10 @@ class LocalDataSource {
         );
         model = model.copyWith(
           hash: await _getHash(model: model, filePath: savePath),
-          size: model.isFolder ? null : await File(savePath).length(),
         );
+        if (model.size == null) {
+          model.copyWith(size: await File(savePath).length());
+        }
       }
 
       if (await filesTable.getFile(fileId: model.id) == null) {
@@ -91,6 +129,13 @@ class LocalDataSource {
     required String devicePath,
   }) async {
     return await safeCall(() async {
+      model = model.copyWith(
+        name: await _makeUniqueName(
+          name: model.name,
+          parentId: model.parentId,
+          ownerId: model.ownerId,
+        ),
+      );
       var savePath = pathService.join(
         parent: await pathService.getLocalPath(fileId: model.parentId),
         child: model.name,
@@ -125,11 +170,16 @@ class LocalDataSource {
     bool softDelete = true,
   }) async {
     return await safeCall(() async {
-      var deletePath = await pathService.getLocalPath(fileId: model.id);
-      await localStorage.deleteEntity(
-        path: deletePath,
-        isFolder: model.isFolder,
-      );
+      try {
+        var deletePath = await pathService.getLocalPath(fileId: model.id);
+        await localStorage.deleteEntity(
+          path: deletePath,
+          isFolder: model.isFolder,
+        );
+      } catch (e) {
+        debugLog(e.toString());
+      }
+
       if (!softDelete) {
         await filesTable.deleteFile(model.id);
       } else {
@@ -148,10 +198,21 @@ class LocalDataSource {
     return await safeCall(() async {
       debugLog('started update');
       if ((request.parentId != null || request.name != null) && overwrite) {
-        final model = await filesTable.getFile(fileId: request.id);
+        debugLog('move request');
+        var model = await filesTable.getFile(fileId: request.id);
         if (model == null) {
           throw Exception('file to update not found id: ${request.id}');
         }
+        if (request.parentId == null || request.name == null) {
+          request = request.copyWith(
+            name: await _makeUniqueName(
+              name: request.name ?? model.name,
+              parentId: request.parentId ?? model.parentId,
+              ownerId: model.ownerId,
+            ),
+          );
+        }
+
         final modelPath = pathService.join(
           parent: await pathService.getLocalPath(
             fileId: request.parentId ?? model.parentId,
@@ -159,7 +220,8 @@ class LocalDataSource {
           child: request.name ?? model.name,
         );
         final currentPath = await pathService.getLocalPath(fileId: model.id);
-
+        debugLog('current path: $currentPath');
+        debugLog('new path: $modelPath');
         if (currentPath != modelPath) {
           await localStorage.moveEntity(
             currentPath: currentPath,
@@ -224,6 +286,18 @@ class LocalDataSource {
             : DeleteFilter.exclude,
       )).map((file) => mapper.fromDbFile(file)).toList();
     }, source: 'LocalDataSource.getFileList');
+  }
+
+  Future<Result<List<FileModel>>> getChildren({
+    required String ownerId,
+    required String parentId,
+  }) async {
+    return await safeCall(() async {
+      return (await filesTable.getChildren(
+        parentId: parentId,
+        ownerId: ownerId,
+      )).map((file) => mapper.fromDbFile(file)).toList();
+    }, source: 'LocalDataSource.getChildren');
   }
 
   Future<Result<FileModel>> getRootFolder({required String ownerId}) async {

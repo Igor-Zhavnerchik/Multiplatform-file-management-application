@@ -117,7 +117,6 @@ class _GlobalSettingsMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final homeState = ref.watch(homeViewModelProvider);
-    final colorScheme = Theme.of(context).colorScheme;
 
     return ContextDialogMenu(
       children: [

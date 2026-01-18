@@ -25,7 +25,11 @@ final fileSystemWatcherProvider = Provider.autoDispose<FileSystemWatcher>((
   ref,
 ) {
   final pathService = ref.watch(storagePathServiceProvider);
-  final watcher = FileSystemWatcher(pathService: pathService);
+  final scanHandler = ref.watch(fsScanHandlerProvider);
+  final watcher = FileSystemWatcher(
+    pathService: pathService,
+    scanHandler: scanHandler,
+  );
   ref.onDispose(() => watcher.dispose());
   return watcher;
 });

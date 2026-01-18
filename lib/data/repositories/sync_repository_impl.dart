@@ -88,7 +88,6 @@ class SyncRepositoryImpl implements SyncRepository {
       _remoteStreamSubscription = remoteSyncEventListener.syncEventStream
           .listen((event) async {
             debugLog('sync repository: catched remote ${event.action} event');
-            debugLog('new checkk');
             final localFile = await storage.getFileModelbyId(
               id: event.payload.id,
             );
@@ -104,15 +103,28 @@ class SyncRepositoryImpl implements SyncRepository {
               debugLog('local hash: ${localFile?.hash}');
               debugLog('remote hash: ${event.payload.hash}');
               if (localFile != null && localFile.hash != event.payload.hash) {
-                debugLog('detected hash change => changed event action');
-                event = event.copyWith(action: SyncAction.load);
+                if (localFile.downloadEnabled!) {
+                  debugLog('detected hash change => changed event action');
+                  event = event.copyWith(action: SyncAction.load);
+                } else {
+                  event.copyWith(payload: event.payload.copyWith(hash: null));
+                }
               }
               syncProcessor.addEvent(event: event);
             }
           }, onError: (e) => debugLog('Error in sync stream: $e'));
     }
-    _localStreamSubscription ??= storage.localSyncEventStream.listen((event) {
+    _localStreamSubscription ??= storage.localSyncEventStream.listen((
+      event,
+    ) async {
       debugLog('sync repository: catched local ${event.action} event');
+      final remoteFile = await storage.getRemoteModel(id: event.payload.id);
+      if (event.action == SyncAction.update &&
+          !event.payload.downloadEnabled!) {
+        event = event.copyWith(
+          payload: event.payload.copyWith(hash: remoteFile?.hash),
+        );
+      }
       syncProcessor.addEvent(event: event);
     });
 
@@ -186,24 +198,25 @@ class SyncRepositoryImpl implements SyncRepository {
         debugLog('for ${localModel.name}');
         debugLog('local time: ${localModel.updatedAt.toIso8601String()}');
         debugLog('remote time: ${remoteModel.updatedAt.toIso8601String()}');
-        switch (localModel.updatedAt.compareTo(remoteModel.updatedAt)) {
-          case > 0:
-            await syncStatusManager.updateStatus(
-              fileId: localModel.id,
-              status: localModel.hash == remoteModel.hash
-                  ? SyncStatus.updatedLocally
-                  : SyncStatus.uploading,
-            );
-            syncProcessor.addEvent(
-              event: SyncEvent(
-                action: localModel.hash == remoteModel.hash
-                    ? SyncAction.update
-                    : SyncAction.load,
-                source: SyncSource.local,
-                payload: localModel,
-              ),
-            );
-          case < 0:
+        if (localModel.updatedAt.isAfter(remoteModel.updatedAt)) {
+          await syncStatusManager.updateStatus(
+            fileId: localModel.id,
+            status: localModel.hash == remoteModel.hash
+                ? SyncStatus.updatedLocally
+                : SyncStatus.uploading,
+          );
+          syncProcessor.addEvent(
+            event: SyncEvent(
+              action: localModel.hash == remoteModel.hash
+                  ? SyncAction.update
+                  : SyncAction.load,
+              source: SyncSource.local,
+              payload: localModel,
+            ),
+          );
+        } else if (localModel.updatedAt.isBefore(remoteModel.updatedAt) ||
+            localModel.hash != remoteModel.hash) {
+          if (localModel.downloadEnabled!) {
             await syncStatusManager.updateStatus(
               fileId: localModel.id,
               status: localModel.hash == remoteModel.hash
@@ -219,11 +232,7 @@ class SyncRepositoryImpl implements SyncRepository {
                 payload: remoteModel,
               ),
             );
-          default:
-            await syncStatusManager.updateStatus(
-              fileId: localModel.id,
-              status: SyncStatus.syncronized,
-            );
+          }
         }
     }
   }
