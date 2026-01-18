@@ -1,7 +1,6 @@
 enum SyncStatus {
   syncronized,
   created,
-  creating,
   updated,
   deleted,
 
@@ -24,7 +23,15 @@ enum SyncStatus {
   failedLocalUpdate,
 }
 
-enum DownloadStatus { downloaded, notDownloaded, processingDownload }
+enum DownloadStatus {
+  notDownloaded,
+  haveNewVersion,
+  downloaded,
+  downloading,
+  uploading,
+  failedUpload,
+  failedDownload,
+}
 
 class FileEntity {
   final String id;

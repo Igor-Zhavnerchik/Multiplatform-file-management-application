@@ -63,7 +63,7 @@ class StoragePathService {
     }
     final file = await filesTable.getFile(fileId: fileId);
     debugLog('for ${file?.name} parent id: ${file?.parentId}');
-    return p.join(await getLocalPath(fileId: file!.parentId), file.name);
+    return p.join((await getLocalPath(fileId: file!.parentId)), file.name);
   }
 
   Future<String> getOwnerIdByPath({required String path}) async {
