@@ -297,6 +297,7 @@ class FileViewElement extends ConsumerWidget {
 class _SyncStatusOverlay extends StatelessWidget {
   final Widget child;
   final _StatusInfo? status;
+  final double statusSize = 12;
 
   const _SyncStatusOverlay({required this.child, required this.status});
 
@@ -316,7 +317,7 @@ class _SyncStatusOverlay extends StatelessWidget {
               color: Theme.of(context).colorScheme.surface,
               shape: BoxShape.circle,
             ),
-            child: Icon(status!.icon, color: status!.color),
+            child: Icon(status!.icon, color: status!.color, size: statusSize),
           ),
         ),
       ],
