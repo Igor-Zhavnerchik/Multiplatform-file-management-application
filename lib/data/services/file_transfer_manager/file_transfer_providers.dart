@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cross_platform_project/data/services/file_transfer_manager/file_transfer_manager.dart';
 import 'package:cross_platform_project/data/services/file_transfer_manager/download_status_manager.dart';
 import 'package:cross_platform_project/data/services/file_transfer_manager/handlers/download_handler.dart';
-import 'package:cross_platform_project/data/services/file_transfer_manager/handlers/upload_nahdler.dart';
+import 'package:cross_platform_project/data/services/file_transfer_manager/handlers/upload_handler.dart';
 
 /// ---------------------------------------------------------------------------
 /// Status manager

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/services/storage_path_service.dart';
-import 'package:cross_platform_project/data/file_system_scan/fs_scan_handler.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/data/services/storage_path_service.dart';
+import 'package:cross_platform_project/application/fs_scan/fs_scan_handler.dart';
 
 class FileSystemWatcher {
   FileSystemWatcher({required this.pathService, required this.scanHandler});

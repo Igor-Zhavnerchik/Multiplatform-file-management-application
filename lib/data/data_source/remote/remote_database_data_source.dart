@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RemoteDatabaseDataSource {
@@ -10,20 +10,13 @@ class RemoteDatabaseDataSource {
 
   Future<List<Map<String, dynamic>>> getMetadata({
     required String userId,
-    required bool getDeleted,
   }) async {
     debugLog('getting files metadata from supabase for user: $userId');
-    var fileList = getDeleted
-        ? await client
-              .from(fileMetadataTable)
-              .select()
-              .eq('owner_id', userId)
-              .not('deleted_at', 'is', null)
-        : await client
-              .from(fileMetadataTable)
-              .select()
-              .eq('owner_id', userId)
-              .isFilter('deleted_at', null);
+    var fileList = await client
+        .from(fileMetadataTable)
+        .select()
+        .eq('owner_id', userId);
+
     debugLog('got ${fileList.length} files');
     return fileList;
   }
@@ -37,7 +30,6 @@ class RemoteDatabaseDataSource {
         .select()
         .eq('owner_id', userId)
         .eq('id', fileId)
-        .not('deleted_at', 'is', null)
         .maybeSingle();
     return file == null ? null : Map<String, dynamic>.from(file);
   }

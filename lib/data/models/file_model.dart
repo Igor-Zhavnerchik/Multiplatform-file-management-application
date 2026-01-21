@@ -5,86 +5,67 @@ class FileModel {
   final String ownerId;
   final String? parentId;
 
-  final int depth;
   final String name;
-  final String? mimeType;
   final bool isFolder;
   final int? size;
   final String? hash;
 
-  final bool? downloadEnabled;
+  final bool contentSyncEnabled;
 
   final SyncStatus syncStatus;
   final DownloadStatus downloadStatus;
 
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime? deletedAt;
+  final DateTime contentUpdatedAt;
 
   const FileModel({
     required this.id,
     required this.ownerId,
     required this.parentId,
-
-    required this.depth,
     required this.name,
-    required this.mimeType,
     required this.isFolder,
     required this.size,
     required this.hash,
-
-    required this.downloadEnabled,
-
+    required this.contentSyncEnabled,
     required this.syncStatus,
     required this.downloadStatus,
-
     required this.createdAt,
     required this.updatedAt,
-    required this.deletedAt,
+    required this.contentUpdatedAt,
   });
 
   FileModel copyWith({
     String? id,
     String? ownerId,
     String? parentId,
-
-    int? depth,
     String? name,
-    String? mimeType,
     bool? isFolder,
     int? size,
     String? hash,
-
-    bool? syncEnabled,
-    bool? downloadEnabled,
-
+    bool? contentSyncEnabled,
     SyncStatus? syncStatus,
     DownloadStatus? downloadStatus,
-
     DateTime? createdAt,
     DateTime? updatedAt,
-    DateTime? deletedAt,
+    DateTime? contentUpdatedAt,
   }) {
     return FileModel(
       id: id ?? this.id,
-      ownerId: this.ownerId,
+      ownerId: ownerId ?? this.ownerId,
       parentId: parentId ?? this.parentId,
-
-      depth: depth ?? this.depth,
       name: name ?? this.name,
-      mimeType: mimeType ?? this.mimeType,
       isFolder: isFolder ?? this.isFolder,
       size: size ?? this.size,
       hash: hash ?? this.hash,
-
-      downloadEnabled: downloadEnabled ?? this.downloadEnabled,
-
+      contentSyncEnabled:
+          contentSyncEnabled ?? this.contentSyncEnabled,
       syncStatus: syncStatus ?? this.syncStatus,
       downloadStatus: downloadStatus ?? this.downloadStatus,
-
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      deletedAt: deletedAt ?? this.deletedAt,
+      contentUpdatedAt:
+          contentUpdatedAt ?? this.contentUpdatedAt,
     );
   }
 }

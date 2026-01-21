@@ -1,5 +1,5 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/services/app_start_service.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/services/app_start_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final appStartServiceProvider = Provider<AppStartService>((ref) {

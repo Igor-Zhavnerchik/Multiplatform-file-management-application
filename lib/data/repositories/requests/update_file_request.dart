@@ -7,101 +7,87 @@ import 'package:drift/drift.dart';
 class FileUpdateRequest {
   final String id;
   final String? ownerId;
-
   final String? parentId;
-  final int? depth;
+
   final String? name;
-  final String? mimeType;
   final bool? isFolder;
   final int? size;
   final String? hash;
 
-  final bool? syncEnabled;
-  final bool? downloadEnabled;
+  final bool? contentSyncEnabled;
 
   final SyncStatus? syncStatus;
   final DownloadStatus? downloadStatus;
 
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final DateTime? deletedAt;
+  final DateTime? contentUpdatedAt;
 
   const FileUpdateRequest({
     required this.id,
     this.ownerId,
     this.parentId,
-    this.depth,
     this.name,
-    this.mimeType,
     this.isFolder,
     this.size,
     this.hash,
-    this.syncEnabled,
-    this.downloadEnabled,
+    this.contentSyncEnabled,
     this.syncStatus,
     this.downloadStatus,
     this.createdAt,
     this.updatedAt,
-    this.deletedAt,
+    this.contentUpdatedAt,
   });
 
   FileUpdateRequest copyWith({
-    String? parentId,
     String? ownerId,
-    int? depth,
+    String? parentId,
     String? name,
-    String? mimeType,
     bool? isFolder,
     int? size,
     String? hash,
-    bool? syncEnabled,
-    bool? downloadEnabled,
+    bool? contentSyncEnabled,
     SyncStatus? syncStatus,
     DownloadStatus? downloadStatus,
     DateTime? createdAt,
     DateTime? updatedAt,
-    DateTime? deletedAt,
+    DateTime? contentUpdatedAt,
   }) {
     return FileUpdateRequest(
       id: id,
       ownerId: ownerId ?? this.ownerId,
       parentId: parentId ?? this.parentId,
-      depth: depth ?? this.depth,
       name: name ?? this.name,
-      mimeType: mimeType ?? this.mimeType,
       isFolder: isFolder ?? this.isFolder,
       size: size ?? this.size,
       hash: hash ?? this.hash,
-      syncEnabled: syncEnabled ?? this.syncEnabled,
-      downloadEnabled: downloadEnabled ?? this.downloadEnabled,
+      contentSyncEnabled:
+          contentSyncEnabled ?? this.contentSyncEnabled,
       syncStatus: syncStatus ?? this.syncStatus,
       downloadStatus: downloadStatus ?? this.downloadStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      deletedAt: deletedAt ?? this.deletedAt,
+      contentUpdatedAt:
+          contentUpdatedAt ?? this.contentUpdatedAt,
     );
   }
 
   FilesCompanion toCompanion() {
     return FilesCompanion(
-      parentId: parentId != null ? Value(parentId!) : Value.absent(),
-      ownerId: ownerId != null ? Value(ownerId!) : Value.absent(),
-      depth: depth != null ? Value(depth!) : Value.absent(),
-      name: name != null ? Value(name!) : Value.absent(),
-      mimeType: mimeType != null ? Value(mimeType!) : Value.absent(),
-      isFolder: isFolder != null ? Value(isFolder!) : Value.absent(),
-      size: size != null ? Value(size!) : Value.absent(),
-      hash: hash != null ? Value(hash!) : Value.absent(),
-      downloadEnabled: downloadEnabled != null
-          ? Value(downloadEnabled!)
-          : Value.absent(),
-      syncStatus: syncStatus != null ? Value(syncStatus!) : Value.absent(),
-      downloadStatus: downloadStatus != null
-          ? Value(downloadStatus!)
-          : Value.absent(),
-      createdAt: createdAt != null ? Value(createdAt!) : Value.absent(),
-      updatedAt: updatedAt != null ? Value(updatedAt!) : Value.absent(),
-      deletedAt: deletedAt != null ? Value(deletedAt!) : Value.absent(),
+      ownerId: Value.absentIfNull(ownerId),
+      parentId: Value.absentIfNull(parentId),
+      name: Value.absentIfNull(name),
+      isFolder: Value.absentIfNull(isFolder),
+      size: Value.absentIfNull(size),
+      hash: Value.absentIfNull(hash),
+      contentSyncEnabled:
+          Value.absentIfNull(contentSyncEnabled),
+      syncStatus: Value.absentIfNull(syncStatus),
+      downloadStatus: Value.absentIfNull(downloadStatus),
+      createdAt: Value.absentIfNull(createdAt),
+      updatedAt: Value.absentIfNull(updatedAt),
+      contentUpdatedAt:
+          Value.absentIfNull(contentUpdatedAt),
     );
   }
 }
@@ -112,18 +98,16 @@ extension FileUpdateRequestFromModelMapper on FileModelMapper {
       id: model.id,
       ownerId: model.ownerId,
       parentId: model.parentId,
-      depth: model.depth,
       name: model.name,
-      mimeType: model.mimeType,
       isFolder: model.isFolder,
       size: model.size,
       hash: model.hash,
-      downloadEnabled: model.downloadEnabled,
+      contentSyncEnabled: model.contentSyncEnabled,
       syncStatus: model.syncStatus,
       downloadStatus: model.downloadStatus,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
-      deletedAt: model.deletedAt,
+      contentUpdatedAt: model.contentUpdatedAt,
     );
   }
 }
@@ -134,16 +118,13 @@ extension FileUpdateRequestToMetadataMapper on FileUpdateRequest {
       'id': id,
       'owner_id': ownerId,
       'parent_id': parentId,
-      'depth': depth,
       'name': name,
-      'mime_type': mimeType,
       'is_folder': isFolder,
-      'size': size,
-      'hash': hash,
       'download_status': downloadStatus?.name,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
-      'deleted_at': deletedAt?.toIso8601String(),
+      'content_updated_at':
+          contentUpdatedAt?.toIso8601String(),
     };
   }
 }

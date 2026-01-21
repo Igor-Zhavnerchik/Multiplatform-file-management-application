@@ -5,7 +5,7 @@ class Users extends Table {
   TextColumn get id => text()();
   TextColumn get email => text()();
 
-  BoolColumn get defaultDownloadEnabled => boolean()();
+  BoolColumn get defaultContentSync => boolean()();
 
   @override
   Set<Column> get primaryKey => {id};

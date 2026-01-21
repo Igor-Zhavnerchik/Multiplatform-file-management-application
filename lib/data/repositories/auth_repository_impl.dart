@@ -1,5 +1,5 @@
-import 'package:cross_platform_project/core/utility/result.dart';
-import 'package:cross_platform_project/core/utility/safe_call.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
+import 'package:cross_platform_project/common/utility/safe_call.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/users_dao.dart';
 import 'package:cross_platform_project/domain/entities/user_entity.dart';
 import 'package:cross_platform_project/domain/repositories/auth_repository.dart';

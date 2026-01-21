@@ -1,7 +1,7 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/providers/app_start_service_provider.dart';
-import 'package:cross_platform_project/core/providers/router_provider.dart';
-import 'package:cross_platform_project/core/providers/auth_status_provider.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/providers/app_start_service_provider.dart';
+import 'package:cross_platform_project/presentation/providers/router_provider.dart';
+import 'package:cross_platform_project/application/providers/auth_status_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final appCoordinatorProvider = Provider<void>((ref) {

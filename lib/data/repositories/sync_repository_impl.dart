@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_sync_event_listener.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/domain/sync/sync_processor.dart';
@@ -88,42 +88,30 @@ class SyncRepositoryImpl implements SyncRepository {
       _remoteStreamSubscription = remoteSyncEventListener.syncEventStream
           .listen((event) async {
             debugLog('sync repository: catched remote ${event.action} event');
-            final localFile = await storage.getFileModelbyId(
-              id: event.payload.id,
-            );
+            final payload = event.remoteFile!;
+            final localFile = await storage.getFileModelbyId(id: payload.id);
 
-            if (!switch (event.action) {
-              SyncAction.create => localFile != null,
-              SyncAction.delete => localFile == null,
+            if (switch (event.action) {
+              SyncAction.create => localFile == null,
+              SyncAction.delete => localFile != null,
               SyncAction.update =>
-                (localFile == null ||
-                    localFile.updatedAt.compareTo(event.payload.updatedAt) > 0),
-              SyncAction.load => false,
+                (localFile != null &&
+                    localFile.updatedAt.isBefore(payload.updatedAt)),
             }) {
-              debugLog('local hash: ${localFile?.hash}');
-              debugLog('remote hash: ${event.payload.hash}');
-              if (localFile != null && localFile.hash != event.payload.hash) {
-                if (localFile.downloadEnabled!) {
-                  debugLog('detected hash change => changed event action');
-                  event = event.copyWith(action: SyncAction.load);
-                } else {
-                  event.copyWith(payload: event.payload.copyWith(hash: null));
-                }
-              }
-              syncProcessor.addEvent(event: event);
+              syncProcessor.addEvent(
+                event: event.copyWith(localFile: localFile),
+              );
             }
           }, onError: (e) => debugLog('Error in sync stream: $e'));
     }
     _localStreamSubscription ??= storage.localSyncEventStream.listen((
       event,
     ) async {
+      final payload = event.localFile!;
       debugLog('sync repository: catched local ${event.action} event');
-      final remoteFile = await storage.getRemoteModel(id: event.payload.id);
-      if (event.action == SyncAction.update &&
-          !event.payload.downloadEnabled!) {
-        event = event.copyWith(
-          payload: event.payload.copyWith(hash: remoteFile?.hash),
-        );
+      if (event.action == SyncAction.update) {
+        final remoteFile = await storage.getRemoteModel(id: payload.id);
+        event = event.copyWith(remoteFile: remoteFile!);
       }
       syncProcessor.addEvent(event: event);
     });
@@ -132,43 +120,36 @@ class SyncRepositoryImpl implements SyncRepository {
   }
 
   Future<void> _handleRemoteOnly({required FileModel remoteModel}) async {
-    /* await syncStatusManager.updateStatus(
-              fileId: remoteModel.id,
-      status: SyncStatus.downloading,
-    ); */
     syncProcessor.addEvent(
       event: SyncEvent(
         action: SyncAction.create,
         source: SyncSource.remote,
-        payload: remoteModel,
+        remoteFile: remoteModel,
+        localFile: null,
       ),
     );
   }
 
   Future<void> _handleLocalOnly({required FileModel localModel}) async {
     switch (localModel.syncStatus) {
-      case SyncStatus.created || SyncStatus.failedUploadNew:
-        await syncStatusManager.updateStatus(
-          fileId: localModel.id,
-          status: SyncStatus.uploadingNew,
-        );
+      case SyncStatus.created || SyncStatus.failedRemoteCreate:
         syncProcessor.addEvent(
           event: SyncEvent(
             action: SyncAction.create,
             source: SyncSource.local,
-            payload: localModel,
+            localFile: localModel,
+            remoteFile: null,
           ),
         );
-      case SyncStatus.syncronized || SyncStatus.deleted:
-        await syncStatusManager.updateStatus(
-          fileId: localModel.id,
-          status: SyncStatus.deletingLocally,
-        );
+      case SyncStatus.syncronized ||
+          SyncStatus.deleted ||
+          SyncStatus.failedRemoteDelete:
         syncProcessor.addEvent(
           event: SyncEvent(
             action: SyncAction.delete,
             source: SyncSource.remote,
-            payload: localModel,
+            localFile: localModel,
+            remoteFile: null,
           ),
         );
       default:
@@ -176,69 +157,34 @@ class SyncRepositoryImpl implements SyncRepository {
     }
   }
 
-  //FIXME delete status changes
   Future<void> _handleIntersection({
     required FileModel localModel,
     required FileModel remoteModel,
   }) async {
     switch (localModel.syncStatus) {
       case SyncStatus.deleted:
-        await syncStatusManager.updateStatus(
-          fileId: localModel.id,
-          status: SyncStatus.deletingRemotely,
-        );
         syncProcessor.addEvent(
           event: SyncEvent(
             action: SyncAction.delete,
             source: SyncSource.local,
-            payload: localModel,
+            localFile: localModel,
+            remoteFile: remoteModel,
           ),
         );
       default:
         debugLog('for ${localModel.name}');
         debugLog('local time: ${localModel.updatedAt.toIso8601String()}');
         debugLog('remote time: ${remoteModel.updatedAt.toIso8601String()}');
-        if (localModel.updatedAt.isAfter(remoteModel.updatedAt)) {
-          await syncStatusManager.updateStatus(
-            fileId: localModel.id,
-            status: localModel.hash == remoteModel.hash
-                ? SyncStatus.updatedLocally
-                : SyncStatus.uploading,
-          );
-          syncProcessor.addEvent(
-            event: SyncEvent(
-              action: localModel.hash == remoteModel.hash
-                  ? SyncAction.update
-                  : SyncAction.load,
-              source: SyncSource.local,
-              payload: localModel,
-            ),
-          );
-        } else if (localModel.updatedAt.isBefore(remoteModel.updatedAt) ||
-            localModel.hash != remoteModel.hash) {
-          if (localModel.downloadEnabled!) {
-            await syncStatusManager.updateStatus(
-              fileId: localModel.id,
-              status: localModel.hash == remoteModel.hash
-                  ? SyncStatus.updatedRemotely
-                  : SyncStatus.downloading,
-            );
-            syncProcessor.addEvent(
-              event: SyncEvent(
-                action: localModel.hash == remoteModel.hash
-                    ? SyncAction.update
-                    : SyncAction.load,
-                source: SyncSource.remote,
-                payload: remoteModel,
-              ),
-            );
-          }
-        }
+        syncProcessor.addEvent(
+          event: SyncEvent(
+            action: SyncAction.update,
+            source: localModel.updatedAt.isBefore(remoteModel.updatedAt)
+                ? SyncSource.remote
+                : SyncSource.local,
+            localFile: localModel,
+            remoteFile: remoteModel,
+          ),
+        );
     }
-  }
-
-  @override
-  void addSyncEvent({required SyncEvent event}) {
-    syncProcessor.addEvent(event: event);
   }
 }

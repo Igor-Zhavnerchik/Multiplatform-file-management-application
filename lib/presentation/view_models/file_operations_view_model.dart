@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/providers/settings_service_provider.dart';
-import 'package:cross_platform_project/core/services/settings_service.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
-import 'package:cross_platform_project/data/file_system_scan/fs_scan_handler.dart';
-import 'package:cross_platform_project/data/file_system_scan/fs_scanner_providers.dart';
+import 'package:cross_platform_project/application/fs_scan/fs_scan_handler_provider.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/providers/settings_service_provider.dart';
+import 'package:cross_platform_project/application/services/settings_service.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
+import 'package:cross_platform_project/application/fs_scan/fs_scan_handler.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/providers/storage_operations_providers.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
@@ -51,7 +51,8 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
   FsScanHandler get _scanHandler => ref.read(fsScanHandlerProvider);
   SettingsService get _settingsService => ref.read(settingsServiceProvider);
 
-  bool get defaultDownloadEnabled => _settingsService.defaultDownloadEnabled;
+  bool get defaultContentSyncEnabled =>
+      _settingsService.defaultContentSyncEnabled;
 
   @override
   FileOperationsState build() {
@@ -63,7 +64,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
     required FileEntity parent,
     required bool isFolder,
     required String name,
-    required bool downloadEnabled,
+    required bool contentSyncEnabled,
   }) async {
     debugLog('VM: creating $name in ${parent.name}');
     final result = await _createFileUseCase(
@@ -72,7 +73,7 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
         FileCreateRequest(
           name: name,
           isFolder: isFolder,
-          downloadEnabled: downloadEnabled,
+          contentSyncEnabled: contentSyncEnabled,
         ),
       ],
     );
@@ -96,13 +97,13 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
     return renameResult;
   }
 
-  Future<Result<void>> setDownloadEnable({
+  Future<Result<void>> setContentSyncEnabled({
     required FileEntity entity,
     required bool isEnabled,
   }) async {
     var renameResult = await _updateFileUseCase(
       entity: entity,
-      downloadEnabled: isEnabled,
+      contentSyncEnabled: isEnabled,
     );
     return renameResult;
   }

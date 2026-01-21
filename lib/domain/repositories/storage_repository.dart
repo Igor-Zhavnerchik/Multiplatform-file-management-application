@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:cross_platform_project/domain/sync/sync_processor.dart';
@@ -9,14 +9,14 @@ class FileCreateRequest {
   final Stream<List<int>>? bytes;
   final String name;
   final bool isFolder;
-  final bool downloadEnabled;
+  final bool contentSyncEnabled;
 
   FileCreateRequest({
     required this.name,
     this.localPath,
     this.bytes,
     required this.isFolder,
-    required this.downloadEnabled,
+    required this.contentSyncEnabled,
   });
 
   FileCreateRequest copyWith({
@@ -24,21 +24,20 @@ class FileCreateRequest {
     Stream<List<int>>? bytes,
     String? name,
     bool? isFolder,
-    bool? downloadEnabled,
+    bool? contentSyncEnabled,
   }) {
     return FileCreateRequest(
       name: name ?? this.name,
       localPath: localPath ?? this.localPath,
       bytes: bytes ?? this.bytes,
       isFolder: isFolder ?? this.isFolder,
-      downloadEnabled: downloadEnabled ?? this.downloadEnabled,
+      contentSyncEnabled: contentSyncEnabled ?? this.contentSyncEnabled,
     );
   }
 }
 
 abstract class StorageRepository {
   Stream<SyncEvent> get localSyncEventStream;
-  /* void init({required String userId}); */
   Future<Result<void>> createUserSaveState();
   Future<Result<void>> ensureRootExists();
 

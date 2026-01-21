@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/data_source/local/database/converters/sync_status_converter.dart';
 import 'package:cross_platform_project/data/data_source/local/database/tables/files.dart';

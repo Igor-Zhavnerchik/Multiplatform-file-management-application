@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/services/current_user_service.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
-import 'package:cross_platform_project/core/utility/safe_call.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/services/current_user_service.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
+import 'package:cross_platform_project/common/utility/safe_call.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/users_dao.dart';
 
 class SettingsService {
@@ -12,14 +12,14 @@ class SettingsService {
 
   SettingsService({required this.usersTable, required this.userService});
 
-  bool _defaultDownloadEnabled = true;
+  bool _defaultContentSyncEnabled = true;
 
   final _controller = StreamController<bool>.broadcast();
   StreamSubscription<bool>? _subscription;
 
-  bool get defaultDownloadEnabled => _defaultDownloadEnabled;
+  bool get defaultContentSyncEnabled => _defaultContentSyncEnabled;
 
-  Stream<bool> get defaultDownloadEnabledStream => _controller.stream;
+  Stream<bool> get defaultContentSyncEnabledStream => _controller.stream;
 
   void init() {
     debugLog('started settings init');
@@ -27,22 +27,22 @@ class SettingsService {
     _subscription = null;
 
     _subscription = usersTable
-        .watchDefaultDownloadOption(userId: userService.currentUserId)
+        .watchDefaultContentSyncOption(userId: userService.currentUserId)
         .listen((value) {
-          _defaultDownloadEnabled = value;
+          _defaultContentSyncEnabled = value;
           debugLog('SettingsService emit: $value');
           _controller.add(value);
         });
     debugLog('ended settings init');
   }
 
-  Future<Result<void>> setDefaultDownloadEnabled(bool value) async {
+  Future<Result<void>> setdefaultContentSyncEnable(bool value) async {
     return await safeCall(() async {
-      usersTable.setDefaultDownloadOption(
+      usersTable.setdefaultContentSyncOption(
         userId: userService.currentUserId,
         isEnabled: value,
       );
-    }, source: 'SettingsService.setDefaultDownloadEnabled');
+    }, source: 'SettingsService.setdefaultContentSyncEnable');
   }
 
   void dispose() {

@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/services/current_user_service.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
-import 'package:cross_platform_project/core/utility/safe_call.dart';
-import 'package:cross_platform_project/core/services/storage_path_service.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/services/current_user_service.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
+import 'package:cross_platform_project/common/utility/safe_call.dart';
+import 'package:cross_platform_project/data/services/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_database_data_source.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_storage_data_source.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
@@ -19,7 +19,7 @@ class RemoteDataSource {
   final CurrentUserService userService;
   final StoragePathService pathService;
   final FileModelMapper mapper;
-  String get currentUser => userService.currentUserId;
+  String get currentUserId => userService.currentUserId;
 
   RemoteDataSource({
     required this.client,
@@ -30,13 +30,10 @@ class RemoteDataSource {
     required this.mapper,
   });
 
-  Future<Result<List<FileModel>>> getFileList({bool getDeleted = false}) async {
+  Future<Result<List<FileModel>>> getFileList() async {
     return await safeCall(() async {
-      debugLog('getting files from supabase for user id: $currentUser');
-      final rawData = await database.getMetadata(
-        getDeleted: getDeleted,
-        userId: currentUser,
-      );
+      debugLog('getting files from supabase for user id: $currentUserId');
+      final rawData = await database.getMetadata(userId: currentUserId);
       return rawData
           .map<FileModel>((metadata) => mapper.fromMetadata(metadata: metadata))
           .toList();
@@ -46,7 +43,7 @@ class RemoteDataSource {
   Future<Result<FileModel?>> getFile({required String fileId}) async {
     return await safeCall(() async {
       final file = await database.getSingleMetadata(
-        userId: currentUser,
+        userId: currentUserId,
         fileId: fileId,
       );
       return file == null ? null : mapper.fromMetadata(metadata: file);
@@ -63,9 +60,12 @@ class RemoteDataSource {
     }, source: 'RemoteDataSource');
   }
 
-  Future<Result<void>> uploadFile({required FileModel model}) async {
+  Future<Result<void>> uploadFile({
+    required FileModel model,
+    required bool uploadData,
+  }) async {
     return await safeCall(() async {
-      if (!model.isFolder) {
+      if (!model.isFolder && uploadData) {
         await storage.uploadFile(
           file: File(await pathService.getLocalPath(fileId: model.id)),
           path: pathService.getRemotePath(fileId: model.id),
@@ -83,16 +83,10 @@ class RemoteDataSource {
 
   Future<Result<void>> deleteFile({
     required FileModel model,
-    bool softDelete = true,
+    bool softDelete = false,
   }) async {
     return await safeCall(() async {
-      if (softDelete) {
-        await database.uploadMetadata(
-          metadata: mapper.toMetadata(
-            model: model.copyWith(deletedAt: DateTime.now()),
-          ),
-        );
-      } else {
+      if (!softDelete) {
         if (!model.isFolder) {
           await storage.deleteFile(
             path: pathService.getRemotePath(fileId: model.id),

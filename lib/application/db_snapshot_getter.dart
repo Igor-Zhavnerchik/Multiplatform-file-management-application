@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/core/services/current_user_service.dart';
+import 'package:cross_platform_project/application/services/current_user_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 
 class DbSnapshotEntry {
@@ -38,18 +38,19 @@ class DbSnapshotGetter {
 
     return {
       for (final file in dbFiles)
-        file.localFileId: DbSnapshotEntry(
-          fileId: file.id,
-          localFileId: file.localFileId,
-          parentId: file.parentId,
-          parentLocalFileId: file.parentId == null
-              ? null
-              : dbFiles.firstWhere((e) => e.id == file.parentId).localFileId,
-          name: file.name,
-          isFolder: file.isFolder,
-          size: file.size,
-          hash: file.hash,
-        ),
+        if (file.localFileId.isNotEmpty)
+          file.localFileId: DbSnapshotEntry(
+            fileId: file.id,
+            localFileId: file.localFileId,
+            parentId: file.parentId,
+            parentLocalFileId: file.parentId == null
+                ? null
+                : dbFiles.firstWhere((e) => e.id == file.parentId).localFileId,
+            name: file.name,
+            isFolder: file.isFolder,
+            size: file.size,
+            hash: file.hash,
+          ),
     };
   }
 }

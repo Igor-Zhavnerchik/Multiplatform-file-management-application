@@ -1,5 +1,5 @@
-import 'package:cross_platform_project/core/converters/providers/bytes_to_stream_converter_provider.dart';
-import 'package:cross_platform_project/core/providers/current_user_service_provider.dart';
+import 'package:cross_platform_project/data/converters/providers/bytes_to_stream_converter_provider.dart';
+import 'package:cross_platform_project/application/providers/current_user_service_provider.dart';
 import 'package:cross_platform_project/data/models/providers/file_model_mapper_provider.dart';
 import 'package:cross_platform_project/data/providers/local_data_source_providers.dart';
 
@@ -7,7 +7,7 @@ import '../data_source/remote/remote_data_source.dart';
 import '../data_source/remote/remote_database_data_source.dart';
 import '../data_source/remote/remote_storage_data_source.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cross_platform_project/core/providers/supabase_client_provider.dart';
+import 'package:cross_platform_project/application/providers/supabase_client_provider.dart';
 
 final remoteDataSourceProvider = Provider.autoDispose<RemoteDataSource>((ref) {
   final client = ref.watch(supabaseClientProvider);

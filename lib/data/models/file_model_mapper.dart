@@ -1,4 +1,5 @@
-import 'package:cross_platform_project/core/services/settings_service.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/services/settings_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/app_database.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
@@ -8,76 +9,52 @@ class FileModelMapper {
   final SettingsService settings;
   FileModelMapper({required this.settings});
 
-  FilesCompanion toInsert(
-    FileModel model,
-    String localFileId, {
-    String? tempParentId,
-  }) => FilesCompanion.insert(
-    id: model.id,
-    ownerId: model.ownerId,
-    parentId: Value(model.parentId),
-    tempParentId: Value(tempParentId),
-
-    localFileId: localFileId,
-    depth: model.depth,
-
-    name: model.name,
-    mimeType: Value(model.mimeType),
-    isFolder: model.isFolder,
-    size: Value(model.size),
-    hash: Value(model.hash),
-
-    syncStatus: model.syncStatus,
-    downloadEnabled: model.downloadEnabled!,
-
-    downloadStatus: model.downloadStatus,
-
-    createdAt: model.createdAt,
-    updatedAt: model.updatedAt,
-    deletedAt: Value(model.deletedAt),
-  );
-
-  FilesCompanion toUpdate(FileModel model, {String? tempParentId}) =>
-      FilesCompanion(
+  FilesCompanion toInsert(FileModel model, String localFileId) =>
+      FilesCompanion.insert(
+        id: model.id,
+        ownerId: model.ownerId,
         parentId: Value(model.parentId),
-        tempParentId: Value(tempParentId),
-
-        depth: Value(model.depth),
-
-        name: Value(model.name),
-        mimeType: Value(model.mimeType),
+        localFileId: localFileId,
+        name: model.name,
+        isFolder: model.isFolder,
         size: Value(model.size),
         hash: Value(model.hash),
+        contentSyncEnabled: model.contentSyncEnabled,
+        syncStatus: model.syncStatus,
+        downloadStatus: model.downloadStatus,
+        createdAt: model.createdAt,
+        updatedAt: model.updatedAt,
+        contentUpdatedAt: model.contentUpdatedAt,
+      );
 
-        //syncStatus: Value(model.syncStatus.name),
+  FilesCompanion toUpdate(FileModel model, {String? localFileId}) =>
+      FilesCompanion(
+        parentId: Value(model.parentId),
+        name: Value(model.name),
+        size: Value(model.size),
+        hash: Value(model.hash),
+        contentSyncEnabled: Value(model.contentSyncEnabled),
+        syncStatus: Value(model.syncStatus),
         downloadStatus: Value(model.downloadStatus),
-        downloadEnabled: Value(model.downloadEnabled!),
-
         updatedAt: Value(model.updatedAt),
-        deletedAt: Value(model.deletedAt),
+        contentUpdatedAt: Value(model.contentUpdatedAt),
+        localFileId: Value.absentIfNull(localFileId),
       );
 
   FileModel fromDbFile(DbFile dbFile) => FileModel(
     id: dbFile.id,
     ownerId: dbFile.ownerId,
     parentId: dbFile.parentId,
-
-    depth: dbFile.depth,
-
     name: dbFile.name,
-    mimeType: dbFile.mimeType,
     isFolder: dbFile.isFolder,
     size: dbFile.size,
     hash: dbFile.hash,
-
-    downloadEnabled: dbFile.downloadEnabled,
-
+    contentSyncEnabled: dbFile.contentSyncEnabled,
     syncStatus: dbFile.syncStatus,
     downloadStatus: dbFile.downloadStatus,
-
     createdAt: dbFile.createdAt.toUtc(),
     updatedAt: dbFile.updatedAt.toUtc(),
-    deletedAt: dbFile.deletedAt?.toUtc(),
+    contentUpdatedAt: dbFile.contentUpdatedAt.toUtc(),
   );
 
   FileEntity toEntity(FileModel model) {
@@ -85,23 +62,16 @@ class FileModelMapper {
       id: model.id,
       ownerId: model.ownerId,
       parentId: model.parentId,
-
-      depth: model.depth,
-
       name: model.name,
-      mimeType: model.mimeType,
       isFolder: model.isFolder,
       size: model.size,
       hash: model.hash,
-
-      downloadStatus: model.downloadStatus,
-
+      contentSyncEnabled: model.contentSyncEnabled,
       syncStatus: model.syncStatus,
-      downloadEnabled: model.downloadEnabled!,
-
+      downloadStatus: model.downloadStatus,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
-      deletedAt: model.deletedAt,
+      contentUpdatedAt: model.contentUpdatedAt,
     );
   }
 
@@ -110,23 +80,16 @@ class FileModelMapper {
       id: entity.id,
       ownerId: entity.ownerId,
       parentId: entity.parentId,
-
-      depth: entity.depth,
-
       name: entity.name,
-      mimeType: entity.mimeType,
       isFolder: entity.isFolder,
       size: entity.size,
       hash: entity.hash,
-
-      downloadEnabled: entity.downloadEnabled,
-
+      contentSyncEnabled: entity.contentSyncEnabled,
       syncStatus: entity.syncStatus,
       downloadStatus: entity.downloadStatus,
-
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
-      deletedAt: entity.deletedAt,
+      contentUpdatedAt: entity.contentUpdatedAt,
     );
   }
 
@@ -135,47 +98,33 @@ class FileModelMapper {
       'id': model.id,
       'owner_id': model.ownerId,
       'parent_id': model.parentId,
-
-      'depth': model.depth,
       'name': model.name,
-      'mime_type': model.mimeType,
       'is_folder': model.isFolder,
-      'size': model.size,
-      'hash': model.hash,
-
       'download_status': model.downloadStatus.name,
-
       'created_at': model.createdAt.toIso8601String(),
       'updated_at': model.updatedAt.toIso8601String(),
-      'deleted_at': model.deletedAt?.toIso8601String(),
+      'content_updated_at': model.contentUpdatedAt.toIso8601String(),
     };
   }
 
   FileModel fromMetadata({required Map<String, dynamic> metadata}) {
+    debugLog('converting to FileModel from $metadata');
     return FileModel(
       id: metadata['id'],
       ownerId: metadata['owner_id'],
       parentId: metadata['parent_id'],
-
-      depth: metadata['depth'],
-
       name: metadata['name'],
-      mimeType: metadata['mime_type'],
       isFolder: metadata['is_folder'],
-      size: metadata['size'],
-      hash: metadata['hash'],
-
+      size: null,
+      hash: null,
+      contentSyncEnabled: settings.defaultContentSyncEnabled,
+      syncStatus: SyncStatus.syncronized,
       downloadStatus: metadata['download_status'] != null
           ? DownloadStatus.values.byName(metadata['download_status'])
           : DownloadStatus.notDownloaded,
-
       createdAt: DateTime.parse(metadata['created_at']),
       updatedAt: DateTime.parse(metadata['updated_at']),
-      deletedAt: metadata['deleted_at'] != null
-          ? DateTime.parse(metadata['deleted_at'])
-          : null,
-      downloadEnabled: settings.defaultDownloadEnabled,
-      syncStatus: SyncStatus.syncronized,
+      contentUpdatedAt: DateTime.parse(metadata['content_updated_at']),
     );
   }
 }

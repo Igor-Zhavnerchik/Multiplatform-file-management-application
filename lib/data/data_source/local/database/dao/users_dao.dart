@@ -13,31 +13,31 @@ class UsersDao extends DatabaseAccessor<AppDatabase> with _$UsersDaoMixin {
         UsersCompanion.insert(
           id: userId,
           email: email,
-          defaultDownloadEnabled: false,
+          defaultContentSync: false,
         ),
       );
 
-  Future setDefaultDownloadOption({
+  Future setdefaultContentSyncOption({
     required String userId,
     required bool isEnabled,
   }) async {
     return update(users)
       ..where((tbl) => tbl.id.equals(userId))
-      ..write(UsersCompanion(defaultDownloadEnabled: Value(isEnabled)));
+      ..write(UsersCompanion(defaultContentSync: Value(isEnabled)));
   }
 
-  Future<bool> getDefaultDownloadOption({required String userId}) async {
+  Future<bool> getdefaultContentSyncOption({required String userId}) async {
     return (await (select(users)
               ..where((tbl) => tbl.id.equals(userId))
               ..getSingle())
             .getSingle())
-        .defaultDownloadEnabled;
+        .defaultContentSync;
   }
 
-  Stream<bool> watchDefaultDownloadOption({required String userId}) {
+  Stream<bool> watchDefaultContentSyncOption({required String userId}) {
     return (select(users)..where((tbl) => tbl.id.equals(userId)))
         .watchSingle()
-        .map((row) => row.defaultDownloadEnabled);
+        .map((row) => row.defaultContentSync);
   }
 
   Future<DbUser?> getuser({required String userId}) async {

@@ -1,5 +1,5 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
 import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';

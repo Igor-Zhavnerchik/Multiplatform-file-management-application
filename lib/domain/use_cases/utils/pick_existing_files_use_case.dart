@@ -1,7 +1,7 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/services/file_picker_service.dart';
-import 'package:cross_platform_project/core/services/settings_service.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/data/services/file_picker_service.dart';
+import 'package:cross_platform_project/application/services/settings_service.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
 
@@ -71,7 +71,7 @@ class PickExistingFilesUseCase {
             name: pickedFile.name,
             isFolder: false,
             localPath: pickedFile.path,
-            downloadEnabled: settingsService.defaultDownloadEnabled,
+            contentSyncEnabled: settingsService.defaultContentSyncEnabled,
             bytes: pickedFile.bytes,
           ),
         );
@@ -82,7 +82,7 @@ class PickExistingFilesUseCase {
             name: pickedfolder.name,
             isFolder: true,
             localPath: pickedfolder.path,
-            downloadEnabled: settingsService.defaultDownloadEnabled,
+            contentSyncEnabled: settingsService.defaultContentSyncEnabled,
           ),
         );
         newParentResult.when(

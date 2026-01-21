@@ -1,6 +1,6 @@
-import 'package:cross_platform_project/core/providers/file_open_service_provider.dart';
-import 'package:cross_platform_project/core/providers/file_picker_service_provider.dart';
-import 'package:cross_platform_project/core/providers/settings_service_provider.dart';
+import 'package:cross_platform_project/data/services/providers/file_open_service_provider.dart';
+import 'package:cross_platform_project/data/services/providers/file_picker_service_provider.dart';
+import 'package:cross_platform_project/application/providers/settings_service_provider.dart';
 import 'package:cross_platform_project/data/repositories/providers/storage_repository_provider.dart';
 import 'package:cross_platform_project/domain/providers/sync_repository_provider.dart';
 import 'package:cross_platform_project/domain/use_cases/utils/open_file_use_case.dart';

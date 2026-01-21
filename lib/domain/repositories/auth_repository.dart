@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/domain/entities/user_entity.dart';
 
 abstract class AuthRepository {

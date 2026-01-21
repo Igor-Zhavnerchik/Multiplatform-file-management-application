@@ -1,5 +1,5 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/providers/current_user_service_provider.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/providers/current_user_service_provider.dart';
 import 'package:cross_platform_project/data/models/providers/file_model_mapper_provider.dart';
 import 'package:cross_platform_project/data/providers/local_data_source_providers.dart';
 import 'package:cross_platform_project/data/providers/remote_data_source_providers.dart';
@@ -8,7 +8,7 @@ import 'package:cross_platform_project/data/repositories/storage_repository_impl
 import 'package:cross_platform_project/domain/sync/providers/sync_providers.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cross_platform_project/core/providers/supabase_client_provider.dart';
+import 'package:cross_platform_project/application/providers/supabase_client_provider.dart';
 
 final storageRepositoryProvider = Provider<StorageRepository>((ref) {
   //FIXME somewhere dispose or update that triggers dispose of storage repo

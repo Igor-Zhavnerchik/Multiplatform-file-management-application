@@ -23,7 +23,7 @@ class _FileOperationSelectMenuState
   @override
   void initState() {
     super.initState();
-    downloadEnabled = widget.entity.downloadEnabled;
+    downloadEnabled = widget.entity.contentSyncEnabled;
   }
 
   @override
@@ -59,7 +59,7 @@ class _FileOperationSelectMenuState
           value: downloadEnabled,
           onChanged: (value) {
             setState(() => downloadEnabled = value);
-            fileOpsVM.setDownloadEnable(
+            fileOpsVM.setContentSyncEnabled(
               entity: widget.entity,
               isEnabled: value,
             );

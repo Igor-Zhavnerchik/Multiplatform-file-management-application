@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 
 Future<Result<T>> safeCall<T>(
   Future<T> Function() action, {

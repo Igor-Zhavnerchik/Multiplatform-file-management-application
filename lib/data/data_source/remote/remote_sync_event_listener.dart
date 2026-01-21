@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/domain/sync/sync_processor.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -41,7 +41,8 @@ class RemoteSyncEventListener {
                   ),
                 },
                 source: SyncSource.remote,
-                payload: mapper.fromMetadata(
+                localFile: null,
+                remoteFile: mapper.fromMetadata(
                   metadata: payload.newRecord.isNotEmpty
                       ? payload.newRecord
                       : payload.oldRecord,
@@ -50,7 +51,9 @@ class RemoteSyncEventListener {
               _controller.add(event);
               debugLog('emitted remote sync ${payload.eventType} event ');
             } catch (e) {
-              debugLog('failed to process remote ${payload.eventType} event ');
+              debugLog(
+                'failed to process remote ${payload.eventType} event error: $e',
+              );
             }
           },
         )

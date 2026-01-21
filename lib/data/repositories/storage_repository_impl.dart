@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/services/current_user_service.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/services/current_user_service.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_data_source.dart';
 
@@ -85,22 +85,21 @@ class StorageRepositoryImpl extends StorageRepository {
     final newFileId = uuidService.generateId(
       userRoot: parent == null ? currentUserId : null,
     );
+    final now = DateTime.now().toUtc();
     final newFile = FileModel(
       id: newFileId,
       ownerId: parent?.ownerId ?? currentUserId,
       parentId: parent?.id,
-      depth: parent?.depth ?? 0 + 1, //FIXME
       name: request.name,
       size: null,
       hash: null,
-      mimeType: null,
       isFolder: request.isFolder,
-      downloadEnabled: request.downloadEnabled,
+      contentSyncEnabled: request.contentSyncEnabled,
       syncStatus: SyncStatus.created,
       downloadStatus: DownloadStatus.downloaded,
-      createdAt: DateTime.now().toUtc(),
-      updatedAt: DateTime.now().toUtc(),
-      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      contentUpdatedAt: now,
     );
     final Result<void> saveResult;
     if (request.localPath != null) {
@@ -112,7 +111,7 @@ class StorageRepositoryImpl extends StorageRepository {
       saveResult = await localDataSource.saveFile(
         overwrite: overwrite,
         model: newFile,
-        bytes: request.bytes,
+        bytes: request.bytes ?? Stream.empty(),
       );
     }
     if (saveResult.isFailure) {
@@ -132,7 +131,8 @@ class StorageRepositoryImpl extends StorageRepository {
       SyncEvent(
         action: SyncAction.create,
         source: SyncSource.local,
-        payload: createdFile.data,
+        localFile: createdFile.data,
+        remoteFile: null,
       ),
     );
     return Success(mapper.toEntity(createdFile.data));
@@ -172,7 +172,7 @@ class StorageRepositoryImpl extends StorageRepository {
       }
     }
     final deleteResult = await localDataSource.deleteFile(
-      model: model.copyWith(deletedAt: DateTime.now().toUtc()),
+      model: model,
       softDelete: true,
     );
     if (deleteResult.isFailure) {
@@ -193,7 +193,8 @@ class StorageRepositoryImpl extends StorageRepository {
       SyncEvent(
         action: SyncAction.delete,
         source: SyncSource.local,
-        payload: model,
+        localFile: model,
+        remoteFile: null,
       ),
     );
 
@@ -207,7 +208,6 @@ class StorageRepositoryImpl extends StorageRepository {
   }) async {
     debugLog('started updating for ${request.id}');
     debugLog('name: ${request.name}');
-    final oldModel = await localDataSource.getFile(fileId: request.id);
     await syncStatusManager.updateStatus(
       fileId: request.id,
       status: SyncStatus.updatingLocally,
@@ -225,40 +225,21 @@ class StorageRepositoryImpl extends StorageRepository {
     }
     await syncStatusManager.updateStatus(
       fileId: request.id,
-      status: SyncStatus.updated,
+      status: SyncStatus.syncronized,
     );
     final updatedModel = await localDataSource.getFile(fileId: request.id);
 
     updatedModel.when(
       success: (model) {
-        debugLog('AFTER UPDATE download enabled: ${model!.downloadEnabled}');
-
-        if (request.downloadEnabled == null) {
-          if (((oldModel as Success).data as FileModel).hash == model.hash) {
-            debugLog('sending update event');
-          } else {
-            debugLog('sending load event');
-          }
-          _controller?.add(
-            SyncEvent(
-              action:
-                  ((oldModel as Success).data as FileModel).hash == model.hash
-                  ? SyncAction.update
-                  : SyncAction.load,
-              source: SyncSource.local,
-              payload: model,
-            ),
-          );
-        } else if (request.downloadEnabled!) {
-          debugLog('loading after enabling download');
-          _controller?.add(
-            SyncEvent(
-              action: SyncAction.load,
-              source: SyncSource.remote,
-              payload: model,
-            ),
-          );
-        }
+        debugLog('AFTER UPDATE sync enabled: ${model!.contentSyncEnabled}');
+        _controller?.add(
+          SyncEvent(
+            action: SyncAction.update,
+            source: SyncSource.local,
+            localFile: model,
+            remoteFile: null,
+          ),
+        );
       },
 
       failure: (msg, err, source) {
@@ -287,7 +268,7 @@ class StorageRepositoryImpl extends StorageRepository {
         request: FileCreateRequest(
           name: entity.name,
           isFolder: entity.isFolder,
-          downloadEnabled: entity.downloadEnabled,
+          contentSyncEnabled: entity.contentSyncEnabled,
           bytes: entity.isFolder
               ? null
               : (await localDataSource.getFileData(
@@ -351,7 +332,7 @@ class StorageRepositoryImpl extends StorageRepository {
         request: FileCreateRequest(
           name: 'Storage',
           isFolder: true,
-          downloadEnabled: true,
+          contentSyncEnabled: true,
         ),
       );
     }

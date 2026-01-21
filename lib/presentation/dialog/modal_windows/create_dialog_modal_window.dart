@@ -20,7 +20,7 @@ class CreateDialog extends ConsumerStatefulWidget {
 
 class _CreateDialogState extends ConsumerState<CreateDialog> {
   String name = '';
-  late bool downloadEnabled;
+  late bool contentSyncEnabled;
   String? errorMessage;
   bool isLoading = false;
 
@@ -28,7 +28,7 @@ class _CreateDialogState extends ConsumerState<CreateDialog> {
   void initState() {
     super.initState();
     final fileOpsVM = ref.read(fileOperationsViewModelProvider.notifier);
-    downloadEnabled = fileOpsVM.defaultDownloadEnabled;
+    contentSyncEnabled = fileOpsVM.defaultContentSyncEnabled;
   }
 
   @override
@@ -76,8 +76,8 @@ class _CreateDialogState extends ConsumerState<CreateDialog> {
         _buildToggleRow(
           icon: Icons.file_download_outlined,
           label: 'Auto download',
-          value: downloadEnabled,
-          onChanged: (v) => setState(() => downloadEnabled = v),
+          value: contentSyncEnabled,
+          onChanged: (v) => setState(() => contentSyncEnabled = v),
         ),
 
         const SizedBox(height: 24),
@@ -139,7 +139,7 @@ class _CreateDialogState extends ConsumerState<CreateDialog> {
           parent: widget.parent,
           isFolder: widget.createFolder,
           name: name.trim(),
-          downloadEnabled: downloadEnabled,
+          contentSyncEnabled: contentSyncEnabled,
         );
 
     if (!mounted) return;

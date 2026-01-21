@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

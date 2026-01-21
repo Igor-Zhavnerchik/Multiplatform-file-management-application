@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:cross_platform_project/core/services/storage_path_service.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/data/services/storage_path_service.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:file_picker/file_picker.dart';
 
 sealed class PickedEntity {

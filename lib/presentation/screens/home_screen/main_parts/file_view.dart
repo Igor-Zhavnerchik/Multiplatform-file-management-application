@@ -253,26 +253,75 @@ class FileViewElement extends ConsumerWidget {
   Color _getIconColor(ThemeData theme) => theme.colorScheme.onSurfaceVariant;
 
   _StatusInfo? _getStatusInfo(ThemeData theme) {
-    switch (element.syncStatus) {
-      case SyncStatus.downloading:
-      case SyncStatus.uploading:
+    // 1. ПРИОРИТЕТ: Статусы процесса загрузки (DownloadStatus)
+    // Это то, что происходит прямо сейчас
+    switch (element.downloadStatus) {
+      case DownloadStatus.downloading:
+      case DownloadStatus.uploading:
         return _StatusInfo(
-          icon: Icons.sync_rounded,
+          icon: Icons.sync_rounded, // Анимированная или обычная иконка обмена
           color: theme.colorScheme.primary,
         );
-      case SyncStatus.failedDownload:
-      case SyncStatus.failedUpload:
+      case DownloadStatus.failedDownload:
+      case DownloadStatus.failedUpload:
         return _StatusInfo(
           icon: Icons.error_outline_rounded,
           color: theme.colorScheme.error,
         );
+      case DownloadStatus.haveNewVersion:
+        return _StatusInfo(
+          icon: Icons.cloud_download_outlined,
+          color: theme.colorScheme.secondary,
+        );
+      default:
+        break;
+    }
+
+    // 2. ВТОРОЙ ПРИОРИТЕТ: Статусы синхронизации (SyncStatus)
+    // Это состояние данных относительно сервера
+    switch (element.syncStatus) {
+      // Процессы синхронизации (если они не перекрыты DownloadStatus)
+      case SyncStatus.updatingLocally:
+      case SyncStatus.updatingRemotely:
+      case SyncStatus.deletingLocally:
+      case SyncStatus.deletingRemotely:
+        return _StatusInfo(
+          icon: Icons.sync_rounded,
+          color: theme.colorScheme.primary,
+        );
+
+      // Ошибки синхронизации
+      case SyncStatus.failedLocalUpdate:
+      case SyncStatus.failedLocalDelete:
+      case SyncStatus.failedRemoteCreate:
+      case SyncStatus.failedRemoteUpdate:
+      case SyncStatus.failedRemoteDelete:
+        return _StatusInfo(
+          icon: Icons.warning_amber_rounded,
+          color: theme.colorScheme.error,
+        );
+
+      // Есть локальные изменения, которые нужно отправить (стрелка вверх)
+      case SyncStatus.updatedLocally:
+      case SyncStatus.created:
+      case SyncStatus.updated:
+        return _StatusInfo(
+          icon: Icons.cloud_upload_outlined,
+          color: theme.colorScheme.primary,
+        );
+
+      // Полностью синхронизировано
       case SyncStatus.syncronized:
-        return element.downloadEnabled
-            ? _StatusInfo(
-                icon: Icons.cloud_done_outlined,
-                color: theme.colorScheme.primary,
-              )
-            : null;
+        // Показываем галочку только если файл скачан и включена загрузка
+        if (element.downloadStatus == DownloadStatus.downloaded &&
+            element.contentSyncEnabled) {
+          return _StatusInfo(
+            icon: Icons.cloud_done_outlined,
+            color: theme.colorScheme.primary,
+          );
+        }
+        return null;
+
       default:
         return null;
     }

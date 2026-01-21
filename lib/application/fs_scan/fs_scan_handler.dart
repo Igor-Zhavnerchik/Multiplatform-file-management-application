@@ -1,8 +1,8 @@
 import 'package:cross_platform_project/application/db_snapshot_getter.dart';
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/data/file_system_scan/fs_change_applier.dart';
-import 'package:cross_platform_project/data/file_system_scan/file_system_scanner.dart';
-import 'package:cross_platform_project/data/file_system_scan/reconciler.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/domain/sync/fs_sync/fs_change_applier.dart';
+import 'package:cross_platform_project/data/file_system/file_system_scanner.dart';
+import 'package:cross_platform_project/domain/sync/fs_sync/reconciler.dart';
 
 class FsScanHandler {
   FsScanHandler({

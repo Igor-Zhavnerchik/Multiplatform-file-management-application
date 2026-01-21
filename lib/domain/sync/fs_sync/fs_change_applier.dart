@@ -1,9 +1,10 @@
 import 'package:collection/collection.dart';
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/services/storage_path_service.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/services/settings_service.dart';
+import 'package:cross_platform_project/data/services/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
-import 'package:cross_platform_project/data/file_system_scan/file_system_scanner.dart';
-import 'package:cross_platform_project/data/file_system_scan/reconciler.dart';
+import 'package:cross_platform_project/data/file_system/file_system_scanner.dart';
+import 'package:cross_platform_project/domain/sync/fs_sync/reconciler.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
@@ -15,12 +16,14 @@ class FsChangeApplier {
     required this.localDataSource,
     required this.mapper,
     required this.pathService,
+    required this.settings,
   });
 
   final StorageRepository storage;
   final FileModelMapper mapper;
   final StoragePathService pathService;
   final LocalDataSource localDataSource;
+  final SettingsService settings;
 
   Future<void> apply({required List<DbChange> changeList}) async {
     final PriorityQueue<DbChange> changeQueue = PriorityQueue<DbChange>(
@@ -47,7 +50,7 @@ class FsChangeApplier {
             request: FileCreateRequest(
               name: pathService.getName(change.fs.path),
               isFolder: change.fs is ExistingFolder,
-              downloadEnabled: true,
+              contentSyncEnabled: settings.defaultContentSyncEnabled,
             ),
           );
         case DbUpdate():
@@ -56,7 +59,7 @@ class FsChangeApplier {
           final newFile = change.fs;
           late final String? parentId;
           final parentResult = await localDataSource.getFile(
-            localFileId: change.fs.parentLocalFileId,
+            localFileId: newFile.parentLocalFileId,
           );
           parentResult.when(
             success: (parent) {
@@ -69,11 +72,14 @@ class FsChangeApplier {
           await storage.updateFile(
             request: FileUpdateRequest(
               id: currentFile.fileId,
-              ownerId: await pathService.getOwnerIdByPath(path: change.fs.path),
+              ownerId: await pathService.getOwnerIdByPath(path: newFile.path),
               parentId: parentId,
               hash: change.hash,
-              name: pathService.getName(change.fs.path),
-              depth: newFile.depth,
+              name: pathService.getName(newFile.path),
+              size: newFile is ExistingFile ? newFile.size : null,
+              contentUpdatedAt: currentFile.hash == change.hash
+                  ? null
+                  : DateTime.now().toUtc(),
             ),
             overwrite: false,
           );

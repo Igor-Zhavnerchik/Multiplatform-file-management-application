@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/domain/providers/sign_out_use_case_provider.dart';
 import 'package:cross_platform_project/domain/providers/user_login_use_case_provider.dart';
 import 'package:cross_platform_project/domain/providers/user_registration_use_case.dart';

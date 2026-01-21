@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_data_source.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';

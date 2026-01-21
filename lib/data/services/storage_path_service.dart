@@ -1,5 +1,5 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/services/current_user_service.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/services/current_user_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 import 'package:path/path.dart' as p;
 
@@ -23,14 +23,6 @@ class StoragePathService {
     return p.join(appRootPath, 'users');
   }
 
-  String normalize(String path, {bool forRemote = false}) {
-    return forRemote ? p.posix.normalize(path) : p.normalize(path);
-  }
-
-  String toLocalPath(String path) {
-    return normalize(path);
-  }
-
   String join({
     required String parent,
     required String child,
@@ -42,13 +34,6 @@ class StoragePathService {
   String getName(String path) {
     return p.basename(path);
   }
-
-  @deprecated
-  String joinFromAnotherPath({
-    required String parent,
-    required String fromPath,
-    bool forRemote = false,
-  }) => join(parent: parent, child: getName(fromPath), forRemote: forRemote);
 
   String getRemotePath({required String fileId}) {
     return 'users/$currentUserId/storage/$fileId';

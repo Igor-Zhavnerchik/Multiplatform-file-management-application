@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
-import 'package:cross_platform_project/core/utility/safe_call.dart';
-import 'package:cross_platform_project/core/services/storage_path_service.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
+import 'package:cross_platform_project/common/utility/safe_call.dart';
+import 'package:cross_platform_project/data/services/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/local/database/dao/files_dao.dart';
 import 'package:cross_platform_project/data/data_source/local/local_file_id_service.dart/local_file_id_service.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
@@ -43,7 +43,6 @@ class LocalDataSource {
       ownerId: ownerId,
     );
 
-    // Если такого имени нет — возвращаем сразу
     final hasSame = siblings.any((e) => e.name == name);
     if (!hasSame) return name;
 
@@ -66,50 +65,80 @@ class LocalDataSource {
     return '$base (${maxIndex + 1})$ext';
   }
 
+  //FIXME should take into account new system
   Future<Result<void>> saveFile({
     required FileModel model,
     required Stream<List<int>>? bytes,
     bool overwrite = true,
   }) async {
     return await safeCall(() async {
-      model = model.copyWith(
-        name: await _makeUniqueName(
-          name: model.name,
-          parentId: model.parentId,
-          ownerId: model.ownerId,
-        ),
-      );
-      var savePath = pathService.join(
-        parent: await pathService.getLocalPath(fileId: model.parentId),
-        child: model.name,
-      );
-      debugLog('Saving "${model.name}" in "$savePath"');
-
-      if (model.isFolder) {
-        await localStorage.createEntity(
-          path: savePath,
-          isFolder: model.isFolder,
-        );
-      } else if (overwrite) {
-        await localStorage.saveBytes(
-          path: savePath,
-          bytes: bytes ?? Stream.empty(),
-        );
+      final dbFile = await filesTable.getFile(fileId: model.id);
+      if (dbFile == null) {
         model = model.copyWith(
-          hash: await _getHash(model: model, filePath: savePath),
+          name: await _makeUniqueName(
+            name: model.name,
+            parentId: model.parentId,
+            ownerId: model.ownerId,
+          ),
         );
-        if (model.size == null) {
-          model.copyWith(size: await File(savePath).length());
+      }
+
+      if (bytes != null) {
+        var savePath = pathService.join(
+          parent: await pathService.getLocalPath(fileId: model.parentId),
+          child: model.name,
+        );
+        debugLog('Saving "${model.name}" in "$savePath"');
+        if (model.isFolder) {
+          await localStorage.createEntity(
+            path: savePath,
+            isFolder: model.isFolder,
+          );
+        } else if (overwrite) {
+          await localStorage.saveBytes(path: savePath, bytes: bytes);
+          model = model.copyWith(
+            hash: await _getHash(model: model, filePath: savePath),
+          );
+          if (model.size == null) {
+            model.copyWith(size: await File(savePath).length());
+          }
         }
       }
 
-      if (await filesTable.getFile(fileId: model.id) == null) {
-        final localId = await localFileIdService.getFileId(path: savePath);
-
-        debugLog('inserting ${model.name} with id:$localId');
-        await filesTable.insertFile(mapper.toInsert(model, localId));
+      if (dbFile == null) {
+        debugLog('inserting ${model.name}');
+        await filesTable.insertFile(
+          mapper.toInsert(
+            model,
+            bytes == null
+                ? ''
+                : await localFileIdService.getFileId(
+                    path: pathService.join(
+                      parent: await pathService.getLocalPath(
+                        fileId: model.parentId,
+                      ),
+                      child: model.name,
+                    ),
+                  ),
+          ),
+        );
       } else {
-        await filesTable.updateFile(model.id, mapper.toUpdate(model));
+        await filesTable.updateFile(
+          model.id,
+          mapper.toUpdate(
+            model,
+            localFileId: dbFile.localFileId.isNotEmpty
+                ? null
+                : await localFileIdService.getFileId(
+                    path: pathService.join(
+                      parent: await pathService.getLocalPath(
+                        fileId: model.parentId,
+                      ),
+                      child: model.name,
+                    ),
+                  ),
+          ),
+        );
       }
     }, source: 'LocalDataSource.saveFile');
   }
@@ -182,11 +211,6 @@ class LocalDataSource {
 
       if (!softDelete) {
         await filesTable.deleteFile(model.id);
-      } else {
-        await filesTable.updateFile(
-          model.id,
-          mapper.toUpdate(model.copyWith(deletedAt: DateTime.now().toUtc())),
-        );
       }
     }, source: 'LocalDataSource.deleteFile');
   }

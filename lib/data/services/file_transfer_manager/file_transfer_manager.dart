@@ -1,11 +1,11 @@
 import 'dart:collection';
 import 'dart:math' as math;
 
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/services/file_transfer_manager/handlers/download_handler.dart';
-import 'package:cross_platform_project/data/services/file_transfer_manager/handlers/upload_nahdler.dart';
+import 'package:cross_platform_project/data/services/file_transfer_manager/handlers/upload_handler.dart';
 
 enum TransferAction { download, upload }
 

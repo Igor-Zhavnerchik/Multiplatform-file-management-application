@@ -1,5 +1,5 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_data_source.dart';
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
@@ -13,7 +13,7 @@ class RemoteSyncActionSource extends SyncActionSource {
   @override
   Future<Result<void>> deleteFile({
     required FileModel model,
-    bool softDelete = true,
+    bool softDelete = false,
   }) async {
     return await remoteDataSource.deleteFile(
       model: model,
@@ -36,7 +36,7 @@ class RemoteSyncActionSource extends SyncActionSource {
     required FileModel model,
     Stream<List<int>>? data,
   }) async {
-    return await remoteDataSource.uploadFile(model: model);
+    return await remoteDataSource.uploadFile(model: model, uploadData: false);
   }
 
   @override

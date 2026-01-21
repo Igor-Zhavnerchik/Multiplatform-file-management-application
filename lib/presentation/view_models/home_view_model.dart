@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/providers/settings_service_provider.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/providers/settings_service_provider.dart';
 import 'package:cross_platform_project/data/providers/file_stream_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/use_cases/utils/open_file_use_case.dart';

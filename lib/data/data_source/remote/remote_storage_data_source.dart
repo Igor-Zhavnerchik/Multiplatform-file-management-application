@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:cross_platform_project/core/converters/bytes_to_stream_converter.dart';
+import 'package:cross_platform_project/data/converters/bytes_to_stream_converter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RemoteStorageDataSource {

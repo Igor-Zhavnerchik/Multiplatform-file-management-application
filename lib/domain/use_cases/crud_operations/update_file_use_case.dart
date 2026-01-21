@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/core/utility/result.dart';
+import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
@@ -11,13 +11,13 @@ class UpdateFileUseCase {
   Future<Result<void>> call({
     required FileEntity entity,
     String? newName,
-    bool? downloadEnabled,
+    bool? contentSyncEnabled,
   }) async {
     return await repository.updateFile(
       request: FileUpdateRequest(
         id: entity.id,
         name: newName,
-        downloadEnabled: downloadEnabled,
+        contentSyncEnabled: contentSyncEnabled,
       ),
     );
   }

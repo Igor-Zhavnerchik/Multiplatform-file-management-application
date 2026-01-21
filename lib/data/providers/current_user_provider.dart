@@ -1,5 +1,5 @@
-import 'package:cross_platform_project/core/debug/debugger.dart';
-import 'package:cross_platform_project/core/providers/supabase_client_provider.dart';
+import 'package:cross_platform_project/common/debug/debugger.dart';
+import 'package:cross_platform_project/application/providers/supabase_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final currentUserIdProvider = StreamProvider.autoDispose<String?>((ref) {
