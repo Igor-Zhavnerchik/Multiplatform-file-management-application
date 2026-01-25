@@ -1,8 +1,10 @@
+import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:cross_platform_project/data/providers/file_stream_providers.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/presentation/dialog/file_operation_dialog.dart';
 import 'package:cross_platform_project/presentation/providers/dialog_view_model_provider.dart';
 import 'package:cross_platform_project/presentation/providers/home_view_model_provider.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -69,6 +71,7 @@ void _showMenu(
   Offset position, {
   required bool isFile,
 }) {
+  debugLog('current position: (${position.dx}, ${position.dy})');
   final screenSize = MediaQuery.of(context).size;
   const double menuWidth = 220;
   final double menuHeight = isFile ? 280 : 180;
@@ -81,8 +84,12 @@ void _showMenu(
   }
   if (finalY + menuHeight > screenSize.height - 20) {
     finalY = position.dy - menuHeight;
+    if (finalY < 10) {
+      finalY = 10;
+    }
   }
-  if (finalY < 10) finalY = 10;
+
+  debugLog('final position: ($finalX, $finalY)');
 
   ref
       .read(dialogViewModelProvider.notifier)
@@ -103,145 +110,185 @@ class FileViewElement extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final homeState = ref.watch(homeViewModelProvider);
-    final homeNotifier = ref.read(homeViewModelProvider.notifier);
     final isMobile = MediaQuery.of(context).size.width <= 500;
     final isSelected = homeState.selected?.id == element.id;
 
+    return Container(
+      decoration: BoxDecoration(
+        color: isSelected && !isMobile
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return constraints.maxWidth > 500
+              ? _buildDesktopListItem(theme, ref, isSelected, context)
+              : _buildMobileListItem(theme, ref, isSelected, context);
+        },
+      ),
+    );
+  }
+
+  Widget _buildDesktopListItem(
+    ThemeData theme,
+    WidgetRef ref,
+    bool isSelected,
+    BuildContext context,
+  ) {
+    final homeNotifier = ref.read(homeViewModelProvider.notifier);
+
     return Listener(
+      behavior: HitTestBehavior.opaque,
       onPointerDown: (event) {
-        if (!isMobile && event.buttons == 1) {
+        if (event.buttons != kSecondaryMouseButton) {
           homeNotifier.setSelected(element);
         }
       },
       child: GestureDetector(
-        onTap: isMobile ? () => homeNotifier.openElement(element) : null,
-        onDoubleTap: !isMobile ? () => homeNotifier.openElement(element) : null,
-        onSecondaryTapDown: (details) {
+        behavior: HitTestBehavior.opaque,
+        onDoubleTap: () {
+          homeNotifier.openElement(element);
+        },
+        onSecondaryTapDown: (event) {
           _showMenu(
             ref,
             context,
             isSelected
                 ? FileOperationSelectMenu(entity: element)
                 : FolderOperationSelectMenu(folder: parentFolder),
-            details.globalPosition,
+            event.globalPosition,
             isFile: isSelected,
           );
         },
-        child: Ink(
-          decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return constraints.maxWidth > 500
-                  ? _buildDesktopListItem(theme)
-                  : _buildMobileListItem(theme, ref);
-            },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              _SyncStatusOverlay(
+                status: _getStatusInfo(theme),
+                child: Icon(
+                  element.isFolder
+                      ? Icons.folder_rounded
+                      : Icons.insert_drive_file_rounded,
+                  size: 24,
+                  color: element.isFolder
+                      ? theme.colorScheme.primary
+                      : _getIconColor(theme),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  element.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Text(
+                  element.isFolder ? '--' : _formatSize(element.size),
+                  textAlign: TextAlign.right,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+              const SizedBox(width: 16),
+              SizedBox(
+                width: 140,
+                child: Text(
+                  _formatDate(element.updatedAt),
+                  textAlign: TextAlign.right,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDesktopListItem(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        children: [
-          _SyncStatusOverlay(
-            status: _getStatusInfo(theme),
-            child: Icon(
-              element.isFolder
-                  ? Icons.folder_rounded
-                  : Icons.insert_drive_file_rounded,
-              size: 24,
-              color: element.isFolder
-                  ? theme.colorScheme.primary
-                  : _getIconColor(theme),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 3,
-            child: Text(
-              element.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(
-            width: 100,
-            child: Text(
-              element.isFolder ? '--' : _formatSize(element.size),
-              textAlign: TextAlign.right,
-              style: theme.textTheme.bodySmall,
-            ),
-          ),
-          const SizedBox(width: 16),
-          SizedBox(
-            width: 140,
-            child: Text(
-              _formatDate(element.updatedAt),
-              textAlign: TextAlign.right,
-              style: theme.textTheme.bodySmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildMobileListItem(
+    ThemeData theme,
+    WidgetRef ref,
+    bool isSelected,
+    BuildContext context,
+  ) {
+    final homeNotifier = ref.read(homeViewModelProvider.notifier);
 
-  Widget _buildMobileListItem(ThemeData theme, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          _SyncStatusOverlay(
-            status: _getStatusInfo(theme),
-            child: Icon(
-              element.isFolder
-                  ? Icons.folder_rounded
-                  : Icons.insert_drive_file_rounded,
-              size: 36,
-              color: element.isFolder
-                  ? theme.colorScheme.primary
-                  : _getIconColor(theme),
-            ),
-          ),
-          const SizedBox(width: 16),
+          // зона с иконкой + текстом + пустое место для клика
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  element.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => homeNotifier.openElement(element),
+              child: Row(
+                children: [
+                  _SyncStatusOverlay(
+                    status: _getStatusInfo(theme),
+                    child: Icon(
+                      element.isFolder
+                          ? Icons.folder_rounded
+                          : Icons.insert_drive_file_rounded,
+                      size: 36,
+                      color: element.isFolder
+                          ? theme.colorScheme.primary
+                          : _getIconColor(theme),
+                    ),
                   ),
-                ),
-                Text(
-                  _formatDate(element.updatedAt),
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          element.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Text('Edited ', style: theme.textTheme.bodySmall),
+                            Text(
+                              _formatDate(element.updatedAt),
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              ref.read(homeViewModelProvider.notifier).setSelected(element);
-              _showMenu(
-                ref,
-                ScaffoldMessenger.of(ref.context).context,
-                FileOperationSelectMenu(entity: element),
-                Offset.zero,
-                isFile: true,
+
+          Builder(
+            builder: (context) {
+              return IconButton(
+                icon: const Icon(Icons.more_vert),
+                onPressed: () {
+                  homeNotifier.setSelected(element);
+                  final renderBox = context.findRenderObject() as RenderBox?;
+                  final offset =
+                      renderBox?.localToGlobal(Offset.zero) ?? Offset.zero;
+                  _showMenu(
+                    ref,
+                    context,
+                    FileOperationSelectMenu(entity: element),
+                    Offset(offset.dx - 220, offset.dy),
+                    isFile: true,
+                  );
+                },
               );
             },
           ),
@@ -253,13 +300,11 @@ class FileViewElement extends ConsumerWidget {
   Color _getIconColor(ThemeData theme) => theme.colorScheme.onSurfaceVariant;
 
   _StatusInfo? _getStatusInfo(ThemeData theme) {
-    // 1. ПРИОРИТЕТ: Статусы процесса загрузки (DownloadStatus)
-    // Это то, что происходит прямо сейчас
     switch (element.downloadStatus) {
       case DownloadStatus.downloading:
       case DownloadStatus.uploading:
         return _StatusInfo(
-          icon: Icons.sync_rounded, // Анимированная или обычная иконка обмена
+          icon: Icons.sync_rounded,
           color: theme.colorScheme.primary,
         );
       case DownloadStatus.failedDownload:
@@ -276,11 +321,7 @@ class FileViewElement extends ConsumerWidget {
       default:
         break;
     }
-
-    // 2. ВТОРОЙ ПРИОРИТЕТ: Статусы синхронизации (SyncStatus)
-    // Это состояние данных относительно сервера
     switch (element.syncStatus) {
-      // Процессы синхронизации (если они не перекрыты DownloadStatus)
       case SyncStatus.updatingLocally:
       case SyncStatus.updatingRemotely:
       case SyncStatus.deletingLocally:
@@ -290,7 +331,6 @@ class FileViewElement extends ConsumerWidget {
           color: theme.colorScheme.primary,
         );
 
-      // Ошибки синхронизации
       case SyncStatus.failedLocalUpdate:
       case SyncStatus.failedLocalDelete:
       case SyncStatus.failedRemoteCreate:
@@ -301,7 +341,6 @@ class FileViewElement extends ConsumerWidget {
           color: theme.colorScheme.error,
         );
 
-      // Есть локальные изменения, которые нужно отправить (стрелка вверх)
       case SyncStatus.updatedLocally:
       case SyncStatus.created:
       case SyncStatus.updated:
@@ -310,11 +349,9 @@ class FileViewElement extends ConsumerWidget {
           color: theme.colorScheme.primary,
         );
 
-      // Полностью синхронизировано
       case SyncStatus.syncronized:
-        // Показываем галочку только если файл скачан и включена загрузка
-        if (element.downloadStatus == DownloadStatus.downloaded &&
-            element.contentSyncEnabled) {
+        if (element.downloadStatus != DownloadStatus.haveNewVersion &&
+            element.downloadStatus != DownloadStatus.notDownloaded) {
           return _StatusInfo(
             icon: Icons.cloud_done_outlined,
             color: theme.colorScheme.primary,

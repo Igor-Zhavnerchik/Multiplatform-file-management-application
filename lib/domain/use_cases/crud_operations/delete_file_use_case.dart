@@ -8,8 +8,14 @@ class DeleteFileUseCase {
 
   DeleteFileUseCase({required this.repository});
 
-  Future<Result<void>> call({required FileEntity entity}) async {
+  Future<Result<void>> call({
+    required FileEntity entity,
+    required bool localDelete,
+  }) async {
     debugLog('use case: deleting ${entity.name}');
-    return await repository.deleteFile(entity: entity);
+    return await repository.deleteFile(
+      entity: entity,
+      localDelete: localDelete,
+    );
   }
 }

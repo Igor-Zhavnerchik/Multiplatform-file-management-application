@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:cross_platform_project/common/utility/result.dart';
-import 'package:cross_platform_project/data/models/file_model.dart';
+import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/sync/sync_handlers/delete_handler.dart';
 import 'package:cross_platform_project/domain/sync/sync_handlers/create_handler.dart';
 import 'package:cross_platform_project/domain/sync/sync_handlers/update_handler.dart';
@@ -16,8 +16,8 @@ class SyncEvent {
   final SyncAction action;
   final SyncSource source;
   late final int priority;
-  final FileModel? localFile;
-  final FileModel? remoteFile;
+  final FileEntity? localFile;
+  final FileEntity? remoteFile;
   final int retry;
 
   SyncEvent({
@@ -37,8 +37,8 @@ class SyncEvent {
   SyncEvent copyWith({
     final SyncAction? action,
     final SyncSource? source,
-    final FileModel? localFile,
-    final FileModel? remoteFile,
+    final FileEntity? localFile,
+    final FileEntity? remoteFile,
     final int? retry,
   }) => SyncEvent(
     action: action ?? this.action,

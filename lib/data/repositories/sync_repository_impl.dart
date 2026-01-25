@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/data/data_source/remote/remote_sync_event_listener.dart';
-import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/domain/sync/sync_processor.dart';
 import 'package:cross_platform_project/domain/sync/sync_status_manager.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
@@ -46,9 +45,10 @@ class SyncRepositoryImpl implements SyncRepository {
     }
     debugLog('sync all: got file lists');
 
-    final List<FileModel> remoteFileList =
+    final List<FileEntity> remoteFileList =
         (remoteFileListResult as Success).data;
-    final List<FileModel> localFileList = (localFileListResult as Success).data;
+    final List<FileEntity> localFileList =
+        (localFileListResult as Success).data;
     debugLog('local:');
     for (var file in localFileList) {
       debugLog('    ${file.name}');
@@ -58,8 +58,8 @@ class SyncRepositoryImpl implements SyncRepository {
       debugLog('    ${file.name}');
     }
 
-    final Map<String, FileModel> remoteMap = {};
-    final Map<String, FileModel> localMap = {};
+    final Map<String, FileEntity> remoteMap = {};
+    final Map<String, FileEntity> localMap = {};
     for (var remoteFile in remoteFileList) {
       remoteMap[remoteFile.id] = remoteFile;
     }
@@ -72,11 +72,11 @@ class SyncRepositoryImpl implements SyncRepository {
 
     for (var fileId in fileIds) {
       switch ((localMap[fileId], remoteMap[fileId])) {
-        case (FileModel localModel, null):
+        case (FileEntity localModel, null):
           await _handleLocalOnly(localModel: localModel);
-        case (null, FileModel remoteModel):
+        case (null, FileEntity remoteModel):
           await _handleRemoteOnly(remoteModel: remoteModel);
-        case (FileModel localModel, FileModel remoteModel):
+        case (FileEntity localModel, FileEntity remoteModel):
           await _handleIntersection(
             localModel: localModel,
             remoteModel: remoteModel,
@@ -89,7 +89,7 @@ class SyncRepositoryImpl implements SyncRepository {
           .listen((event) async {
             debugLog('sync repository: catched remote ${event.action} event');
             final payload = event.remoteFile!;
-            final localFile = await storage.getFileModelbyId(id: payload.id);
+            final localFile = await storage.getFileEntitybyId(id: payload.id);
 
             if (switch (event.action) {
               SyncAction.create => localFile == null,
@@ -110,7 +110,7 @@ class SyncRepositoryImpl implements SyncRepository {
       final payload = event.localFile!;
       debugLog('sync repository: catched local ${event.action} event');
       if (event.action == SyncAction.update) {
-        final remoteFile = await storage.getRemoteModel(id: payload.id);
+        final remoteFile = await storage.getRemoteEntity(id: payload.id);
         event = event.copyWith(remoteFile: remoteFile!);
       }
       syncProcessor.addEvent(event: event);
@@ -119,7 +119,7 @@ class SyncRepositoryImpl implements SyncRepository {
     return Success(null);
   }
 
-  Future<void> _handleRemoteOnly({required FileModel remoteModel}) async {
+  Future<void> _handleRemoteOnly({required FileEntity remoteModel}) async {
     syncProcessor.addEvent(
       event: SyncEvent(
         action: SyncAction.create,
@@ -130,7 +130,7 @@ class SyncRepositoryImpl implements SyncRepository {
     );
   }
 
-  Future<void> _handleLocalOnly({required FileModel localModel}) async {
+  Future<void> _handleLocalOnly({required FileEntity localModel}) async {
     switch (localModel.syncStatus) {
       case SyncStatus.created || SyncStatus.failedRemoteCreate:
         syncProcessor.addEvent(
@@ -158,8 +158,8 @@ class SyncRepositoryImpl implements SyncRepository {
   }
 
   Future<void> _handleIntersection({
-    required FileModel localModel,
-    required FileModel remoteModel,
+    required FileEntity localModel,
+    required FileEntity remoteModel,
   }) async {
     switch (localModel.syncStatus) {
       case SyncStatus.deleted:

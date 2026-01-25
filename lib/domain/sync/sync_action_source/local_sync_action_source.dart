@@ -17,6 +17,7 @@ class LocalSyncActionSource extends SyncActionSource {
     return await localDataSource.deleteFile(
       model: model,
       softDelete: softDelete,
+      localDelete: false,
     );
   }
 

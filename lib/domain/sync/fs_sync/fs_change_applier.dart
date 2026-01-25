@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:cross_platform_project/application/services/settings_service.dart';
+import 'package:cross_platform_project/data/repositories/requests/create_file_request.dart';
 import 'package:cross_platform_project/data/services/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
 import 'package:cross_platform_project/data/file_system/file_system_scanner.dart';
@@ -50,7 +51,7 @@ class FsChangeApplier {
             request: FileCreateRequest(
               name: pathService.getName(change.fs.path),
               isFolder: change.fs is ExistingFolder,
-              contentSyncEnabled: settings.defaultContentSyncEnabled,
+              contentSyncEnabled: parent.contentSyncEnabled,
             ),
           );
         case DbUpdate():
@@ -88,8 +89,10 @@ class FsChangeApplier {
             fileId: change.file.fileId,
           );
           fileResult.when(
-            success: (file) =>
-                storage.deleteFile(entity: mapper.toEntity(file!)),
+            success: (file) => storage.deleteFile(
+              entity: mapper.toEntity(file!),
+              localDelete: true,
+            ),
             failure: (_, _, _) => {debugLog('file is already deleted')},
           );
       }

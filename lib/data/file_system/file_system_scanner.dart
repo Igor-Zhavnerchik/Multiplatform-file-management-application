@@ -68,10 +68,10 @@ class FileSystemScanner {
     required int depth,
     String? fromParent,
   }) async {
-    debugLog('scanning: $path');
+    //debugLog('scanning: $path');
     final Map<String, FSEntry> entries = {};
     final localFileId = await localFileIdService.getFileId(path: path);
-    debugLog('path: $path id: $localFileId');
+    //debugLog('path: $path id: $localFileId');
     if (localFileId.isEmpty) {
       throw Exception('file id does not exists. path: $path ');
     } else {

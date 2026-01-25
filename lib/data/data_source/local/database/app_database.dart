@@ -23,6 +23,14 @@ class AppDatabase extends _$AppDatabase {
   @override
   DriftDatabaseOptions get options =>
       const DriftDatabaseOptions(storeDateTimeAsText: true);
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (migrator, from, to) async {
+      await migrator.deleteTable('files');
+      await migrator.createAll();
+    },
+  );
 }
 
 LazyDatabase _openConnection() {

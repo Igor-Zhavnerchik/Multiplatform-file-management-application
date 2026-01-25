@@ -33,18 +33,7 @@ class NavigationPanel extends ConsumerWidget implements PreferredSizeWidget {
       ),
       leadingWidth: 110,
       leading: const NavigationControls(),
-      title: isMobile
-          ? null
-          : Text(
-              'File Manager',
-              style: TextStyle(
-                fontSize: isMobile ? 16 : 18,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-            ),
       actions: [
-        // --- КНОПКА ДЕЙСТВИЙ С ТЕКУЩЕЙ ПАПКОЙ ---
         _ActionButton(
           label: 'Scan',
           icon: Icons.search_rounded,
@@ -87,7 +76,6 @@ class NavigationPanel extends ConsumerWidget implements PreferredSizeWidget {
 
         const VerticalDivider(width: 10, indent: 20, endIndent: 20),
 
-        // --- КНОПКА ГЛОБАЛЬНЫХ НАСТРОЕК (ВМЕСТО POPUPMENU) ---
         Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -110,7 +98,6 @@ class NavigationPanel extends ConsumerWidget implements PreferredSizeWidget {
   }
 }
 
-/// Новое меню настроек, построенное на вашей системе диалогов
 class _GlobalSettingsMenu extends ConsumerWidget {
   const _GlobalSettingsMenu();
 
@@ -121,13 +108,13 @@ class _GlobalSettingsMenu extends ConsumerWidget {
     return ContextDialogMenu(
       children: [
         ContextDialogSwitch(
-          title: 'Auto-Download',
+          title: 'Syncronize content by default',
           icon: Icons.cloud_download_outlined,
           value: homeState.defaultDownloadEnabled,
           onChanged: (value) {
             ref
                 .read(homeViewModelProvider.notifier)
-                .toggleDefaultDownload(value);
+                .toggleDefaultContentSync(value);
           },
         ),
         const Divider(height: 1),

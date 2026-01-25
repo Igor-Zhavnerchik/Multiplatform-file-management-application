@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/application/fs_scan/fs_scan_handler_provider.dart';
+import 'package:cross_platform_project/application/fs_scan/providers/fs_scan_handler_provider.dart';
 import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:cross_platform_project/application/providers/settings_service_provider.dart';
 import 'package:cross_platform_project/common/utility/result.dart';

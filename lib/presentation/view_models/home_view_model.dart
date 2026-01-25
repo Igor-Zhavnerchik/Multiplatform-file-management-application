@@ -110,10 +110,9 @@ class HomeViewModel extends Notifier<HomeViewState> {
     }
   }
 
-  Future<void> toggleDefaultDownload(bool value) async {
-    // Вызываем Use Case (в котором внутри SettingsService.setDefaultDownloadEnabled)
+  Future<void> toggleDefaultContentSync(bool value) async {
     final result = await _setSettingsUseCase.call(
-      defaultDownloadEnabled: value,
+      defaultContentSyncEnabled: value,
     );
 
     result.when(

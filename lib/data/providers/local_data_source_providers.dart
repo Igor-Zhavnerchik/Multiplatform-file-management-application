@@ -2,14 +2,14 @@ import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:cross_platform_project/application/providers/current_user_service_provider.dart';
 import 'package:cross_platform_project/data/providers/local_storage_provider.dart';
 import 'package:cross_platform_project/data/data_source/local/database/database_providers.dart';
-import 'package:cross_platform_project/data/data_source/local/local_file_id_service.dart/local_file_id_serivde_provider.dart';
+import 'package:cross_platform_project/data/data_source/local/local_file_id_service.dart/local_file_id_service_provider.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
 import 'package:cross_platform_project/data/services/storage_path_service.dart';
 import 'package:cross_platform_project/data/models/providers/file_model_mapper_provider.dart';
 import 'package:cross_platform_project/data/services/providers/hash_service_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final localDataSourceProvider = Provider.autoDispose<LocalDataSource>((ref) {
+final localDataSourceProvider = Provider<LocalDataSource>((ref) {
   final pathService = ref.watch(storagePathServiceProvider);
   final localStorage = ref.watch(localStorageProvider);
   final filesTable = ref.watch(filesTableProvider);

@@ -1,14 +1,14 @@
 import 'dart:async';
 
-import 'package:cross_platform_project/application/fs_scan/fs_scan_handler_provider.dart';
+import 'package:cross_platform_project/application/fs_scan/providers/fs_scan_handler_provider.dart';
 import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:cross_platform_project/application/providers/settings_service_provider.dart';
 import 'package:cross_platform_project/application/services/settings_service.dart';
 import 'package:cross_platform_project/common/utility/result.dart';
 import 'package:cross_platform_project/application/fs_scan/fs_scan_handler.dart';
+import 'package:cross_platform_project/data/repositories/requests/create_file_request.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/providers/storage_operations_providers.dart';
-import 'package:cross_platform_project/domain/repositories/storage_repository.dart';
 import 'package:cross_platform_project/domain/use_cases/crud_operations/copy_file_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/crud_operations/create_file_use_case.dart';
 import 'package:cross_platform_project/domain/use_cases/crud_operations/delete_file_use_case.dart';
@@ -81,8 +81,14 @@ class FileOperationsViewModel extends Notifier<FileOperationsState> {
     return result;
   }
 
-  Future<Result<void>> deleteFile({required FileEntity entity}) async {
-    var result = await _deleteFileUseCase(entity: entity);
+  Future<Result<void>> deleteFile({
+    required FileEntity entity,
+    required bool localDelete,
+  }) async {
+    var result = await _deleteFileUseCase(
+      entity: entity,
+      localDelete: localDelete,
+    );
     return result;
   }
 

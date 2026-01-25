@@ -17,7 +17,17 @@ class DownloadHandler {
   });
 
   Future<Result<void>> handle({required FileModel model}) async {
-    statusManager.setStatus(id: model.id, status: DownloadStatus.downloading);
+    if (model.isFolder) {
+      await statusManager.setStatus(
+        id: model.id,
+        status: DownloadStatus.downloaded,
+      );
+      return Success(null);
+    }
+    await statusManager.setStatus(
+      id: model.id,
+      status: DownloadStatus.downloading,
+    );
     final dataResult = await remoteDataSource.downloadFile(model: model);
     return dataResult.when(
       success: (data) async {
@@ -33,8 +43,8 @@ class DownloadHandler {
         );
         return downloadResult;
       },
-      failure: (_, _, _) {
-        statusManager.setStatus(
+      failure: (_, _, _) async {
+        await statusManager.setStatus(
           id: model.id,
           status: DownloadStatus.failedDownload,
         );

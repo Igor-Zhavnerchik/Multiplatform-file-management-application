@@ -47,11 +47,13 @@ final createHandlerProvider = Provider<CreateHandler>((ref) {
   final remoteSyncActionSource = ref.watch(remoteSyncActionSourceProvider);
   final syncStatusManager = ref.watch(syncStatusManagerProvider);
   final fileTransferManager = ref.watch(fileTransferManagerProvider);
+  final mapper = ref.watch(fileModelMapperProvider);
   return CreateHandler(
     local: localSyncActionSource,
     remote: remoteSyncActionSource,
     syncStatusManager: syncStatusManager,
     fileTransferManager: fileTransferManager,
+    mapper: mapper,
   );
 });
 
@@ -59,10 +61,12 @@ final deleteHandlerProvider = Provider<DeleteHandler>((ref) {
   final localSyncActionSource = ref.watch(localSyncActionSourceProvider);
   final remoteSyncActionSource = ref.watch(remoteSyncActionSourceProvider);
   final syncStatusManager = ref.watch(syncStatusManagerProvider);
+  final mapper = ref.watch(fileModelMapperProvider);
   return DeleteHandler(
     local: localSyncActionSource,
     remote: remoteSyncActionSource,
     syncStatusManager: syncStatusManager,
+    mapper: mapper,
   );
 });
 

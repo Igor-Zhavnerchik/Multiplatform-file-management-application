@@ -8,6 +8,7 @@ import 'package:cross_platform_project/data/data_source/remote/remote_data_sourc
 
 import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
+import 'package:cross_platform_project/data/repositories/requests/create_file_request.dart';
 import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:cross_platform_project/data/services/uuid_generation_service.dart';
 import 'package:cross_platform_project/domain/sync/sync_processor.dart';
@@ -45,11 +46,13 @@ class StorageRepositoryImpl extends StorageRepository {
   }
 
   @override
-  Future<Result<List<FileModel>>> getRemoteFileList() async {
+  Future<Result<List<FileEntity>>> getRemoteFileList() async {
     var remoteFileListResult = await remoteDataSource.getFileList();
     return remoteFileListResult.when(
       success: (data) {
-        return Success(data);
+        return Success(
+          data.map((element) => mapper.toEntity(element)).toList(),
+        );
       },
       failure: (msg, err, source) {
         debugLog('$msg, error: $err source: $source');
@@ -59,7 +62,7 @@ class StorageRepositoryImpl extends StorageRepository {
   }
 
   @override
-  Future<Result<List<FileModel>>> getLocalFileList() async {
+  Future<Result<List<FileEntity>>> getLocalFileList() async {
     debugLog('getting file list');
     var rawFileListResult = await localDataSource.getFileList(
       ownerId: currentUserId,
@@ -67,7 +70,9 @@ class StorageRepositoryImpl extends StorageRepository {
     );
     return rawFileListResult.when(
       success: (data) {
-        return Success(data);
+        return Success(
+          data.map((element) => mapper.toEntity(element)).toList(),
+        );
       },
       failure: (msg, err, source) {
         debugLog('$msg, error: $err source: $source');
@@ -114,32 +119,49 @@ class StorageRepositoryImpl extends StorageRepository {
         bytes: request.bytes ?? Stream.empty(),
       );
     }
-    if (saveResult.isFailure) {
-      debugLog(
-        '${(saveResult as Failure).message}, error: ${saveResult.error}, source: ${saveResult.source}',
-      );
-      return Failure(
-        saveResult.message,
-        error: saveResult.error,
-        source: saveResult.source,
-      );
-    }
-    debugLog('emitting local create sync event');
-    final createdFile =
-        (await localDataSource.getFile(fileId: newFileId)) as Success;
-    _controller!.add(
-      SyncEvent(
-        action: SyncAction.create,
-        source: SyncSource.local,
-        localFile: createdFile.data,
-        remoteFile: null,
-      ),
+    return await saveResult.when(
+      success: (_) async {
+        debugLog('emitting local create sync event');
+        final Result<FileModel?> result = await localDataSource.getFile(
+          fileId: newFileId,
+        );
+        return result.when(
+          success: (created) {
+            if (created != null) {
+              final entity = mapper.toEntity(created);
+              _controller!.add(
+                SyncEvent(
+                  action: SyncAction.create,
+                  source: SyncSource.local,
+                  localFile: mapper.toEntity(created),
+                  remoteFile: null,
+                ),
+              );
+              return Success(entity);
+            } else {
+              return Failure(
+                'no file was created',
+                source: 'StorageRepository.createFile',
+              );
+            }
+          },
+          failure: (msg, err, source) {
+            return Failure(msg, error: err, source: source);
+          },
+        );
+      },
+      failure: (msg, err, source) {
+        debugLog('$msg, error: $err, source: $source');
+        return Failure(msg, error: err, source: source);
+      },
     );
-    return Success(mapper.toEntity(createdFile.data));
   }
 
   @override
-  Future<Result<void>> deleteFile({required FileEntity entity}) async {
+  Future<Result<void>> deleteFile({
+    required FileEntity entity,
+    required bool localDelete,
+  }) async {
     final model = mapper.fromEntity(entity);
     await syncStatusManager.updateStatus(
       fileId: model.id,
@@ -154,7 +176,10 @@ class StorageRepositoryImpl extends StorageRepository {
       final Result<void> result = await childrenResult.when(
         success: (children) async {
           for (var child in children) {
-            final result = await deleteFile(entity: mapper.toEntity(child));
+            final result = await deleteFile(
+              entity: mapper.toEntity(child),
+              localDelete: localDelete,
+            );
             if (result.isFailure) {
               return result;
             }
@@ -174,6 +199,7 @@ class StorageRepositoryImpl extends StorageRepository {
     final deleteResult = await localDataSource.deleteFile(
       model: model,
       softDelete: true,
+      localDelete: localDelete,
     );
     if (deleteResult.isFailure) {
       final fail = deleteResult as Failure;
@@ -186,17 +212,19 @@ class StorageRepositoryImpl extends StorageRepository {
     }
     await syncStatusManager.updateStatus(
       fileId: model.id,
-      status: SyncStatus.deleted,
+      status: localDelete ? SyncStatus.syncronized : SyncStatus.deleted,
     );
     debugLog('emitting local delete sync event for ${model.name}');
-    _controller!.add(
-      SyncEvent(
-        action: SyncAction.delete,
-        source: SyncSource.local,
-        localFile: model,
-        remoteFile: null,
-      ),
-    );
+    if (!localDelete) {
+      _controller!.add(
+        SyncEvent(
+          action: SyncAction.delete,
+          source: SyncSource.local,
+          localFile: mapper.toEntity(model),
+          remoteFile: null,
+        ),
+      );
+    }
 
     return Success(null);
   }
@@ -236,7 +264,7 @@ class StorageRepositoryImpl extends StorageRepository {
           SyncEvent(
             action: SyncAction.update,
             source: SyncSource.local,
-            localFile: model,
+            localFile: mapper.toEntity(model),
             remoteFile: null,
           ),
         );
@@ -359,17 +387,33 @@ class StorageRepositoryImpl extends StorageRepository {
   }
 
   @override
-  Future<FileModel?> getFileModelbyId({required String id}) async {
-    return await localDataSource.getFileModel(id: id);
+  Future<FileEntity?> getFileEntitybyId({required String id}) async {
+    final model = await localDataSource.getFileModel(id: id);
+    return model == null ? null : mapper.toEntity(model);
   }
 
   @override
-  Future<FileModel?> getRemoteModel({required String id}) async {
+  Future<FileEntity?> getRemoteEntity({required String id}) async {
     return (await remoteDataSource.getFile(fileId: id)).when(
-      success: (data) => data,
+      success: (data) => data == null ? null : mapper.toEntity(data),
       failure: (msg, err, source) {
         debugLog('$msg error: $err source: $source');
         return null;
+      },
+    );
+  }
+
+  @override
+  Future<Result<List<FileEntity>>> getChildren({required String id}) async {
+    return (await localDataSource.getChildren(
+      ownerId: currentUserId,
+      parentId: id,
+    )).when(
+      success: (data) =>
+          Success(data.map((model) => mapper.toEntity(model)).toList()),
+      failure: (msg, err, source) {
+        debugLog('$msg error: $err source: $source');
+        return Failure(msg, error: err, source: source);
       },
     );
   }

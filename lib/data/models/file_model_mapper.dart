@@ -119,9 +119,7 @@ class FileModelMapper {
       hash: null,
       contentSyncEnabled: settings.defaultContentSyncEnabled,
       syncStatus: SyncStatus.syncronized,
-      downloadStatus: metadata['download_status'] != null
-          ? DownloadStatus.values.byName(metadata['download_status'])
-          : DownloadStatus.notDownloaded,
+      downloadStatus: DownloadStatus.values.byName(metadata['download_status']),
       createdAt: DateTime.parse(metadata['created_at']),
       updatedAt: DateTime.parse(metadata['updated_at']),
       contentUpdatedAt: DateTime.parse(metadata['content_updated_at']),

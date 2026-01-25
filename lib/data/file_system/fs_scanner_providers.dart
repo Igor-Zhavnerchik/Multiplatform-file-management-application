@@ -1,5 +1,5 @@
-import 'package:cross_platform_project/application/fs_scan/fs_scan_handler_provider.dart';
-import 'package:cross_platform_project/data/data_source/local/local_file_id_service.dart/local_file_id_serivde_provider.dart';
+import 'package:cross_platform_project/application/fs_scan/providers/fs_scan_handler_provider.dart';
+import 'package:cross_platform_project/data/data_source/local/local_file_id_service.dart/local_file_id_service_provider.dart';
 import 'package:cross_platform_project/data/file_system/file_system_scanner.dart';
 import 'package:cross_platform_project/data/file_system/file_system_watcher.dart';
 import 'package:cross_platform_project/data/providers/local_data_source_providers.dart';

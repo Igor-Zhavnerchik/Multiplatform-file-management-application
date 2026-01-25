@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,14 +13,28 @@ class RemoteDatabaseDataSource {
   Future<List<Map<String, dynamic>>> getMetadata({
     required String userId,
   }) async {
-    debugLog('getting files metadata from supabase for user: $userId');
-    var fileList = await client
-        .from(fileMetadataTable)
-        .select()
-        .eq('owner_id', userId);
+    try {
+      debugLog('getting files metadata from supabase for user: $userId');
+      debugLog('Session: ${client.auth.currentSession}');
+      debugLog('User: ${client.auth.currentUser}');
+      var fileList = await client
+          .from(fileMetadataTable)
+          .select()
+          .eq('owner_id', userId)
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              debugLog('timeout');
+              throw TimeoutException('Supabase select() hung');
+            },
+          );
 
-    debugLog('got ${fileList.length} files');
-    return fileList;
+      debugLog('got ${fileList.length} files');
+      return fileList;
+    } catch (e) {
+      debugLog(e.toString());
+      return [];
+    }
   }
 
   Future<Map<String, dynamic>?> getSingleMetadata({

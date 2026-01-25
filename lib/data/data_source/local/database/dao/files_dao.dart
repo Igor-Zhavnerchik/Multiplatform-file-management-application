@@ -47,10 +47,8 @@ class FilesDao extends DatabaseAccessor<AppDatabase> with _$FilesDaoMixin {
     return select(files).get();
   }
 
+  //FIXME
   Future<DbFile?> getFile({String? fileId, String? localFileId}) {
-    if (fileId == null && localFileId == null) {
-      throw ArgumentError('Either fileId or localFileId must be provided');
-    }
     final query = select(files);
     if (fileId != null) {
       query.where((entity) => entity.id.equals(fileId));

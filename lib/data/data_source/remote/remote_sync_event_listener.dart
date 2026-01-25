@@ -42,10 +42,12 @@ class RemoteSyncEventListener {
                 },
                 source: SyncSource.remote,
                 localFile: null,
-                remoteFile: mapper.fromMetadata(
-                  metadata: payload.newRecord.isNotEmpty
-                      ? payload.newRecord
-                      : payload.oldRecord,
+                remoteFile: mapper.toEntity(
+                  mapper.fromMetadata(
+                    metadata: payload.newRecord.isNotEmpty
+                        ? payload.newRecord
+                        : payload.oldRecord,
+                  ),
                 ),
               );
               _controller.add(event);

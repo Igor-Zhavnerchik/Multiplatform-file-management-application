@@ -18,12 +18,12 @@ class FileOperationSelectMenu extends ConsumerStatefulWidget {
 
 class _FileOperationSelectMenuState
     extends ConsumerState<FileOperationSelectMenu> {
-  late bool downloadEnabled;
+  late bool contentSyncEnabled;
 
   @override
   void initState() {
     super.initState();
-    downloadEnabled = widget.entity.contentSyncEnabled;
+    contentSyncEnabled = widget.entity.contentSyncEnabled;
   }
 
   @override
@@ -54,11 +54,11 @@ class _FileOperationSelectMenuState
         ),
         const Divider(height: 1),
         ContextDialogSwitch(
-          title: 'Auto-Download',
-          icon: Icons.cloud_download_outlined,
-          value: downloadEnabled,
+          title: 'Syncronization',
+          icon: Icons.sync,
+          value: contentSyncEnabled,
           onChanged: (value) {
-            setState(() => downloadEnabled = value);
+            setState(() => contentSyncEnabled = value);
             fileOpsVM.setContentSyncEnabled(
               entity: widget.entity,
               isEnabled: value,
@@ -66,11 +66,19 @@ class _FileOperationSelectMenuState
           },
         ),
         ContextDialogOption(
-          title: 'Delete',
+          title: 'Delete ${widget.entity.isFolder ? 'folder' : 'file'}',
           icon: Icons.delete_outline_rounded,
           isDestructive: true,
           action: () => dialogVM.showCustomDialog(
-            content: DeleteDialog(entity: widget.entity),
+            content: DeleteDialog(entity: widget.entity, localDelete: false),
+          ),
+        ),
+        ContextDialogOption(
+          title: 'Delete content',
+          icon: Icons.delete_outline_rounded,
+          isDestructive: true,
+          action: () => dialogVM.showCustomDialog(
+            content: DeleteDialog(entity: widget.entity, localDelete: true),
           ),
         ),
       ],
@@ -264,8 +272,6 @@ class ContextDialogSwitch extends StatelessWidget {
                   ),
                 ),
               ),
-              // Отключаем реакцию самого свитча на жесты,
-              // так как их обрабатывает InkWell всей строки
               IgnorePointer(
                 child: Transform.scale(
                   scale: 0.7,

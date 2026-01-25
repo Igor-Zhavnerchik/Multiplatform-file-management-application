@@ -7,7 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DeleteDialog extends ConsumerStatefulWidget {
   final FileEntity entity;
-  const DeleteDialog({required this.entity, super.key});
+  final bool localDelete;
+  const DeleteDialog({
+    required this.entity,
+    super.key,
+    required this.localDelete,
+  });
 
   @override
   ConsumerState<DeleteDialog> createState() => _DeleteDialogState();
@@ -35,7 +40,7 @@ class _DeleteDialogState extends ConsumerState<DeleteDialog> {
           ],
         ),
         Text(
-          'Are you sure you want to delete "${widget.entity.name}"? This action cannot be undone.',
+          'Are you sure you want to delete "${widget.entity.name}"? This action will delete this ${widget.entity.isFolder ? "folder" : "file"} from ${widget.localDelete ? "this device" : "all your devices"}.',
         ),
         if (errorMessage != null)
           Text(
@@ -69,7 +74,7 @@ class _DeleteDialogState extends ConsumerState<DeleteDialog> {
     setState(() => isLoading = true);
     final result = await ref
         .read(fileOperationsViewModelProvider.notifier)
-        .deleteFile(entity: widget.entity);
+        .deleteFile(entity: widget.entity, localDelete: widget.localDelete);
     if (!mounted) return;
     result.when(
       success: (_) => ref.read(dialogViewModelProvider.notifier).hide(),

@@ -74,15 +74,14 @@ class _CreateDialogState extends ConsumerState<CreateDialog> {
         const SizedBox(height: 8),
 
         _buildToggleRow(
-          icon: Icons.file_download_outlined,
-          label: 'Auto download',
+          icon: Icons.sync,
+          label: 'Syncronization',
           value: contentSyncEnabled,
           onChanged: (v) => setState(() => contentSyncEnabled = v),
         ),
 
         const SizedBox(height: 24),
 
-        // Кнопки управления
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [

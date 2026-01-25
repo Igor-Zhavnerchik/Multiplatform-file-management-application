@@ -11,12 +11,18 @@ class UploadHandler {
   UploadHandler({required this.remoteDataSource, required this.statusManager});
 
   Future<Result<void>> handle({required FileModel model}) async {
-    statusManager.setStatus(id: model.id, status: DownloadStatus.uploading);
+    if (model.isFolder) {
+      return Success(null);
+    }
+    await statusManager.setStatus(
+      id: model.id,
+      status: DownloadStatus.uploading,
+    );
     final uploadResult = await remoteDataSource.uploadFile(
       model: model,
       uploadData: true,
     );
-    statusManager.setStatus(
+    await statusManager.setStatus(
       id: model.id,
       status: uploadResult.isSuccess
           ? DownloadStatus.downloaded

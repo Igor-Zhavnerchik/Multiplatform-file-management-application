@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:cross_platform_project/application/db_snapshot_getter.dart';
+import 'package:cross_platform_project/application/fs_scan/db_snapshot_getter.dart';
 import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:cross_platform_project/data/services/storage_path_service.dart';
 import 'package:cross_platform_project/data/data_source/local/local_data_source.dart';
@@ -55,7 +55,6 @@ class Reconciler {
     final List<DbChange> changeList = [];
 
     for (var localId in localIdKeys) {
-      //debugLog('processing localId: $localId');
       final fsEntry = fsSnapshot[localId];
       final dbEntry = dbSnapshot[localId];
 
@@ -80,11 +79,10 @@ class Reconciler {
               ),
               _ => null,
             };
-            debugLog('local id: ${fsEntry!.localFileId}');
             if ((fsHash != dbFile.hash && fsHash != null) ||
-                (dbFile.name != pathService.getName(fsEntry.path)) ||
+                (dbFile.name != pathService.getName(fsEntry!.path)) ||
                 (dbFile.parentLocalFileId != fsEntry.parentLocalFileId)) {
-              debugLog('path: ${fsEntry.path} decision: update');
+              debugLog('path: ${fsEntry!.path} decision: update');
               debugLog('    reason: ');
               debugLog(
                 'fs: hash: $fsHash, name: ${pathService.getName(fsEntry.path)}, parent id: ${fsEntry.parentLocalFileId} ',

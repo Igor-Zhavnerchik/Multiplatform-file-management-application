@@ -9,6 +9,7 @@ import 'package:cross_platform_project/data/models/file_model.dart';
 import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/data/repositories/requests/update_file_request.dart';
 import 'package:cross_platform_project/data/services/hash_service.dart';
+import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import '../local/local_storage_service.dart';
 
 class LocalDataSource {
@@ -65,6 +66,15 @@ class LocalDataSource {
     return '$base (${maxIndex + 1})$ext';
   }
 
+  Future<String> _getLocalFileId({required FileModel model}) async {
+    return await localFileIdService.getFileId(
+      path: pathService.join(
+        parent: await pathService.getLocalPath(fileId: model.parentId),
+        child: model.name,
+      ),
+    );
+  }
+
   //FIXME should take into account new system
   Future<Result<void>> saveFile({
     required FileModel model,
@@ -73,7 +83,10 @@ class LocalDataSource {
   }) async {
     return await safeCall(() async {
       final dbFile = await filesTable.getFile(fileId: model.id);
-      if (dbFile == null) {
+      final haveDbEntry = dbFile != null;
+      final haveData = bytes != null;
+
+      if (!haveDbEntry) {
         model = model.copyWith(
           name: await _makeUniqueName(
             name: model.name,
@@ -83,11 +96,19 @@ class LocalDataSource {
         );
       }
 
-      if (bytes != null) {
-        var savePath = pathService.join(
-          parent: await pathService.getLocalPath(fileId: model.parentId),
-          child: model.name,
+      if (haveData) {
+        final parentPath = await pathService.getLocalPath(
+          fileId: model.parentId,
         );
+        if (model.parentId != null && !(await Directory(parentPath).exists())) {
+          await saveFile(
+            model: mapper.fromDbFile(
+              (await filesTable.getFile(fileId: model.parentId))!,
+            ),
+            bytes: Stream.empty(),
+          );
+        }
+        var savePath = pathService.join(parent: parentPath, child: model.name);
         debugLog('Saving "${model.name}" in "$savePath"');
         if (model.isFolder) {
           await localStorage.createEntity(
@@ -98,28 +119,17 @@ class LocalDataSource {
           await localStorage.saveBytes(path: savePath, bytes: bytes);
           model = model.copyWith(
             hash: await _getHash(model: model, filePath: savePath),
+            size: await File(savePath).length(),
           );
-          if (model.size == null) {
-            model.copyWith(size: await File(savePath).length());
-          }
         }
       }
 
-      if (dbFile == null) {
+      if (!haveDbEntry) {
         debugLog('inserting ${model.name}');
         await filesTable.insertFile(
           mapper.toInsert(
             model,
-            bytes == null
-                ? ''
-                : await localFileIdService.getFileId(
-                    path: pathService.join(
-                      parent: await pathService.getLocalPath(
-                        fileId: model.parentId,
-                      ),
-                      child: model.name,
-                    ),
-                  ),
+            !haveData ? '' : await _getLocalFileId(model: model),
           ),
         );
       } else {
@@ -127,16 +137,9 @@ class LocalDataSource {
           model.id,
           mapper.toUpdate(
             model,
-            localFileId: dbFile.localFileId.isNotEmpty
-                ? null
-                : await localFileIdService.getFileId(
-                    path: pathService.join(
-                      parent: await pathService.getLocalPath(
-                        fileId: model.parentId,
-                      ),
-                      child: model.name,
-                    ),
-                  ),
+            localFileId: dbFile.localFileId.isEmpty && haveData
+                ? await _getLocalFileId(model: model)
+                : null,
           ),
         );
       }
@@ -197,6 +200,7 @@ class LocalDataSource {
   Future<Result<void>> deleteFile({
     required FileModel model,
     bool softDelete = true,
+    required bool localDelete,
   }) async {
     return await safeCall(() async {
       try {
@@ -211,6 +215,22 @@ class LocalDataSource {
 
       if (!softDelete) {
         await filesTable.deleteFile(model.id);
+      }
+
+      if (localDelete) {
+        filesTable.updateFile(
+          model.id,
+          mapper.toUpdate(
+            model.copyWith(
+              hash: '',
+              size: 0,
+              contentSyncEnabled: false,
+              downloadStatus: DownloadStatus.notDownloaded,
+              contentUpdatedAt: DateTime.fromMillisecondsSinceEpoch(0).toUtc(),
+            ),
+            localFileId: '',
+          ),
+        );
       }
     }, source: 'LocalDataSource.deleteFile');
   }

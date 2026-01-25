@@ -13,12 +13,42 @@ class UpdateFileUseCase {
     String? newName,
     bool? contentSyncEnabled,
   }) async {
-    return await repository.updateFile(
-      request: FileUpdateRequest(
-        id: entity.id,
-        name: newName,
-        contentSyncEnabled: contentSyncEnabled,
-      ),
+    Result<void> result = Failure(
+      'no parameters to update',
+      source: 'UpdateFileUseCase',
     );
+    if (newName != null) {
+      result = await repository.updateFile(
+        request: FileUpdateRequest(id: entity.id, name: newName),
+      );
+    }
+
+    if (contentSyncEnabled != null) {
+      await _updateContentSyncEnabled(
+        entity: entity,
+        isEnabled: contentSyncEnabled,
+      );
+    }
+
+    return result;
+  }
+
+  Future<Result<void>> _updateContentSyncEnabled({
+    required FileEntity entity,
+    required bool isEnabled,
+  }) async {
+    Result<void> result = await repository.updateFile(
+      request: FileUpdateRequest(id: entity.id, contentSyncEnabled: isEnabled),
+    );
+    if (entity.isFolder) {
+      for (FileEntity child
+          in (await repository.getChildren(id: entity.id) as Success).data) {
+        result = await _updateContentSyncEnabled(
+          entity: child,
+          isEnabled: isEnabled,
+        );
+      }
+    }
+    return result;
   }
 }

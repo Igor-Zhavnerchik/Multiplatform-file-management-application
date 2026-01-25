@@ -6,7 +6,9 @@ class SetSettingsUseCase {
 
   SetSettingsUseCase({required this.settings});
 
-  Future<Result<void>> call({required bool defaultDownloadEnabled}) async {
-    return await settings.setdefaultContentSyncEnable(defaultDownloadEnabled);
+  Future<Result<void>> call({required bool defaultContentSyncEnabled}) async {
+    return await settings.setdefaultContentSyncEnable(
+      defaultContentSyncEnabled,
+    );
   }
 }

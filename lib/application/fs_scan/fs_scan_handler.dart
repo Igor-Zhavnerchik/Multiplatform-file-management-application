@@ -1,4 +1,4 @@
-import 'package:cross_platform_project/application/db_snapshot_getter.dart';
+import 'package:cross_platform_project/application/fs_scan/db_snapshot_getter.dart';
 import 'package:cross_platform_project/common/debug/debugger.dart';
 import 'package:cross_platform_project/domain/sync/fs_sync/fs_change_applier.dart';
 import 'package:cross_platform_project/data/file_system/file_system_scanner.dart';

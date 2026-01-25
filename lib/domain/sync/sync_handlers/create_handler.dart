@@ -1,5 +1,5 @@
 import 'package:cross_platform_project/common/utility/result.dart';
-import 'package:cross_platform_project/data/models/file_model.dart';
+import 'package:cross_platform_project/data/models/file_model_mapper.dart';
 import 'package:cross_platform_project/data/services/file_transfer_manager/file_transfer_manager.dart';
 import 'package:cross_platform_project/domain/entities/file_entity.dart';
 import 'package:cross_platform_project/domain/sync/sync_action_source/sync_action_source.dart';
@@ -11,17 +11,19 @@ class CreateHandler {
   SyncActionSource remote;
   SyncStatusManager syncStatusManager;
   FileTransferManager fileTransferManager;
+  FileModelMapper mapper;
 
   CreateHandler({
     required this.local,
     required this.remote,
     required this.syncStatusManager,
     required this.fileTransferManager,
+    required this.mapper,
   });
 
   Future<Result<void>> handle(SyncEvent event) async {
     late final SyncActionSource dest;
-    FileModel payload;
+    FileEntity payload;
     final bool isFromLocal = event.source == SyncSource.local;
     if (isFromLocal) {
       dest = remote;
@@ -37,12 +39,14 @@ class CreateHandler {
           : DateTime.fromMillisecondsSinceEpoch(0).toUtc(),
     );
 
-    final createResult = await dest.writeFile(model: payload);
+    final createResult = await dest.writeFile(
+      model: mapper.fromEntity(payload),
+    );
 
-    if (syncEnabled) {
+    if (syncEnabled && payload.downloadStatus == DownloadStatus.downloaded) {
       fileTransferManager.addTransferEvent(
         action: isFromLocal ? TransferAction.upload : TransferAction.download,
-        payload: payload,
+        payload: mapper.fromEntity(payload),
       );
     }
     if (isFromLocal) {
